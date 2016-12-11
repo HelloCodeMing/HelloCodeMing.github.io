@@ -1,0 +1,607 @@
+
+ <!DOCTYPE HTML>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  
+    <title>uhttpd源码分析 | Hello Code</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1,user-scalable=no">
+    
+    <meta name="author" content="王欢明">
+    
+
+    
+    <meta name="description" content="uhttpd是openwrt上默认的Web服务器，支持CGI，lua脚本，以及静态文件的服务。它是一个精简的服务器，一般适合作为路由器这样的嵌入式设备使用，或者Web服务器的入门学习。
+uhttpd的源码可以用svn到这里下载。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="uhttpd源码分析">
+<meta property="og:url" content="http://wanghuanming.com/2014/08/uhttpd-code-analysis/index.html">
+<meta property="og:site_name" content="Hello Code">
+<meta property="og:description" content="uhttpd是openwrt上默认的Web服务器，支持CGI，lua脚本，以及静态文件的服务。它是一个精简的服务器，一般适合作为路由器这样的嵌入式设备使用，或者Web服务器的入门学习。
+uhttpd的源码可以用svn到这里下载。">
+<meta property="og:image" content="http://huanming-blog.qiniudn.com/uhttp-framework.png">
+<meta property="og:image" content="http://huanming-blog.qiniudn.com/uhttpd-help.png">
+<meta property="og:image" content="http://huanming-blog.qiniudn.com/uhttpd-nmap.png">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="uhttpd源码分析">
+<meta name="twitter:description" content="uhttpd是openwrt上默认的Web服务器，支持CGI，lua脚本，以及静态文件的服务。它是一个精简的服务器，一般适合作为路由器这样的嵌入式设备使用，或者Web服务器的入门学习。
+uhttpd的源码可以用svn到这里下载。">
+
+    
+    <link rel="alternative" href="/atom.xml" title="Hello Code" type="application/atom+xml">
+    
+    
+    <link rel="icon" href="/img/panda-icon.ico">
+    
+    
+    <link rel="apple-touch-icon" href="/img/panda.png">
+    <link rel="apple-touch-icon-precomposed" href="/img/panda.png">
+    
+    <link rel="stylesheet" href="/css/style.css" type="text/css">
+</head>
+
+  <body>
+    <header>
+      <div>
+		
+			<div id="imglogo">
+				<a href="/"><img src="/img/panda.png" alt="Hello Code" title="Hello Code"/></a>
+			</div>
+			
+			<div id="textlogo">
+				<h1 class="site-name"><a href="/" title="Hello Code">Hello Code</a></h1>
+				<h2 class="blog-motto"></h2>
+			</div>
+			<div class="navbar"><a class="navbutton navmobile" href="#" title="菜单">
+			</a></div>
+			<nav class="animated">
+				<ul>
+					<ul>
+					 
+						<li><a href="/">首页</a></li>
+					
+						<li><a href="/archives">归档</a></li>
+					
+						<li><a href="/about">关于</a></li>
+					
+					<li>
+ 					
+					<form class="search" action="//google.com/search" method="get" accept-charset="utf-8">
+						<label>Search</label>
+						<input type="search" id="search" name="q" autocomplete="off" maxlength="20" placeholder="搜索" />
+						<input type="hidden" name="q" value="site:wanghuanming.com">
+					</form>
+					
+					</li>
+				</ul>
+			</nav>			
+</div>
+    </header>
+    <div id="container">
+      <div id="main" class="post" itemscope itemprop="blogPost">
+  
+	<article itemprop="articleBody"> 
+		<header class="article-info clearfix">
+  <h1 itemprop="name">
+    
+      <a href="/2014/08/uhttpd-code-analysis/" title="uhttpd源码分析" itemprop="url">uhttpd源码分析</a>
+  </h1>
+  <p class="article-author">By
+       
+		<a href="http://wanghuanming.com/about" title="王欢明" target="_blank" itemprop="author">王欢明</a>
+		
+  <p class="article-time">
+    <time datetime="2014-08-19T06:48:39.000Z" itemprop="datePublished"> 发表于 2014 Aug 19</time>
+    
+  </p>
+</header>
+	<div class="article-content">
+		
+		<div id="toc" class="toc-article">
+			<strong class="toc-title">文章目录</strong>
+		
+			<ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#启动"><span class="toc-number">1.</span> <span class="toc-text">启动</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#等待请求"><span class="toc-number">2.</span> <span class="toc-text">等待请求</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#总结"><span class="toc-number">3.</span> <span class="toc-text">总结</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#参考资料"><span class="toc-number">4.</span> <span class="toc-text">参考资料</span></a></li></ol>
+		
+		</div>
+		
+		<p>uhttpd是openwrt上默认的Web服务器，支持CGI，lua脚本，以及静态文件的服务。它是一个精简的服务器，一般适合作为路由器这样的嵌入式设备使用，或者Web服务器的入门学习。</p>
+<p>uhttpd的源码可以用svn到<a href="svn://svn.openwrt.org/openwrt/branches/backfire/package/uhttpd/src" target="_blank" rel="external">这里</a>下载。<br><a id="more"></a></p>
+<p>##概述<br><img src="http://huanming-blog.qiniudn.com/uhttp-framework.png" alt="uhttpd.png"><br>首先，在uhttpd启动的时候，它会先读取参数，进行服务器的配置。参数可以由命令行输入，其中port参数必须制定，其他都有默认值。</p>
+<p>配置完参数之后，服务器会进入uh_mainloop，等待请求。</p>
+<p>在主循环中，uhttpd采用select进行轮询，而不是采用fork进行并发，一定程度上降低了并发能力，但是很适合这样的小型服务器。</p>
+<p>当select检测到有客户端请求，uhttpd就会先接受请求，再进行解析，之后再调用uh_dispatch_request去分发请求。其中，lua请求比较特殊，不由uh_dispatch_request分发。</p>
+<p>在分发过程（不包括lua请求）当中，会根据path的前缀来判断是CGI请求还是静态文件请求，默认的CGI前缀是/cgi-bin。CGI请求进入uh_cgi_request，文件请求进入uh_file_request，lua请求则会进入lua_request。</p>
+<p>在三种handler中，就会进行请求的处理了。lua_request会调用lua解释器进行处理，file_request直接读取文件并且返回，CGI请求比较复杂，之后会详细说明。</p>
+<p>在三种request处理之后，都会返回给客户端。一次循环到此结束。</p>
+<h2 id="启动">启动</h2><p>###服务器配置<br>启动入口的main函数位于uhttpd.c，它接受命令行参数，进行服务器配置，并且启动服务器。让我们先来看看它有哪些配置。</p>
+<p><img src="http://huanming-blog.qiniudn.com/uhttpd-help.png" alt="help"></p>
+<p>其中port必须指定，别的都有默认值。一般情况下我们可以用这样的参数来启动服务器：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">./uhttpd -p <span class="number">8080</span></span><br></pre></td></tr></table></figure></p>
+<p>服务器默认是运行在后台的，可以使用“ps -A | grep uhttp”看到它的运行情况，用nmap扫描一下本地端口也可以看到它已经在监听8080端口了。<br><img src="http://huanming-blog.qiniudn.com/uhttpd-nmap.png" alt="nmap"></p>
+<p>uhttpd的配置用“struct config”存储，成员也很丰富：<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> config &#123;</span><br><span class="line">	<span class="keyword">char</span> docroot[PATH_MAX];        </span><br><span class="line">	<span class="keyword">char</span> *realm;</span><br><span class="line">	<span class="keyword">char</span> *file;        </span><br><span class="line">	<span class="keyword">char</span> *index_file;            </span><br><span class="line">	<span class="keyword">char</span> *error_handler;</span><br><span class="line">	<span class="keyword">int</span> no_symlinks;</span><br><span class="line">	<span class="keyword">int</span> no_dirlists;</span><br><span class="line">	<span class="keyword">int</span> network_timeout;        </span><br><span class="line">	<span class="keyword">int</span> rfc1918_filter;</span><br><span class="line">	<span class="keyword">int</span> tcp_keepalive;</span><br><span class="line"><span class="preprocessor">#<span class="keyword">ifdef</span> HAVE_CGI</span></span><br><span class="line">	<span class="keyword">char</span> *cgi_prefix;</span><br><span class="line"><span class="preprocessor">#<span class="keyword">endif</span></span></span><br><span class="line"><span class="preprocessor">#<span class="keyword">ifdef</span> HAVE_LUA</span></span><br><span class="line">	<span class="keyword">char</span> *lua_prefix;</span><br><span class="line">	<span class="keyword">char</span> *lua_handler;</span><br><span class="line">	lua_State *lua_state;</span><br><span class="line">	lua_State * (*lua_init) (<span class="keyword">const</span> <span class="keyword">char</span> *handler);</span><br><span class="line">	<span class="keyword">void</span> (*lua_close) (lua_State *L);</span><br><span class="line">	<span class="keyword">void</span> (*lua_request) (<span class="keyword">struct</span> client *cl, <span class="keyword">struct</span> http_request *req, lua_State *L);</span><br><span class="line"><span class="preprocessor">#<span class="keyword">endif</span></span></span><br><span class="line"><span class="preprocessor">#<span class="keyword">if</span> defined(HAVE_CGI) || defined(HAVE_LUA)</span></span><br><span class="line">	<span class="keyword">int</span> script_timeout;</span><br><span class="line"><span class="preprocessor">#<span class="keyword">endif</span></span></span><br><span class="line"><span class="preprocessor">#<span class="keyword">ifdef</span> HAVE_TLS</span></span><br><span class="line">	<span class="keyword">char</span> *cert;</span><br><span class="line">	<span class="keyword">char</span> *key;</span><br><span class="line">	SSL_CTX *tls;</span><br><span class="line">	SSL_CTX * (*tls_init) (<span class="keyword">void</span>);</span><br><span class="line">	<span class="keyword">int</span> (*tls_cert) (SSL_CTX *c, <span class="keyword">const</span> <span class="keyword">char</span> *file);</span><br><span class="line">	<span class="keyword">int</span> (*tls_key) (SSL_CTX *c, <span class="keyword">const</span> <span class="keyword">char</span> *file);</span><br><span class="line">	<span class="keyword">void</span> (*tls_free) (<span class="keyword">struct</span> listener *l);</span><br><span class="line">	<span class="keyword">int</span> (*tls_accept) (<span class="keyword">struct</span> client *c);</span><br><span class="line">	<span class="keyword">void</span> (*tls_close) (<span class="keyword">struct</span> client *c);</span><br><span class="line">	<span class="keyword">int</span> (*tls_recv) (<span class="keyword">struct</span> client *c, <span class="keyword">void</span> *buf, <span class="keyword">int</span> len);</span><br><span class="line">	<span class="keyword">int</span> (*tls_send) (<span class="keyword">struct</span> client *c, <span class="keyword">void</span> *buf, <span class="keyword">int</span> len);</span><br><span class="line"><span class="preprocessor">#<span class="keyword">endif</span></span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure></p>
+<p>###端口绑定<br>服务器的端口绑定没有写在config里面，而是直接用uh_socket_bind进行了端口的绑定。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* bind sockets */</span></span><br><span class="line">bound += uh_socket_bind(</span><br><span class="line">	&amp;serv_fds, &amp;max_fd, bind[<span class="number">0</span>] ? bind : <span class="literal">NULL</span>, port,</span><br><span class="line">	&amp;hints,	(opt == <span class="string">'s'</span>), &amp;conf</span><br><span class="line">);</span><br></pre></td></tr></table></figure></p>
+<p>uh_socket_bind：<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">int</span> <span class="title">uh_socket_bind</span><span class="params">(</span><br><span class="line">	fd_set *serv_fds, <span class="keyword">int</span> *max_fd, <span class="keyword">const</span> <span class="keyword">char</span> *host, <span class="keyword">const</span> <span class="keyword">char</span> *port,</span><br><span class="line">	<span class="keyword">struct</span> addrinfo *hints, <span class="keyword">int</span> do_tls, <span class="keyword">struct</span> config *conf</span><br><span class="line">)</span></span></span><br></pre></td></tr></table></figure></p>
+<p>此函数进行端口绑定并且把listener加到了一个全局的链表中，于是我们可以绑定多个端口。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* add listener to global list */</span></span><br><span class="line"><span class="keyword">if</span>( ! (l = uh_listener_add(sock, conf)) )</span><br><span class="line">&#123;</span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"uh_listener_add(): Failed to allocate memory\n"</span>);</span><br><span class="line">	<span class="keyword">goto</span> error;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>比较有意思的是，uhttpd把一些信息存在了链表里，用add函数在表头插入。C语言没有现成的集合框架，但是自己写一个链表也是很轻松的。这些工具函数都在uhttpd-utils.c里。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">static</span> <span class="keyword">struct</span> client *uh_clients = <span class="literal">NULL</span>;</span><br><span class="line"><span class="function"><span class="keyword">struct</span> client * <span class="title">uh_client_add</span><span class="params">(<span class="keyword">int</span> sock, <span class="keyword">struct</span> listener *serv)</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">struct</span> client * <span class="title">uh_client_lookup</span><span class="params">(<span class="keyword">int</span> sock)</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">uh_client_remove</span><span class="params">(<span class="keyword">int</span> sock)</span></span>;</span><br></pre></td></tr></table></figure></p>
+<p>###配置文件</p>
+<p>光用命令行的话肯定太麻烦，uhttpd也可以用配置文件来进行配置。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* config file */</span></span><br><span class="line">uh_config_parse(&amp;conf);</span><br></pre></td></tr></table></figure>
+<p>但是配置文件的选项好像不是很多，最好的方式还是写一个启动脚本。</p>
+<p>###正式启动<br>在一系列的配置之后，uhttpd终于要正式启动了。它默认是后台启动，fork一个子进程，父进程退出，子进程带着配置文件和服务器的FD进入了mainloop。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* server main loop */</span></span><br><span class="line">uh_mainloop(&amp;conf, serv_fds, max_fd);</span><br></pre></td></tr></table></figure></p>
+<h2 id="等待请求">等待请求</h2><p>uh_mainloop函数也在uhttp.c里，最外层是一个大的循环。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">while</span> (run) &#123;</span><br><span class="line">		<span class="keyword">if</span>( select(max_fd + <span class="number">1</span>, &amp;read_fds, <span class="literal">NULL</span>, <span class="literal">NULL</span>, <span class="literal">NULL</span>) == -<span class="number">1</span> ) </span><br><span class="line">		&#123;</span><br><span class="line">		...</span><br><span class="line">		&#125;</span><br><span class="line">		...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>###select<br><a href="http://blog.csdn.net/piaojun_pj/article/details/5991968" target="_blank" rel="external">select</a>函数起到了阻塞请求的作用，并且和accept不用的是，它使用轮询机制，而不是fork，更加适合嵌入式设备。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span>( select(max_fd + <span class="number">1</span>, &amp;read_fds, <span class="literal">NULL</span>, <span class="literal">NULL</span>, <span class="literal">NULL</span>) == -<span class="number">1</span> )</span><br><span class="line">&#123;</span><br><span class="line">	perror(<span class="string">"select()"</span>);</span><br><span class="line">	<span class="built_in">exit</span>(<span class="number">1</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>最后一个参数是设置超时时间，如果设置成NULL，则无限超时，直到FD有变动。</p>
+<p>###获得请求<br>之后会进入一个嵌套复杂的“if-else”语句，数了一下最深有六层if嵌套。主要的功能就是遍历所有的FD，分别找到服务端和客户端的FD，在服务端，accept并且把client加入链表。在客户端的FD中，处理请求。</p>
+<p>用uh_http_header_recv获得请求之后，用uh_http_header_parse解析，得到一个http_request的结构体。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> http_request &#123;</span><br><span class="line">	<span class="keyword">int</span>	method;</span><br><span class="line">	<span class="keyword">float</span> version;</span><br><span class="line">	<span class="keyword">int</span> redirect_status;</span><br><span class="line">	<span class="keyword">char</span> *url;</span><br><span class="line">	<span class="keyword">char</span> *headers[UH_LIMIT_HEADERS];</span><br><span class="line">	<span class="keyword">struct</span> auth_realm *realm;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure></p>
+<p>###请求分发<br>得到http_request之后，就可以根据URL来进行请求的分发了。带有lua前缀的给lua_request，否则交给uh_dispatch_request。<br><figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">/* Lua request? */</span><br><span class="line">if( conf-&gt;lua_state &amp;&amp;</span><br><span class="line">    uh_path_match(conf-&gt;lua_prefix, req-&gt;url) )</span><br><span class="line">&#123;</span><br><span class="line">	conf-&gt;lua_request(cl, req, conf-&gt;lua_state);</span><br><span class="line">&#125;</span><br><span class="line">else</span><br><span class="line">/* dispatch request */</span><br><span class="line">if( (pin = uh_path_lookup(cl, req-&gt;url)) != NULL )</span><br><span class="line">&#123;</span><br><span class="line">	/* auth ok? */</span><br><span class="line">	if( !pin-&gt;redirected &amp;&amp; uh_auth_check(cl, req, pin) )</span><br><span class="line">		uh_dispatch_request(cl, req, pin);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>dispatch也只是做了一个简单的判断然后就交给下一级了。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span>( uh_path_match(cl-&gt;server-&gt;conf-&gt;cgi_prefix, pin-&gt;name) ||</span><br><span class="line">	(ipr = uh_interpreter_lookup(pin-&gt;phys)) )</span><br><span class="line">&#123;</span><br><span class="line">	uh_cgi_request(cl, req, pin, ipr);</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">else</span></span><br><span class="line">&#123;</span><br><span class="line">	uh_file_request(cl, req, pin);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>##处理请求<br>lua请求暂时不说了，这里只说文件和CGI请求。</p>
+<p>###静态文件<br>file_request在uhttpd-file.c中。成员如下<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line">uhttpd-file.c </span><br><span class="line">  macro</span><br><span class="line">    _XOPEN_SOURCE</span><br><span class="line">    _BSD_SOURCE</span><br><span class="line"></span><br><span class="line">  <span class="keyword">function</span></span><br><span class="line">    uh_file_mime_lookup</span><br><span class="line">    uh_file_mktag</span><br><span class="line">    uh_file_date2unix</span><br><span class="line">    uh_file_unix2date</span><br><span class="line">    uh_file_header_lookup</span><br><span class="line">    uh_file_response_ok_hdrs</span><br><span class="line">    uh_file_response_200</span><br><span class="line">    uh_file_response_304</span><br><span class="line">    uh_file_response_412</span><br><span class="line">    uh_file_<span class="keyword">if</span>_match</span><br><span class="line">    uh_file_<span class="keyword">if</span>_modified_since</span><br><span class="line">    uh_file_<span class="keyword">if</span>_none_match</span><br><span class="line">    uh_file_<span class="keyword">if</span>_range</span><br><span class="line">    uh_file_<span class="keyword">if</span>_unmodified_since</span><br><span class="line">    uh_file_scandir_filter_dir</span><br><span class="line">    uh_file_dirlist</span><br><span class="line">    uh_file_request</span><br></pre></td></tr></table></figure></p>
+<p>既然是静态文件请求，自然是先看看本地有没有这个文件，有的话就读取内容发给客户端，没有就404。</p>
+<p>这里有一个有趣的函数，<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* test preconditions */</span></span><br><span class="line"><span class="keyword">if</span>(ok) ensure_out(uh_file_if_modified_since(cl, req, &amp;pi-&gt;stat, &amp;ok));</span><br><span class="line"><span class="keyword">if</span>(ok) ensure_out(uh_file_if_match(cl, req, &amp;pi-&gt;stat, &amp;ok));</span><br><span class="line"><span class="keyword">if</span>(ok) ensure_out(uh_file_if_range(cl, req, &amp;pi-&gt;stat, &amp;ok));</span><br><span class="line"><span class="keyword">if</span>(ok) ensure_out(uh_file_if_unmodified_since(cl, req, &amp;pi-&gt;stat, &amp;ok));</span><br><span class="line"><span class="keyword">if</span>(ok) ensure_out(uh_file_if_none_match(cl, req, &amp;pi-&gt;stat, &amp;ok));</span><br></pre></td></tr></table></figure></p>
+<p>处理请求的过程中大量使用了ensure_out，它应该是保证关闭FD的。如果网络发生异常或者文件读写异常，需要保证FD被正确关闭。实现很简单，一个类函数宏就搞定了。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="preprocessor">#<span class="keyword">define</span> ensure_out(x) \</span><br><span class="line">	do &#123; <span class="keyword">if</span>((x) &lt; <span class="number">0</span>) goto out; &#125; while(<span class="number">0</span>)</span></span><br><span class="line">	</span><br><span class="line">out:</span><br><span class="line">	<span class="keyword">if</span>( fd &gt; -<span class="number">1</span> )</span><br><span class="line">		close(fd);</span><br></pre></td></tr></table></figure></p>
+<p>###CGI请求</p>
+<p>处理CGI请求稍微复杂一点。</p>
+<p>uh_cgi_request函数位于uhttpd-cgi.c。成员如下。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">uhttpd-cgi.c </span><br><span class="line">  function</span><br><span class="line">    uh_cgi_header_parse</span><br><span class="line">    uh_cgi_header_lookup</span><br><span class="line">    uh_cgi_error_500</span><br><span class="line">    uh_cgi_request</span><br></pre></td></tr></table></figure></p>
+<p>虽然成员很少，但是总体还是有600多行。</p>
+<p>CGI的处理过程，基本上就是调用CGI程序，获得它的处理结果，然后返回给客户端。但CGI程序和主调函数，肯定是两个进程，它们之间如何通信，如何传递数据，这才是关键。</p>
+<p>uhttpd采用了管道和CGI程序进行通信，有两个管道，实现双向通信。一个管道负责从父进程写数据到CGI程序，主要是客户端的POST数据。另一个就是读取CGI程序的处理结果。同时，按照CGI的标准，HTTP请求头都是通过环境变量的方式传给CGI程序的，CGI程序是fork和exec的，所以会继承环境变量，达到传递数据的目的。</p>
+<p>在子进程中，则用dup2进行了一个重定向，把输入输出流都定向到了管道。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* patch stdout and stdin to pipes */</span></span><br><span class="line">	dup2(rfd[<span class="number">1</span>], <span class="number">1</span>);</span><br><span class="line">	dup2(wfd[<span class="number">0</span>], <span class="number">0</span>);</span><br></pre></td></tr></table></figure></p>
+<p>之后就用了大段的代码设置环境变量。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">setenv(<span class="string">"SERVER_NAME"</span>, sa_straddr(&amp;cl-&gt;servaddr), <span class="number">1</span>);</span><br><span class="line">setenv(<span class="string">"SERVER_ADDR"</span>, sa_straddr(&amp;cl-&gt;servaddr), <span class="number">1</span>);</span><br><span class="line">setenv(<span class="string">"SERVER_PORT"</span>, sa_strport(&amp;cl-&gt;servaddr), <span class="number">1</span>);</span><br><span class="line">setenv(<span class="string">"REMOTE_HOST"</span>, sa_straddr(&amp;cl-&gt;peeraddr), <span class="number">1</span>);</span><br><span class="line">setenv(<span class="string">"REMOTE_ADDR"</span>, sa_straddr(&amp;cl-&gt;peeraddr), <span class="number">1</span>);</span><br><span class="line">setenv(<span class="string">"REMOTE_PORT"</span>, sa_strport(&amp;cl-&gt;peeraddr), <span class="number">1</span>);</span><br></pre></td></tr></table></figure></p>
+<p>之后才真正地调用CGI程序。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span>( ip != <span class="literal">NULL</span> )</span><br><span class="line">	execl(ip-&gt;path, ip-&gt;path, pi-&gt;phys, <span class="literal">NULL</span>);</span><br><span class="line"><span class="keyword">else</span></span><br><span class="line">	execl(pi-&gt;phys, pi-&gt;phys, <span class="literal">NULL</span>);</span><br></pre></td></tr></table></figure></p>
+<p>与此同时，父进程则焦急地等待着管道另一头的回音。它等来等去等的不耐烦了，于是它又机制地给自己设置了一个timeout，过了这个时间它就离开了。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">ensure_out(rv = select_intr(fd_max, &amp;reader,</span><br><span class="line">	(content_length &gt; -<span class="number">1</span>) ? &amp;writer : <span class="literal">NULL</span>, <span class="literal">NULL</span>, &amp;timeout));</span><br><span class="line">	......</span><br><span class="line">			<span class="comment">/* read it from socket ... */</span></span><br><span class="line">			ensure_out(buflen = uh_tcp_recv(cl, buf,</span><br><span class="line">				min(content_length, <span class="keyword">sizeof</span>(buf))));</span><br><span class="line">			.....	</span><br><span class="line">				<span class="comment">/* ... and write it to child's stdin */</span></span><br><span class="line">				<span class="keyword">if</span>( write(wfd[<span class="number">1</span>], buf, buflen) &lt; <span class="number">0</span> )</span><br><span class="line">					perror(<span class="string">"write()"</span>);</span><br><span class="line">			......</span><br><span class="line">		<span class="comment">/* read data from child ... */</span></span><br><span class="line">		<span class="keyword">if</span>( (buflen = read(rfd[<span class="number">0</span>], buf, <span class="keyword">sizeof</span>(buf))) &gt; <span class="number">0</span> )</span><br></pre></td></tr></table></figure></p>
+<p>从CGI程序读完了数据之后，它还是不放心，又解析了一下响应头，确认正确之后，才发给了客户端。</p>
+<p>到这里，整个处理过程才算结束。</p>
+<h2 id="总结">总结</h2><p>第一次看服务器的源码，所以找了一个比较简单的服务器。大致能够理解它的原理，但是很多细节还是不明白，可能只有自己亲自去实现才能对它有一个深刻的理解。uhttd的代码并不多，其中很多的代码都用来处理错误，可见处理异常情况也是很重要的。有机会的话，希望自己能亲自实现一个服务器。</p>
+<h2 id="参考资料">参考资料</h2><ul>
+<li><a href="http://blog.csdn.net/piaojun_pj/article/details/5991968" target="_blank" rel="external">细说select函数</a></li>
+<li><a href="ttp://www.cnblogs.com/zmkeil/archive/2013/05/14/3078766.html" target="_blank" rel="external">uhttpd的实现框架</a></li>
+<li><a href="http://qsjming.blog.51cto.com/1159640/983682" target="_blank" rel="external">linux中对文件描述符的操作</a></li>
+<li><a href="http://www.cnblogs.com/gjianw217/p/3288051.html" target="_blank" rel="external">linux C语言getopt的使用</a></li>
+<li>uhttpd的注释</li>
+<li><a href="http://book.douban.com/subject/17099720/" target="_blank" rel="external">linux C编程从入门到精通</a></li>
+</ul>
+  
+	</div>
+		<footer class="article-footer clearfix">
+<div class="article-catetags">
+
+<div class="article-categories">
+  <span></span>
+  <a class="article-category-link" href="/categories/Code/">Code</a>
+</div>
+
+
+  <div class="article-tags">
+  
+  <span></span> <a href="/tags/openwrt/">openwrt</a><a href="/tags/uhttpd/">uhttpd</a><a href="/tags/服务器/">服务器</a>
+  </div>
+
+</div>
+
+
+
+	<div class="article-share" id="share">
+	
+	  <div data-url="http://wanghuanming.com/2014/08/uhttpd-code-analysis/" data-title="uhttpd源码分析 | Hello Code" data-tsina="null" class="share clearfix">
+	  </div>
+	
+	</div>
+
+
+</footer>
+
+   	       
+	</article>
+	
+<nav class="article-nav clearfix">
+ 
+ <div class="prev" >
+ <a href="/2014/08/No-auth-methods-could-be-used/" title="No auth methods could be used">
+  <strong>上一篇：</strong><br/>
+  <span>
+  No auth methods could be used</span>
+</a>
+</div>
+
+
+<div class="next">
+<a href="/2014/08/Makefile学习笔记/"  title="Makefile学习笔记">
+ <strong>下一篇：</strong><br/> 
+ <span>Makefile学习笔记
+</span>
+</a>
+</div>
+
+</nav>
+
+	
+<section id="comments" class="comment">
+	<div class="ds-thread" data-thread-key="2014/08/uhttpd-code-analysis/" data-title="uhttpd源码分析" data-url="http://wanghuanming.com/2014/08/uhttpd-code-analysis/"></div>
+</section>
+
+
+</div>  
+      <div class="openaside"><a class="navbutton" href="#" title="显示侧边栏"></a></div>
+
+  <div id="toc" class="toc-aside">
+  <strong class="toc-title">文章目录</strong>
+ 
+ <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#启动"><span class="toc-number">1.</span> <span class="toc-text">启动</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#等待请求"><span class="toc-number">2.</span> <span class="toc-text">等待请求</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#总结"><span class="toc-number">3.</span> <span class="toc-text">总结</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#参考资料"><span class="toc-number">4.</span> <span class="toc-text">参考资料</span></a></li></ol>
+ 
+  </div>
+
+<div id="asidepart">
+<div class="closeaside"><a class="closebutton" href="#" title="隐藏侧边栏"></a></div>
+<aside class="clearfix">
+
+  
+<div class="categorieslist">
+	<p class="asidetitle">分类</p>
+		<ul>
+		
+		  
+			<li><a href="/categories/Code/" title="Code">Code<sup>39</sup></a></li>
+		  
+		
+		  
+			<li><a href="/categories/Life-Work/" title="Life &amp; Work">Life &amp; Work<sup>10</sup></a></li>
+		  
+		
+		  
+			<li><a href="/categories/Reading/" title="Reading">Reading<sup>4</sup></a></li>
+		  
+		
+		  
+			<li><a href="/categories/Tech-Tool/" title="Tech &amp; Tool">Tech &amp; Tool<sup>24</sup></a></li>
+		  
+		
+		</ul>
+</div>
+
+
+  
+<div class="tagslist">
+	<p class="asidetitle">标签</p>
+		<ul class="clearfix">
+		
+			
+				<li><a href="/tags/C/" title="C++">C++<sup>9</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Scala/" title="Scala">Scala<sup>6</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/编译原理/" title="编译原理">编译原理<sup>4</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/LLVM/" title="LLVM">LLVM<sup>4</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/数据结构/" title="数据结构">数据结构<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Spark/" title="Spark">Spark<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/javascript/" title="javascript">javascript<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/OS/" title="OS">OS<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/ACM/" title="ACM">ACM<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/虚拟机/" title="虚拟机">虚拟机<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/线段树/" title="线段树">线段树<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/解释器/" title="解释器">解释器<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/C语言/" title="C语言">C语言<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/进程/" title="进程">进程<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Linux/" title="Linux">Linux<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Coursera/" title="Coursera">Coursera<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/ssh/" title="ssh">ssh<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/openwrt/" title="openwrt">openwrt<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/C/" title="C">C<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/函数式编程/" title="函数式编程">函数式编程<sup>2</sup></a></li>
+			
+		
+		</ul>
+</div>
+
+
+  <div class="rsspart">
+	<a href="/atom.xml" target="_blank" title="rss">RSS 订阅</a>
+</div>
+
+</aside>
+</div>
+    </div>
+    <footer><div id="footer" >
+	
+	<div class="line">
+		<span></span>
+		<div class="author"></div>
+	</div>
+	
+	
+	<div class="social-font" class="clearfix">
+		
+		<a href="http://weibo.com/5108629996" target="_blank" class="icon-weibo" title="微博"></a>
+		
+		
+		<a href="https://github.com/HelloCodeMing" target="_blank" class="icon-github" title="github"></a>
+		
+		
+		
+		
+		
+		
+		<a href="https://www.douban.com/people/94795087" target="_blank" class="icon-douban" title="豆瓣"></a>
+		
+		
+		<a href="https://www.zhihu.com/people/hellocode-67" target="_blank" class="icon-zhihu" title="知乎"></a>
+		
+		
+		
+		<a href="mailto:huanmingwong@163.com" target="_blank" class="icon-email" title="Email Me"></a>
+		
+	</div>
+			
+		
+
+		<p class="copyright">
+		Powered by <a href="http://hexo.io" target="_blank" title="hexo">hexo</a> and Theme by <a href="https://github.com/wuchong/jacman" target="_blank" title="Jacman">Jacman</a> © 2016 
+		
+		<a href="http://wanghuanming.com/about" target="_blank" title="王欢明">王欢明</a>
+		
+		
+		</p>
+</div>
+</footer>
+    <script src="/js/jquery-2.0.3.min.js"></script>
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  $('.navbar').click(function(){
+    $('header nav').toggleClass('shownav');
+  });
+  var myWidth = 0;
+  function getSize(){
+    if( typeof( window.innerWidth ) == 'number' ) {
+      myWidth = window.innerWidth;
+    } else if( document.documentElement && document.documentElement.clientWidth) {
+      myWidth = document.documentElement.clientWidth;
+    };
+  };
+  var m = $('#main'),
+      a = $('#asidepart'),
+      c = $('.closeaside'),
+      o = $('.openaside');
+  c.click(function(){
+    a.addClass('fadeOut').css('display', 'none');
+    o.css('display', 'block').addClass('fadeIn');
+    m.addClass('moveMain');
+  });
+  o.click(function(){
+    o.css('display', 'none').removeClass('beforeFadeIn');
+    a.css('display', 'block').removeClass('fadeOut').addClass('fadeIn');      
+    m.removeClass('moveMain');
+  });
+  $(window).scroll(function(){
+    o.css("top",Math.max(80,260-$(this).scrollTop()));
+  });
+  
+  $(window).resize(function(){
+    getSize(); 
+    if (myWidth >= 1024) {
+      $('header nav').removeClass('shownav');
+    }else{
+      m.removeClass('moveMain');
+      a.css('display', 'block').removeClass('fadeOut');
+      o.css('display', 'none');
+      
+      $('#toc.toc-aside').css('display', 'none');
+        
+    }
+  });
+});
+</script>
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  var ai = $('.article-content>iframe'),
+      ae = $('.article-content>embed'),
+      t  = $('#toc'),
+      ta = $('#toc.toc-aside'),
+      o  = $('.openaside'),
+      c  = $('.closeaside');
+  if(ai.length>0){
+    ai.wrap('<div class="video-container" />');
+  };
+  if(ae.length>0){
+   ae.wrap('<div class="video-container" />');
+  };
+  c.click(function(){
+    ta.css('display', 'block').addClass('fadeIn');
+  });
+  o.click(function(){
+    ta.css('display', 'none');
+  });
+  $(window).scroll(function(){
+    ta.css("top",Math.max(140,320-$(this).scrollTop()));
+  });
+});
+</script>
+
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  var $this = $('.share'),
+      url = $this.attr('data-url'),
+      encodedUrl = encodeURIComponent(url),
+      title = $this.attr('data-title'),
+      tsina = $this.attr('data-tsina'),
+      description = $this.attr('description');
+  var html = [
+  '<a href="#" class="overlay" id="qrcode"></a>',
+  '<div class="qrcode clearfix"><span>扫描二维码分享到微信朋友圈</span><a class="qrclose" href="#nothing"></a><strong>Loading...Please wait</strong><img id="qrcode-pic" data-src="http://s.jiathis.com/qrcode.php?url=' + encodedUrl + '"/></div>',
+  '<a href="https://www.facebook.com/sharer.php?u=' + encodedUrl + '" class="article-share-facebook" target="_blank" title="Facebook"></a>',
+  '<a href="https://twitter.com/intent/tweet?url=' + encodedUrl + '" class="article-share-twitter" target="_blank" title="Twitter"></a>',
+  '<a href="#qrcode" class="article-share-qrcode" title="微信"></a>',
+  '<a href="http://widget.renren.com/dialog/share?resourceUrl=' + encodedUrl + '&srcUrl=' + encodedUrl + '&title=' + title +'" class="article-share-renren" target="_blank" title="人人"></a>',
+  '<a href="http://service.weibo.com/share/share.php?title='+title+'&url='+encodedUrl +'&ralateUid='+ tsina +'&searchPic=true&style=number' +'" class="article-share-weibo" target="_blank" title="微博"></a>',
+  '<span title="Share to"></span>'
+  ].join('');
+  $this.append(html);
+  $('.article-share-qrcode').click(function(){
+    var imgSrc = $('#qrcode-pic').attr('data-src');
+    $('#qrcode-pic').attr('src', imgSrc);
+    $('#qrcode-pic').load(function(){
+        $('.qrcode strong').text(' ');
+    });
+  });
+});     
+</script>
+
+
+
+<script type="text/javascript">
+  var duoshuoQuery = {short_name:"wanghuanming"};
+  (function() {
+    var ds = document.createElement('script');
+    ds.type = 'text/javascript';ds.async = true;
+    ds.src = '//static.duoshuo.com/embed.js';
+    ds.charset = 'UTF-8';
+    (document.getElementsByTagName('head')[0] 
+    || document.getElementsByTagName('body')[0]).appendChild(ds);
+  })();
+</script> 
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+$(document).ready(function(){ 
+  $('.article-content').each(function(i){
+    $(this).find('img').each(function(){
+      if ($(this).parent().hasClass('fancybox')) return;
+      var alt = this.alt;
+      if (alt) $(this).after('<span class="caption">' + alt + '</span>');
+      $(this).wrap('<a href="' + this.src + '" title="' + alt + '" class="fancybox"></a>');
+    });
+    $(this).find('.fancybox').each(function(){
+      $(this).attr('rel', 'article' + i);
+    });
+  });
+  if($.fancybox){
+    $('.fancybox').fancybox();
+  }
+}); 
+</script>
+
+
+
+<!-- Analytics Begin -->
+
+
+
+
+
+<!-- Analytics End -->
+
+<!-- Totop Begin -->
+
+	<div id="totop">
+	<a title="返回顶部"><img src="/img/scrollup.png"/></a>
+	</div>
+	<script src="/js/totop.js"></script>
+
+<!-- Totop End -->
+
+<!-- MathJax Begin -->
+<!-- mathjax config similar to math.stackexchange -->
+
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    tex2jax: {
+      inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+      processEscapes: true
+    }
+  });
+</script>
+
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: {
+        skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+      }
+    });
+</script>
+
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Queue(function() {
+        var all = MathJax.Hub.getAllJax(), i;
+        for(i=0; i < all.length; i += 1) {
+            all[i].SourceElement().parentNode.className += ' has-jax';
+        }
+    });
+</script>
+
+<script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+</script>
+
+
+<!-- MathJax End -->
+
+<!-- Tiny_search Begin -->
+
+<!-- Tiny_search End -->
+
+  </body>
+</html>

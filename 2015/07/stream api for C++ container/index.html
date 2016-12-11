@@ -1,0 +1,588 @@
+
+ <!DOCTYPE HTML>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  
+    <title>C++容器stream API的实现 | Hello Code</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1,user-scalable=no">
+    
+    <meta name="author" content="王欢明">
+    
+
+    
+    <meta name="description" content="概述前面说到给C++实现了placeholder，以为C++就能变得函数式了，但事实上，它的用途还是很局限，因为每一个placeholder的功能都很小巧，只有当这些微小的部件组合在一起之后它才能发挥强大的功能。而函数式语言的容器通常都伴随着stream风格的API，使得对容器的操作能够行云流水地无缝衔接，而这正是C++所缺少的。所以在这里，我们来看看如何为C++的容器实现一个stream-API">
+<meta property="og:type" content="article">
+<meta property="og:title" content="C++容器stream API的实现">
+<meta property="og:url" content="http://wanghuanming.com/2015/07/stream api for C++ container/index.html">
+<meta property="og:site_name" content="Hello Code">
+<meta property="og:description" content="概述前面说到给C++实现了placeholder，以为C++就能变得函数式了，但事实上，它的用途还是很局限，因为每一个placeholder的功能都很小巧，只有当这些微小的部件组合在一起之后它才能发挥强大的功能。而函数式语言的容器通常都伴随着stream风格的API，使得对容器的操作能够行云流水地无缝衔接，而这正是C++所缺少的。所以在这里，我们来看看如何为C++的容器实现一个stream-API">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="C++容器stream API的实现">
+<meta name="twitter:description" content="概述前面说到给C++实现了placeholder，以为C++就能变得函数式了，但事实上，它的用途还是很局限，因为每一个placeholder的功能都很小巧，只有当这些微小的部件组合在一起之后它才能发挥强大的功能。而函数式语言的容器通常都伴随着stream风格的API，使得对容器的操作能够行云流水地无缝衔接，而这正是C++所缺少的。所以在这里，我们来看看如何为C++的容器实现一个stream-API">
+
+    
+    <link rel="alternative" href="/atom.xml" title="Hello Code" type="application/atom+xml">
+    
+    
+    <link rel="icon" href="/img/panda-icon.ico">
+    
+    
+    <link rel="apple-touch-icon" href="/img/panda.png">
+    <link rel="apple-touch-icon-precomposed" href="/img/panda.png">
+    
+    <link rel="stylesheet" href="/css/style.css" type="text/css">
+</head>
+
+  <body>
+    <header>
+      <div>
+		
+			<div id="imglogo">
+				<a href="/"><img src="/img/panda.png" alt="Hello Code" title="Hello Code"/></a>
+			</div>
+			
+			<div id="textlogo">
+				<h1 class="site-name"><a href="/" title="Hello Code">Hello Code</a></h1>
+				<h2 class="blog-motto"></h2>
+			</div>
+			<div class="navbar"><a class="navbutton navmobile" href="#" title="菜单">
+			</a></div>
+			<nav class="animated">
+				<ul>
+					<ul>
+					 
+						<li><a href="/">首页</a></li>
+					
+						<li><a href="/archives">归档</a></li>
+					
+						<li><a href="/about">关于</a></li>
+					
+					<li>
+ 					
+					<form class="search" action="//google.com/search" method="get" accept-charset="utf-8">
+						<label>Search</label>
+						<input type="search" id="search" name="q" autocomplete="off" maxlength="20" placeholder="搜索" />
+						<input type="hidden" name="q" value="site:wanghuanming.com">
+					</form>
+					
+					</li>
+				</ul>
+			</nav>			
+</div>
+    </header>
+    <div id="container">
+      <div id="main" class="post" itemscope itemprop="blogPost">
+  
+	<article itemprop="articleBody"> 
+		<header class="article-info clearfix">
+  <h1 itemprop="name">
+    
+      <a href="/2015/07/stream api for C++ container/" title="C++容器stream API的实现" itemprop="url">C++容器stream API的实现</a>
+  </h1>
+  <p class="article-author">By
+       
+		<a href="http://wanghuanming.com/about" title="王欢明" target="_blank" itemprop="author">王欢明</a>
+		
+  <p class="article-time">
+    <time datetime="2015-07-07T11:53:17.000Z" itemprop="datePublished"> 发表于 2015 Jul 7</time>
+    
+  </p>
+</header>
+	<div class="article-content">
+		
+		<div id="toc" class="toc-article">
+			<strong class="toc-title">文章目录</strong>
+		
+			<ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#概述"><span class="toc-number">1.</span> <span class="toc-text">概述</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#stream"><span class="toc-number">2.</span> <span class="toc-text">stream</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#C++_容器"><span class="toc-number">3.</span> <span class="toc-text">C++ 容器</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#stream_API的实现"><span class="toc-number">4.</span> <span class="toc-text">stream API的实现</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#CRTP"><span class="toc-number">4.1.</span> <span class="toc-text">CRTP</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#map"><span class="toc-number">4.2.</span> <span class="toc-text">map</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#添加元素"><span class="toc-number">4.3.</span> <span class="toc-text">添加元素</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Map"><span class="toc-number">4.4.</span> <span class="toc-text">Map</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#性能"><span class="toc-number">5.</span> <span class="toc-text">性能</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#总结"><span class="toc-number">6.</span> <span class="toc-text">总结</span></a></li></ol>
+		
+		</div>
+		
+		<h2 id="概述">概述</h2><p>前面说到给C++实现了placeholder，以为C++就能变得函数式了，但事实上，它的用途还是很局限，因为每一个placeholder的功能都很小巧，只有当这些微小的部件组合在一起之后它才能发挥强大的功能。而函数式语言的容器通常都伴随着stream风格的API，使得对容器的操作能够行云流水地无缝衔接，而这正是C++所缺少的。所以在这里，我们来看看如何为C++的容器实现一个stream-API。</p>
+<a id="more"></a>
+<h2 id="stream">stream</h2><p>这里用的stream一词，是借用了java 8的stream。所谓stream，Oracle的文档是这样描述的：</p>
+<blockquote>
+<p>functional-style operations on streams of elements, such as map-reduce transformations on collections.</p>
+</blockquote>
+<p>这种范式来自于纯函数式编程语言，因为在纯函数式语言中，所有变量都是immutable，对容器进行udpate操作的唯一方式就是产生一个新的容器。这种编程范式在很多年里都没有成为主流，很大程度上应该还是机器性能的问题，相比于传统的方式它的开销要大的多。而近年来随着Google MapReduce编程模型的提出，函数式又成为并行计算的一个突破点。机器的性能够了，有4核，16核，甚至几百几万核，如何利用这些计算资源却成为一个问题。传统的多线程模型不容器实现并行程序，尤其是CPU bound的并行程序，而函数式的模型为此提供了一个很好的解法。</p>
+<p>MapReduce的idea便是来源于函数式编程，它将一个大的计算任务分解成Map和Reduce操作（中间还有一个shuffle操作），而这两个操作是很容器并行的——因为它对所有数据的操作是一致的，只需要把任务分片，同时进行Map，同时进行Reduce，问题就得到了解决。当然，Spark将这一思想发挥到了极致，不仅是map，reduce，它将函数式语言的API都移植到了弹性分布式数据集（RDD）上，从而能够更加轻松地编写并行程序。例如，我们可以用一行代码对数据进行词频统计（word cound）：</p>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sc.textFile(<span class="string">"input"</span>).flatMap(_.split(<span class="string">" "</span>)).map(_ -&gt; <span class="number">1</span>).reduceByKey(_ + _).</span><br></pre></td></tr></table></figure>
+<p>当然，编程效率的提高通常伴随着计算效率的降低，这是难以避免的。不过stream风格无疑是简洁，优雅的，这也是我要在C++里实现它的原因。</p>
+<h2 id="C++_容器">C++ 容器</h2><p>C++中的容器和算法是分离的，中间通过iterator作为桥梁。</p>
+<p>说实话我很欣赏这种设计，它达到了效率和代码重用性的极致。虽然我也喜欢stream风格的API，但很多时候它会造成容器API的膨胀，看看Scala每个容器都有30多个方法就会觉得一阵头晕。</p>
+<p>但C++的容器算法有时候用起来并不是那么舒服，在我以前不理解C++的时候就经常感到疑惑，郁闷。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">std</span>::<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; vec(<span class="number">100</span>);</span><br><span class="line"><span class="built_in">std</span>::iota(vec.begin(), vec.end(), <span class="number">1</span>);</span><br><span class="line"><span class="built_in">std</span>::random_shuffle(vec.begin(), vec.end());</span><br><span class="line"><span class="built_in">std</span>::sort(vec.begin(), vec.end());</span><br></pre></td></tr></table></figure>
+<p>可以看到，每个算法都需要传iterator进去，计算范围在begin在end之间，所以需要不断地重复begin、end，begin、end，如果直接传递容器进去不是干净利落？事实上并不能，因为你需要告诉算法你计算的范围，其他方式会更加恶心。那么在函数式语言中如何对容器进行部分操作呢，方法是把容器的部分元素“拿出来”——take、head、tail。</p>
+<h2 id="stream_API的实现">stream API的实现</h2><p>扯淡了这么多，到这里要开始展现真正的技术了！</p>
+<p>STL的容器有不少，包括vector、list、set、map、multiset、multimap、unordered_set、unordered_map，等等。并且，它们没有公共基类，我们也没办法对它们的代码做任何改动。so，要为它们增加方法必须是实现自己的容器。为了增加代码重用性，我们可以继承原有的容器，在此基础上扩展新的成员函数。为了避免代码膨胀，我们可以实现Iterable作为基类，让它实现一个基础的逻辑，而一些底层的成员函数则由派生类来实现。那么可以得到如下的代码：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">class</span> T&gt;</span><br><span class="line"><span class="keyword">class</span> Iterable &#123;</span><br><span class="line">    <span class="keyword">public</span>: </span><br><span class="line">    <span class="keyword">template</span> &lt;<span class="keyword">class</span> Fn&gt;</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">foreach</span><span class="params">(Fn f)</span></span>;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">template</span> &lt;<span class="keyword">class</span> Fn&gt;</span><br><span class="line">    <span class="function"><span class="keyword">auto</span> <span class="title">map</span><span class="params">(Fn f)</span></span>;</span><br><span class="line">    </span><br><span class="line">    ...</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">class</span> T&gt;</span><br><span class="line"><span class="keyword">class</span> Vector: <span class="built_in">std</span>::<span class="built_in">vector</span>&lt;T&gt;, ming::Iterable&lt;T&gt; &#123;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>到这里问题来了，Iterable需要调用由Vector实现的函数，按理说只要把那些函数都写成虚函数就可以了。但事实上并不行，因为有这么一条规则：模版函数不能是虚函数。因为模版函数是在调用的时候才会实例化，而虚函数需要借助virtual table来实现，virtual table需要是静态的。目前对这种问题编译器还没有一个好的解决方案，那么自然我们也就不能这样做了。</p>
+<h3 id="CRTP">CRTP</h3><p>不过没关系，没有了动态多态，我们还有静态多态。C++有其特有的CRTP模式，能够实现这样的需求。所谓CRTP，就是派生类把自己的类型传递给基类，使得基类能够调用派生类的成员函数。这个过程看起来是本末倒置了，派生类继承了基类，又把自己传给基类，基类于是又能够访问派生类。但是在现有的编译模型下也只有这种做法了。</p>
+<p>在调用派生类成员的时候，如果是静态成员，只需要<code>Derived::fun()</code>，而非静态成员则需要<code>static_cast&lt;Derived*&gt;(this)-&gt;fun()</code>，稍微麻烦了一点。我们可以顺手把这个指针变成基类的成员，调用起来会舒服一点。通过这种方式还能够享受到多继承的好处，基类Iterable不仅能够调用Vector的成员函数，还能调用std::vector的函数，甚至能调用自己的成员！这一切只需要通过<code>derived-&gt;fun()</code>就能达到！</p>
+<p>虽然看起来很不可思议，但谁让Vector继承了std::vector和Iterable呢，所谓函数也不过是一个地址，而且这些函数都在Vector的命名空间下，理论上都能被Vector调用。这也算是意外之喜。</p>
+<p>到这里理论上的问题已经被解决，可以开始动手实现了。我选择了fold作为基础函数，其他函数在它的基础上实现。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">class</span> Init, <span class="keyword">class</span> Fn, <span class="keyword">class</span> Pred&gt;</span><br><span class="line">    <span class="function"><span class="keyword">constexpr</span> <span class="keyword">auto</span> <span class="title">fold_if</span><span class="params">(Init&amp;&amp; init, Fn f, Pred pred)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">auto</span>&amp;&amp; i: *derived) &#123;</span><br><span class="line">            <span class="keyword">if</span> (pred(i))</span><br><span class="line">                init = f(<span class="built_in">std</span>::forward&lt;Init&gt;(init), i);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> <span class="built_in">std</span>::forward&lt;Init&gt;(init);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="keyword">template</span> &lt;<span class="keyword">class</span> Init, <span class="keyword">class</span> Fn&gt;</span><br><span class="line">    <span class="function"><span class="keyword">constexpr</span> <span class="keyword">auto</span> <span class="title">fold</span><span class="params">(Init&amp;&amp; init, Fn f)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> derived-&gt;fold_if(<span class="built_in">std</span>::forward&lt;Init&gt;(init), f, [](<span class="keyword">auto</span>&amp;&amp; x)&#123; <span class="keyword">return</span> <span class="literal">true</span>; &#125;);</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">template</span>&lt;<span class="keyword">class</span> Fn&gt;</span><br><span class="line">    <span class="function"><span class="keyword">constexpr</span> <span class="keyword">auto</span> <span class="title">map</span><span class="params">(Fn f)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">using</span> item_type = <span class="keyword">decltype</span>(f(head()));</span><br><span class="line">        <span class="keyword">using</span> container_type = <span class="keyword">typename</span> Derived::<span class="keyword">template</span> container&lt;item_type&gt;::type;</span><br><span class="line">        <span class="keyword">return</span> derived-&gt;fold(container_type(), [f](<span class="keyword">auto</span>&amp;&amp; init, <span class="keyword">auto</span>&amp;&amp; item) &#123;</span><br><span class="line">            init.add(f(<span class="built_in">std</span>::forward&lt;<span class="keyword">decltype</span>(item)&gt;(item)));</span><br><span class="line">            <span class="keyword">return</span> <span class="built_in">std</span>::forward&lt;<span class="keyword">decltype</span>(init)&gt;(init);</span><br><span class="line">            &#125;);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">template</span> &lt;<span class="keyword">class</span> Fn&gt;</span><br><span class="line">    <span class="function"><span class="keyword">constexpr</span> <span class="keyword">auto</span> <span class="title">filter</span><span class="params">(Fn f)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> derived-&gt;fold_if(Derived(), [](<span class="keyword">auto</span>&amp;&amp; init, <span class="keyword">auto</span>&amp;&amp; item) &#123;</span><br><span class="line">                init.add(item);</span><br><span class="line">                <span class="keyword">return</span> <span class="built_in">std</span>::forward&lt;<span class="keyword">decltype</span>(init)&gt;(init);</span><br><span class="line">        &#125;, f);</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<h3 id="map">map</h3><p>除了map其他几个函数都比较容易实现，而map的难度在于它的返回类型和容器未必是一样的，例如，如果map接受的是<code>map([](auto&amp;&amp; x) { return std::to_string(x); })</code>，那么容器的元素类型就会变成std::string了。</p>
+<p>所以我们首先要推导map接受的callable的返回类型，再由此推导容器的类型。如果顺利的话，可以像这样是实现<code>Derived&lt;return_type&gt;</code>，但这显然不对，因为Derived的类型是Vecetor<t>，如果要替换必然涉及到模版形参的嵌套，这是违背C++语法的。</t></p>
+<p>我就不卖关子了，这里用了“回调元函数”方式来实现这个功能，即在Vector中提供一个回调函数，当传入int的时候，返回Vector<int>。当然，这不是一个普通的函数，而是元函数。</int></p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">class</span> T&gt;</span><br><span class="line"><span class="keyword">struct</span> container &#123;</span><br><span class="line">    <span class="keyword">using</span> type = Vector&lt;T&gt;;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>当然还有另一种风格，就是把回调组件分离出来得到container_traits，不过STL的容器并没有这样做，我也就直接把traits写在Vector里面了。</p>
+<h3 id="添加元素">添加元素</h3><p>这里还有一个问题，不同的容器有不同的添加元素的方式，如何在Iterable里统一地执行呢。比较朴素的做法是每个派生类都实现一个add成员函数，以此来添加元素，vector用push_back，set用insert。</p>
+<p>但我其实还有一种更加通用的做法。STL的容器添加元素的成员函数并不是无理无据的，像vector、list这种线性表用push_back，而set、map这样的树状结构则用insert，虽然命名不一样，但总的函数就那么几个。所以，能不能根据函数来选择呢，有push_back就用push_back，有insert就用insert。在java里用反射倒是容易实现，可以看到class的所有方法，但C++并没有反射，真的能做到这样吗。</p>
+<p>其实也不是很难，静态判断有没有push_back而已，用SFINAE就能搞定。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">class</span> T, <span class="keyword">class</span>... Args&gt;</span><br><span class="line"><span class="keyword">struct</span> has_push_back &#123;</span><br><span class="line">    <span class="keyword">private</span>:</span><br><span class="line">    <span class="keyword">template</span> &lt;</span><br><span class="line">        <span class="keyword">class</span> C,</span><br><span class="line">        <span class="keyword">class</span> = <span class="keyword">decltype</span>(<span class="built_in">std</span>::declval&lt;C&gt;().push_back(<span class="built_in">std</span>::declval&lt;Args&gt;()...))</span><br><span class="line">        &gt;</span><br><span class="line">    <span class="keyword">static</span> <span class="built_in">std</span>::<span class="function">true_type <span class="title">check</span><span class="params">(<span class="keyword">int</span>)</span></span>;</span><br><span class="line">    <span class="keyword">template</span> &lt;<span class="keyword">class</span> C&gt;</span><br><span class="line">    <span class="keyword">static</span> <span class="built_in">std</span>::<span class="function">false_type <span class="title">check</span><span class="params">(...)</span></span>;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">public</span>:</span><br><span class="line">    <span class="keyword">const</span> <span class="keyword">static</span> <span class="keyword">bool</span> value = <span class="keyword">decltype</span>(check&lt;T&gt;(<span class="number">0</span>)&gt;::value;</span><br><span class="line">    <span class="keyword">using</span> type = <span class="built_in">std</span>::integral_constant&lt;<span class="keyword">bool</span>, value&gt;;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>于是，实现这样一个add其实就没有问题了。</p>
+<h3 id="Map">Map</h3><p>之前说完了map，现在要说Map。这个指的是Map容器，它的问题在于，map成员函数会得到不同的容器类型，例如，如果是<code>m.map(lambda(_.first * 2))</code>返回的结果就不是Map了，而是一个线性表，可以用Vector表示。那么这个类型要如何推导呢？</p>
+<p>基本规则是，如果callable返回std::pair，容器类型就是Map<result_type>，否则就是Vector<result_type>。</result_type></result_type></p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">class</span> Fn&gt;</span><br><span class="line">    <span class="function"><span class="keyword">constexpr</span> <span class="keyword">auto</span> <span class="title">map</span><span class="params">(Fn f)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">using</span> result_type = <span class="keyword">decltype</span>(f(iterable::head()));</span><br><span class="line">        <span class="keyword">using</span> container_type = <span class="built_in">std</span>::<span class="keyword">conditional_t</span>&lt;</span><br><span class="line">                                            ming::is_pair&lt;result_type&gt;::value, </span><br><span class="line">                                            Map&lt;result_type&gt;, </span><br><span class="line">                                            Vector&lt;result_type&gt;&gt;;</span><br><span class="line">        <span class="keyword">return</span> iterable::fold(container_type(), [f](<span class="keyword">auto</span>&amp;&amp; init, <span class="keyword">auto</span>&amp;&amp; elem) &#123;</span><br><span class="line">                init.add(f(<span class="built_in">std</span>::forward&lt;<span class="keyword">decltype</span>(elem)&gt;(elem)));</span><br><span class="line">                <span class="keyword">return</span> <span class="built_in">std</span>::forward&lt;<span class="keyword">decltype</span>(init)&gt;(init);</span><br><span class="line">                &#125;);</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<p>用Map::map把Iterable::map覆盖掉就可以了。还是很轻松的。</p>
+<h2 id="性能">性能</h2><p>到这里整个实现已经差不多了，细枝末节的东西我就不再这里赘述，可以直接看代码。但还有一个东西没有提及，就是性能。这样的实现会不会导致性能骤降呢，反复的拷贝，赋值，相比于原来的API性能会不会差太多呢。</p>
+<p>如果是C++11以前，这样的实现很难避免低性能，或者说为了高性能实现起来有很大的难度。但有了移动语义的支持，再加上全局的完美转发，性能其实并不低。在我自己的测试下，对两百万个元素<code>map(_ * 2)</code>需要400ms，<code>filter(_ &lt; 10000)</code>需要40ms，foldeach和fold的时间也都是40ms左右，可以说这样的性能是相当不错的。所以在日常使用中使用这套容器是不会有太大的性能问题的。</p>
+<h2 id="总结">总结</h2><p>花了大概两三天时间，摸索中搞定了这个东西，很多问题都是摸着石头过河，一边学习一边实践。其中学到了很多东西，例如SFINAE，constraints，自己之前学的TMP知识也全都用到了，函数式编程的知识也有所实践。并且算是搞懂了右值引用，移动语义，完美转发这些东西。收获颇丰。</p>
+<p>之后还有进一步的开发计划，可能会实现并行集合，惰性集合，不过未来的事情谁会知道呢。</p>
+<p>代码在<a href="https://github.com/HelloCodeMing/MyCppLibrary" target="_blank" rel="external">这里</a></p>
+  
+	</div>
+		<footer class="article-footer clearfix">
+<div class="article-catetags">
+
+<div class="article-categories">
+  <span></span>
+  <a class="article-category-link" href="/categories/Code/">Code</a>
+</div>
+
+
+  <div class="article-tags">
+  
+  <span></span> <a href="/tags/C/">C++</a><a href="/tags/Stream-API/">Stream API</a><a href="/tags/functional/">functional</a>
+  </div>
+
+</div>
+
+
+
+	<div class="article-share" id="share">
+	
+	  <div data-url="http://wanghuanming.com/2015/07/stream api for C++ container/" data-title="C++容器stream API的实现 | Hello Code" data-tsina="null" class="share clearfix">
+	  </div>
+	
+	</div>
+
+
+</footer>
+
+   	       
+	</article>
+	
+<nav class="article-nav clearfix">
+ 
+ <div class="prev" >
+ <a href="/2015/07/implementation of parallel containers/" title="并行容器的实现">
+  <strong>上一篇：</strong><br/>
+  <span>
+  并行容器的实现</span>
+</a>
+</div>
+
+
+<div class="next">
+<a href="/2015/07/placeholder lambda for C++/"  title="C++占位符Lambda的实现">
+ <strong>下一篇：</strong><br/> 
+ <span>C++占位符Lambda的实现
+</span>
+</a>
+</div>
+
+</nav>
+
+	
+<section id="comments" class="comment">
+	<div class="ds-thread" data-thread-key="2015/07/stream api for C++ container/" data-title="C++容器stream API的实现" data-url="http://wanghuanming.com/2015/07/stream api for C++ container/"></div>
+</section>
+
+
+</div>  
+      <div class="openaside"><a class="navbutton" href="#" title="显示侧边栏"></a></div>
+
+  <div id="toc" class="toc-aside">
+  <strong class="toc-title">文章目录</strong>
+ 
+ <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#概述"><span class="toc-number">1.</span> <span class="toc-text">概述</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#stream"><span class="toc-number">2.</span> <span class="toc-text">stream</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#C++_容器"><span class="toc-number">3.</span> <span class="toc-text">C++ 容器</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#stream_API的实现"><span class="toc-number">4.</span> <span class="toc-text">stream API的实现</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#CRTP"><span class="toc-number">4.1.</span> <span class="toc-text">CRTP</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#map"><span class="toc-number">4.2.</span> <span class="toc-text">map</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#添加元素"><span class="toc-number">4.3.</span> <span class="toc-text">添加元素</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Map"><span class="toc-number">4.4.</span> <span class="toc-text">Map</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#性能"><span class="toc-number">5.</span> <span class="toc-text">性能</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#总结"><span class="toc-number">6.</span> <span class="toc-text">总结</span></a></li></ol>
+ 
+  </div>
+
+<div id="asidepart">
+<div class="closeaside"><a class="closebutton" href="#" title="隐藏侧边栏"></a></div>
+<aside class="clearfix">
+
+  
+<div class="categorieslist">
+	<p class="asidetitle">分类</p>
+		<ul>
+		
+		  
+			<li><a href="/categories/Code/" title="Code">Code<sup>39</sup></a></li>
+		  
+		
+		  
+			<li><a href="/categories/Life-Work/" title="Life &amp; Work">Life &amp; Work<sup>10</sup></a></li>
+		  
+		
+		  
+			<li><a href="/categories/Reading/" title="Reading">Reading<sup>4</sup></a></li>
+		  
+		
+		  
+			<li><a href="/categories/Tech-Tool/" title="Tech &amp; Tool">Tech &amp; Tool<sup>24</sup></a></li>
+		  
+		
+		</ul>
+</div>
+
+
+  
+<div class="tagslist">
+	<p class="asidetitle">标签</p>
+		<ul class="clearfix">
+		
+			
+				<li><a href="/tags/C/" title="C++">C++<sup>9</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Scala/" title="Scala">Scala<sup>6</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/编译原理/" title="编译原理">编译原理<sup>4</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/LLVM/" title="LLVM">LLVM<sup>4</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/数据结构/" title="数据结构">数据结构<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Spark/" title="Spark">Spark<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/javascript/" title="javascript">javascript<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/OS/" title="OS">OS<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/ACM/" title="ACM">ACM<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/虚拟机/" title="虚拟机">虚拟机<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/线段树/" title="线段树">线段树<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/解释器/" title="解释器">解释器<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/C语言/" title="C语言">C语言<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/进程/" title="进程">进程<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Linux/" title="Linux">Linux<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Coursera/" title="Coursera">Coursera<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/ssh/" title="ssh">ssh<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/openwrt/" title="openwrt">openwrt<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/C/" title="C">C<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/函数式编程/" title="函数式编程">函数式编程<sup>2</sup></a></li>
+			
+		
+		</ul>
+</div>
+
+
+  <div class="rsspart">
+	<a href="/atom.xml" target="_blank" title="rss">RSS 订阅</a>
+</div>
+
+</aside>
+</div>
+    </div>
+    <footer><div id="footer" >
+	
+	<div class="line">
+		<span></span>
+		<div class="author"></div>
+	</div>
+	
+	
+	<div class="social-font" class="clearfix">
+		
+		<a href="http://weibo.com/5108629996" target="_blank" class="icon-weibo" title="微博"></a>
+		
+		
+		<a href="https://github.com/HelloCodeMing" target="_blank" class="icon-github" title="github"></a>
+		
+		
+		
+		
+		
+		
+		<a href="https://www.douban.com/people/94795087" target="_blank" class="icon-douban" title="豆瓣"></a>
+		
+		
+		<a href="https://www.zhihu.com/people/hellocode-67" target="_blank" class="icon-zhihu" title="知乎"></a>
+		
+		
+		
+		<a href="mailto:huanmingwong@163.com" target="_blank" class="icon-email" title="Email Me"></a>
+		
+	</div>
+			
+		
+
+		<p class="copyright">
+		Powered by <a href="http://hexo.io" target="_blank" title="hexo">hexo</a> and Theme by <a href="https://github.com/wuchong/jacman" target="_blank" title="Jacman">Jacman</a> © 2016 
+		
+		<a href="http://wanghuanming.com/about" target="_blank" title="王欢明">王欢明</a>
+		
+		
+		</p>
+</div>
+</footer>
+    <script src="/js/jquery-2.0.3.min.js"></script>
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  $('.navbar').click(function(){
+    $('header nav').toggleClass('shownav');
+  });
+  var myWidth = 0;
+  function getSize(){
+    if( typeof( window.innerWidth ) == 'number' ) {
+      myWidth = window.innerWidth;
+    } else if( document.documentElement && document.documentElement.clientWidth) {
+      myWidth = document.documentElement.clientWidth;
+    };
+  };
+  var m = $('#main'),
+      a = $('#asidepart'),
+      c = $('.closeaside'),
+      o = $('.openaside');
+  c.click(function(){
+    a.addClass('fadeOut').css('display', 'none');
+    o.css('display', 'block').addClass('fadeIn');
+    m.addClass('moveMain');
+  });
+  o.click(function(){
+    o.css('display', 'none').removeClass('beforeFadeIn');
+    a.css('display', 'block').removeClass('fadeOut').addClass('fadeIn');      
+    m.removeClass('moveMain');
+  });
+  $(window).scroll(function(){
+    o.css("top",Math.max(80,260-$(this).scrollTop()));
+  });
+  
+  $(window).resize(function(){
+    getSize(); 
+    if (myWidth >= 1024) {
+      $('header nav').removeClass('shownav');
+    }else{
+      m.removeClass('moveMain');
+      a.css('display', 'block').removeClass('fadeOut');
+      o.css('display', 'none');
+      
+      $('#toc.toc-aside').css('display', 'none');
+        
+    }
+  });
+});
+</script>
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  var ai = $('.article-content>iframe'),
+      ae = $('.article-content>embed'),
+      t  = $('#toc'),
+      ta = $('#toc.toc-aside'),
+      o  = $('.openaside'),
+      c  = $('.closeaside');
+  if(ai.length>0){
+    ai.wrap('<div class="video-container" />');
+  };
+  if(ae.length>0){
+   ae.wrap('<div class="video-container" />');
+  };
+  c.click(function(){
+    ta.css('display', 'block').addClass('fadeIn');
+  });
+  o.click(function(){
+    ta.css('display', 'none');
+  });
+  $(window).scroll(function(){
+    ta.css("top",Math.max(140,320-$(this).scrollTop()));
+  });
+});
+</script>
+
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  var $this = $('.share'),
+      url = $this.attr('data-url'),
+      encodedUrl = encodeURIComponent(url),
+      title = $this.attr('data-title'),
+      tsina = $this.attr('data-tsina'),
+      description = $this.attr('description');
+  var html = [
+  '<a href="#" class="overlay" id="qrcode"></a>',
+  '<div class="qrcode clearfix"><span>扫描二维码分享到微信朋友圈</span><a class="qrclose" href="#nothing"></a><strong>Loading...Please wait</strong><img id="qrcode-pic" data-src="http://s.jiathis.com/qrcode.php?url=' + encodedUrl + '"/></div>',
+  '<a href="https://www.facebook.com/sharer.php?u=' + encodedUrl + '" class="article-share-facebook" target="_blank" title="Facebook"></a>',
+  '<a href="https://twitter.com/intent/tweet?url=' + encodedUrl + '" class="article-share-twitter" target="_blank" title="Twitter"></a>',
+  '<a href="#qrcode" class="article-share-qrcode" title="微信"></a>',
+  '<a href="http://widget.renren.com/dialog/share?resourceUrl=' + encodedUrl + '&srcUrl=' + encodedUrl + '&title=' + title +'" class="article-share-renren" target="_blank" title="人人"></a>',
+  '<a href="http://service.weibo.com/share/share.php?title='+title+'&url='+encodedUrl +'&ralateUid='+ tsina +'&searchPic=true&style=number' +'" class="article-share-weibo" target="_blank" title="微博"></a>',
+  '<span title="Share to"></span>'
+  ].join('');
+  $this.append(html);
+  $('.article-share-qrcode').click(function(){
+    var imgSrc = $('#qrcode-pic').attr('data-src');
+    $('#qrcode-pic').attr('src', imgSrc);
+    $('#qrcode-pic').load(function(){
+        $('.qrcode strong').text(' ');
+    });
+  });
+});     
+</script>
+
+
+
+<script type="text/javascript">
+  var duoshuoQuery = {short_name:"wanghuanming"};
+  (function() {
+    var ds = document.createElement('script');
+    ds.type = 'text/javascript';ds.async = true;
+    ds.src = '//static.duoshuo.com/embed.js';
+    ds.charset = 'UTF-8';
+    (document.getElementsByTagName('head')[0] 
+    || document.getElementsByTagName('body')[0]).appendChild(ds);
+  })();
+</script> 
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+$(document).ready(function(){ 
+  $('.article-content').each(function(i){
+    $(this).find('img').each(function(){
+      if ($(this).parent().hasClass('fancybox')) return;
+      var alt = this.alt;
+      if (alt) $(this).after('<span class="caption">' + alt + '</span>');
+      $(this).wrap('<a href="' + this.src + '" title="' + alt + '" class="fancybox"></a>');
+    });
+    $(this).find('.fancybox').each(function(){
+      $(this).attr('rel', 'article' + i);
+    });
+  });
+  if($.fancybox){
+    $('.fancybox').fancybox();
+  }
+}); 
+</script>
+
+
+
+<!-- Analytics Begin -->
+
+
+
+
+
+<!-- Analytics End -->
+
+<!-- Totop Begin -->
+
+	<div id="totop">
+	<a title="返回顶部"><img src="/img/scrollup.png"/></a>
+	</div>
+	<script src="/js/totop.js"></script>
+
+<!-- Totop End -->
+
+<!-- MathJax Begin -->
+<!-- mathjax config similar to math.stackexchange -->
+
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    tex2jax: {
+      inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+      processEscapes: true
+    }
+  });
+</script>
+
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: {
+        skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+      }
+    });
+</script>
+
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Queue(function() {
+        var all = MathJax.Hub.getAllJax(), i;
+        for(i=0; i < all.length; i += 1) {
+            all[i].SourceElement().parentNode.className += ' has-jax';
+        }
+    });
+</script>
+
+<script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+</script>
+
+
+<!-- MathJax End -->
+
+<!-- Tiny_search Begin -->
+
+<!-- Tiny_search End -->
+
+  </body>
+</html>

@@ -1,0 +1,716 @@
+
+ <!DOCTYPE HTML>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  
+    <title>Scala容器中的高阶函数 | Hello Code</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1,user-scalable=no">
+    
+    <meta name="author" content="王欢明">
+    
+
+    
+    <meta name="description" content="高阶函数，是指以一个函数作为输入或输出的函数。我们常用的Curry化函数，就是输出一个函数的高阶函数。
+在Scala中，容器包含了丰富的高阶函数，从经典的map-reduce，到晦涩的aggregate，应有尽有。虽然初看起来过于复杂， 但是它在提高代码重用性，以及封装并发性等方面，却有不可替代的作用，十分值得我们学习。
+ListList类几乎包含了Scala集合框架中所有的高阶函数，所以我们使用">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Scala容器中的高阶函数">
+<meta property="og:url" content="http://wanghuanming.com/2014/12/Scala-highorder-function/index.html">
+<meta property="og:site_name" content="Hello Code">
+<meta property="og:description" content="高阶函数，是指以一个函数作为输入或输出的函数。我们常用的Curry化函数，就是输出一个函数的高阶函数。
+在Scala中，容器包含了丰富的高阶函数，从经典的map-reduce，到晦涩的aggregate，应有尽有。虽然初看起来过于复杂， 但是它在提高代码重用性，以及封装并发性等方面，却有不可替代的作用，十分值得我们学习。
+ListList类几乎包含了Scala集合框架中所有的高阶函数，所以我们使用">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Scala容器中的高阶函数">
+<meta name="twitter:description" content="高阶函数，是指以一个函数作为输入或输出的函数。我们常用的Curry化函数，就是输出一个函数的高阶函数。
+在Scala中，容器包含了丰富的高阶函数，从经典的map-reduce，到晦涩的aggregate，应有尽有。虽然初看起来过于复杂， 但是它在提高代码重用性，以及封装并发性等方面，却有不可替代的作用，十分值得我们学习。
+ListList类几乎包含了Scala集合框架中所有的高阶函数，所以我们使用">
+
+    
+    <link rel="alternative" href="/atom.xml" title="Hello Code" type="application/atom+xml">
+    
+    
+    <link rel="icon" href="/img/panda-icon.ico">
+    
+    
+    <link rel="apple-touch-icon" href="/img/panda.png">
+    <link rel="apple-touch-icon-precomposed" href="/img/panda.png">
+    
+    <link rel="stylesheet" href="/css/style.css" type="text/css">
+</head>
+
+  <body>
+    <header>
+      <div>
+		
+			<div id="imglogo">
+				<a href="/"><img src="/img/panda.png" alt="Hello Code" title="Hello Code"/></a>
+			</div>
+			
+			<div id="textlogo">
+				<h1 class="site-name"><a href="/" title="Hello Code">Hello Code</a></h1>
+				<h2 class="blog-motto"></h2>
+			</div>
+			<div class="navbar"><a class="navbutton navmobile" href="#" title="菜单">
+			</a></div>
+			<nav class="animated">
+				<ul>
+					<ul>
+					 
+						<li><a href="/">首页</a></li>
+					
+						<li><a href="/archives">归档</a></li>
+					
+						<li><a href="/about">关于</a></li>
+					
+					<li>
+ 					
+					<form class="search" action="//google.com/search" method="get" accept-charset="utf-8">
+						<label>Search</label>
+						<input type="search" id="search" name="q" autocomplete="off" maxlength="20" placeholder="搜索" />
+						<input type="hidden" name="q" value="site:wanghuanming.com">
+					</form>
+					
+					</li>
+				</ul>
+			</nav>			
+</div>
+    </header>
+    <div id="container">
+      <div id="main" class="post" itemscope itemprop="blogPost">
+  
+	<article itemprop="articleBody"> 
+		<header class="article-info clearfix">
+  <h1 itemprop="name">
+    
+      <a href="/2014/12/Scala-highorder-function/" title="Scala容器中的高阶函数" itemprop="url">Scala容器中的高阶函数</a>
+  </h1>
+  <p class="article-author">By
+       
+		<a href="http://wanghuanming.com/about" title="王欢明" target="_blank" itemprop="author">王欢明</a>
+		
+  <p class="article-time">
+    <time datetime="2014-12-08T11:54:55.000Z" itemprop="datePublished"> 发表于 2014 Dec 8</time>
+    
+  </p>
+</header>
+	<div class="article-content">
+		
+		<div id="toc" class="toc-article">
+			<strong class="toc-title">文章目录</strong>
+		
+			<ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#List"><span class="toc-number">1.</span> <span class="toc-text">List</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#aggregate"><span class="toc-number">1.1.</span> <span class="toc-text">aggregate</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#andThen"><span class="toc-number">1.2.</span> <span class="toc-text">andThen</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#collect"><span class="toc-number">1.3.</span> <span class="toc-text">collect</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#collectFirst"><span class="toc-number">1.4.</span> <span class="toc-text">collectFirst</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#compose"><span class="toc-number">1.5.</span> <span class="toc-text">compose</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#corresponds"><span class="toc-number">1.6.</span> <span class="toc-text">corresponds</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#count"><span class="toc-number">1.7.</span> <span class="toc-text">count</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#dropWhile"><span class="toc-number">1.8.</span> <span class="toc-text">dropWhile</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#exists"><span class="toc-number">1.9.</span> <span class="toc-text">exists</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#filter"><span class="toc-number">1.10.</span> <span class="toc-text">filter</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#filterNot"><span class="toc-number">1.11.</span> <span class="toc-text">filterNot</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#find"><span class="toc-number">1.12.</span> <span class="toc-text">find</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#flatten"><span class="toc-number">1.13.</span> <span class="toc-text">flatten</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#fold"><span class="toc-number">1.14.</span> <span class="toc-text">fold</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#forall"><span class="toc-number">1.15.</span> <span class="toc-text">forall</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#foreach"><span class="toc-number">1.16.</span> <span class="toc-text">foreach</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#groupBy"><span class="toc-number">1.17.</span> <span class="toc-text">groupBy</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#indexWhere"><span class="toc-number">1.18.</span> <span class="toc-text">indexWhere</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#map"><span class="toc-number">1.19.</span> <span class="toc-text">map</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#maxBy"><span class="toc-number">1.20.</span> <span class="toc-text">maxBy</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#minBy"><span class="toc-number">1.21.</span> <span class="toc-text">minBy</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#partition"><span class="toc-number">1.22.</span> <span class="toc-text">partition</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#prefixLength"><span class="toc-number">1.23.</span> <span class="toc-text">prefixLength</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#reduce"><span class="toc-number">1.24.</span> <span class="toc-text">reduce</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#reduceOption"><span class="toc-number">1.25.</span> <span class="toc-text">reduceOption</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#reverseMap"><span class="toc-number">1.26.</span> <span class="toc-text">reverseMap</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#runWith"><span class="toc-number">1.27.</span> <span class="toc-text">runWith</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#scan"><span class="toc-number">1.28.</span> <span class="toc-text">scan</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#sortWith"><span class="toc-number">1.29.</span> <span class="toc-text">sortWith</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#span"><span class="toc-number">1.30.</span> <span class="toc-text">span</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#takeWhile"><span class="toc-number">1.31.</span> <span class="toc-text">takeWhile</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#后记"><span class="toc-number">2.</span> <span class="toc-text">后记</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#参考资料"><span class="toc-number">3.</span> <span class="toc-text">参考资料</span></a></li></ol>
+		
+		</div>
+		
+		<p>高阶函数，是指以一个函数作为输入或输出的函数。我们常用的Curry化函数，就是输出一个函数的高阶函数。</p>
+<p>在Scala中，容器包含了丰富的高阶函数，从经典的map-reduce，到晦涩的aggregate，应有尽有。虽然初看起来过于复杂， 但是它在提高代码重用性，以及封装并发性等方面，却有不可替代的作用，十分值得我们学习。</p>
+<h2 id="List">List</h2><p>List类几乎包含了Scala集合框架中所有的高阶函数，所以我们使用它作为样例来分析高阶函数。<br>在它的<a href="http://www.scala-lang.org/api/current/#scala.collection.immutable.List" target="_blank" rel="external">文档</a>中，可以看到所有List的所有方法。这里按照文档的顺序来一一说明其意义。</p>
+<p>声明在前，这里所有的方法都是非破坏性方法，也就是说，它们不改变容器的内容。</p>
+<h3 id="aggregate">aggregate</h3><ul>
+<li>作用：一个比fold、reduce更加抽象的聚集操作，对集合分块，块中每一个元素执行一个操作，得到一个容器，在将这些容器进行聚集。</li>
+<li>样例：  <figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 求容器所有元素mod之后的Set</span></span><br><span class="line"><span class="keyword">val</span> list = <span class="type">List</span>(<span class="number">1</span>, <span class="number">4</span>, <span class="number">9</span>)</span><br><span class="line">list.aggregate(scala.collection.mutable.<span class="type">Set</span>[<span class="type">Int</span>]())(_ += _ % <span class="number">8</span>, _ ++ _)</span><br><span class="line"><span class="comment">// return: Set[Int] = Set(1, 4)</span></span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<h3 id="andThen">andThen</h3><ul>
+<li>作用：把两个函数组合在一起，先调用第一个函数，再调用第二个。</li>
+<li>样例：  <figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 先调用add2， 再调用add3</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">add2</span>(</span>num: <span class="type">Int</span>) = num + <span class="number">2</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">print</span>(</span>num: <span class="type">Int</span>) = println(num)</span><br><span class="line"><span class="keyword">val</span> addAndPrint = add2 _ andThen print _</span><br><span class="line">addAndPrint(<span class="number">2</span>)</span><br><span class="line"><span class="comment">//return: 4</span></span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<h3 id="collect">collect</h3><ul>
+<li>作用：基于给定的偏函数，遍历容器，得到一个新的容器。（此函数十分强大）</li>
+<li>样例：  <figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 找到列表中的奇数，乘以2</span></span><br><span class="line"><span class="keyword">val</span> list = <span class="type">List</span>(<span class="number">1</span>, <span class="number">4</span>, <span class="number">9</span>)</span><br><span class="line">list collect &#123; <span class="keyword">case</span> item <span class="keyword">if</span> item % <span class="number">2</span> == <span class="number">1</span> =&gt; item * <span class="number">2</span> &#125;</span><br><span class="line"><span class="comment">// return: List[Int] = List(2, 18)</span></span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<h3 id="collectFirst">collectFirst</h3><ul>
+<li>作用：基于给定的偏函数，查找第一个满足此条件的元素。</li>
+<li><p>样例：</p>
+  <figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 找到第一个奇数，乘以2</span></span><br><span class="line"><span class="keyword">val</span> list = <span class="type">List</span>(<span class="number">1</span>, <span class="number">4</span>, <span class="number">9</span>)</span><br><span class="line">list collectFirst &#123; cast item <span class="keyword">if</span> item % == <span class="number">1</span> =&gt; item * <span class="number">2</span>&#125; getOrElse <span class="number">0</span></span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<h3 id="compose">compose</h3><ul>
+<li>作用：把两个函数组合在一起，形成一个新的函数。</li>
+<li>样例：  <figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 把两个函数组合</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">add2</span>(</span>num: <span class="type">Int</span>) = num + <span class="number">2</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">add3</span>(</span>num: <span class="type">Int</span>) = num + <span class="number">3</span></span><br><span class="line"><span class="keyword">val</span> add5 = add2 _ compose add3 _</span><br><span class="line">add5(<span class="number">1</span>)</span><br><span class="line"><span class="comment">// return: Int = 6</span></span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<h3 id="corresponds">corresponds</h3><ul>
+<li>作用：测试两个容器所有相应的元素时候满足一定的关系。</li>
+<li>样例：  <figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 判断两个列表的元素是否满足两倍的关系</span></span><br><span class="line"><span class="keyword">val</span> list1 = <span class="type">List</span>(<span class="number">1</span>, <span class="number">4</span>, <span class="number">9</span>)</span><br><span class="line"><span class="keyword">val</span> list2 = <span class="type">List</span>(<span class="number">2</span>, <span class="number">8</span>, <span class="number">18</span>)</span><br><span class="line">list1.corresponds(list2)&#123;_ * <span class="number">2</span> == _&#125;</span><br><span class="line"><span class="comment">// return : Boolean = true</span></span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<h3 id="count">count</h3><ul>
+<li>作用：计数满足条件的元素</li>
+<li>样例：  <figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 计数偶数的个数</span></span><br><span class="line"><span class="keyword">val</span> list = <span class="type">List</span>(<span class="number">1</span>, <span class="number">4</span>, <span class="number">9</span>)</span><br><span class="line">list.count(_ % <span class="number">2</span> == <span class="number">0</span>)</span><br><span class="line"><span class="comment">// return : Int = 1</span></span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<h3 id="dropWhile">dropWhile</h3><ul>
+<li>作用：以指定的条件删除满足条件的最长前缀</li>
+<li>样例：  <figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 删除小于8 的前缀</span></span><br><span class="line"><span class="keyword">val</span> list = <span class="type">List</span>(<span class="number">1</span>, <span class="number">4</span>, <span class="number">9</span>)</span><br><span class="line">list.dropWhile(_ &lt; <span class="number">8</span>)</span><br><span class="line"><span class="comment">// return: List[Int] = List(9)</span></span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<h3 id="exists">exists</h3><ul>
+<li>作用：判断容器中是否存在满足条件的元素</li>
+<li>样例：  <figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"> <span class="comment">// 判断是否存在偶数</span></span><br><span class="line"><span class="keyword">val</span> list = <span class="type">List</span>(<span class="number">1</span>, <span class="number">4</span>, <span class="number">9</span>)</span><br><span class="line">list.exists(_ % <span class="number">2</span> == <span class="number">0</span>)</span><br><span class="line"><span class="comment">// return : Boolean = true</span></span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<h3 id="filter">filter</h3><ul>
+<li>作用：以指定的条件过滤容器</li>
+<li>样例：  <figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 返回偶数</span></span><br><span class="line"><span class="keyword">val</span> list = <span class="type">List</span>(<span class="number">1</span>, <span class="number">4</span>, <span class="number">9</span>)</span><br><span class="line">list.filter(_ % <span class="number">2</span> == <span class="number">0</span>)</span><br><span class="line"><span class="comment">//return : List[Int] = List(2)</span></span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<h3 id="filterNot">filterNot</h3><ul>
+<li>作用：反向过滤容器</li>
+<li>样例：  <figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 返回奇数</span></span><br><span class="line"><span class="keyword">val</span> list = <span class="type">List</span>(<span class="number">1</span>, <span class="number">4</span>, <span class="number">9</span>)</span><br><span class="line">list.filterNot(_ % <span class="number">2</span> == <span class="number">0</span>)</span><br><span class="line"><span class="comment">// return : List[Int] = List(1, 9)</span></span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<h3 id="find">find</h3><ul>
+<li>作用：在容器中查找元素</li>
+<li>样例：  <figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 查找偶数</span></span><br><span class="line"><span class="keyword">val</span> list = <span class="type">List</span>(<span class="number">1</span>, <span class="number">4</span>, <span class="number">9</span>)</span><br><span class="line">list.find(_ % <span class="number">2</span> == <span class="number">0</span>)</span><br><span class="line"><span class="comment">// return : Option[Int] = Some(2)</span></span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<h3 id="flatten">flatten</h3><ul>
+<li>作用：将容器扁平化</li>
+<li>样例：  <figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 扁平化</span></span><br><span class="line"><span class="keyword">val</span> list = <span class="type">List</span>(<span class="type">List</span>(<span class="number">2</span>, <span class="number">3</span>), <span class="type">List</span>(<span class="number">4</span>, <span class="number">5</span>))</span><br><span class="line">list.flatten</span><br><span class="line"><span class="comment">// return: List[Int] = List(2, 3, 4, 5)</span></span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<h3 id="fold">fold</h3><ul>
+<li>作用：“折叠容器”，给定初始值，以及折叠方法。或称统计，一般用来统计某个特征。</li>
+<li>样例：  <figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 求10的阶乘</span></span><br><span class="line">(<span class="number">1</span> to <span class="number">10</span>).fold(<span class="number">1</span>)(_ * _)</span><br><span class="line"><span class="comment">// return: Int = 3628800</span></span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<h3 id="forall">forall</h3><ul>
+<li>作用：测试容器中的每一个元素</li>
+<li>样例：  <figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">val</span> list = <span class="type">List</span>(<span class="number">1</span>, <span class="number">4</span>, <span class="number">9</span>)</span><br><span class="line">list.forall(_ % <span class="number">2</span> == <span class="number">0</span>)</span><br><span class="line"><span class="comment">//return : Boolean = false</span></span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<h3 id="foreach">foreach</h3><ul>
+<li>作用：以容器中的每一个元素为参数调用函数，无返回值。</li>
+<li>样例：  <figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 打印容器</span></span><br><span class="line"><span class="keyword">val</span> list = <span class="type">List</span>(<span class="number">1</span>, <span class="number">4</span>, <span class="number">9</span>)</span><br><span class="line">list.foreach(println)</span><br><span class="line"><span class="comment">// return :</span></span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<h3 id="groupBy">groupBy</h3><ul>
+<li>作用：以指定的条件来对容器中的元素分组，得到一个Map。</li>
+<li>样例：  <figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 以 mod 8 的结果来对容器的元素分组</span></span><br><span class="line"><span class="keyword">val</span> list = <span class="type">List</span>(<span class="number">1</span>, <span class="number">4</span>, <span class="number">9</span>)</span><br><span class="line">list groupBy (_ % <span class="number">8</span>)</span><br><span class="line"><span class="comment">// return: scala.collection.ummutable.Map[Int, List[Int]] = Map(4 -&gt; List(4), 1 -&gt; List(1, 9))</span></span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<h3 id="indexWhere">indexWhere</h3><ul>
+<li>作用：查找满足条件的元素的索引</li>
+<li>样例：  <figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 查找第一个偶数的位置</span></span><br><span class="line"><span class="keyword">val</span> list = <span class="type">List</span>(<span class="number">1</span>, <span class="number">4</span>, <span class="number">9</span>)</span><br><span class="line">list.indexWhere(_ % <span class="number">2</span> == <span class="number">0</span>)</span><br><span class="line"><span class="comment">// return: Int = 1</span></span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<h3 id="map">map</h3><ul>
+<li>作用：以容器中每一个元素为参数调用函数，返回新容器</li>
+<li>样例：  <figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 将容器中的元素 * 2</span></span><br><span class="line"><span class="keyword">val</span> list = <span class="type">List</span>(<span class="number">1</span>, <span class="number">4</span>, <span class="number">9</span>)</span><br><span class="line">list.map(_ * <span class="number">2</span>)</span><br><span class="line"><span class="comment">// return : List[Int] = List(2, 8, 18)</span></span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<h3 id="maxBy">maxBy</h3><ul>
+<li>作用：以指定的条件来衡量每个元素的价值，找价值最大的。</li>
+<li>样例：  <figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 找mod 7之后最大的元素</span></span><br><span class="line"><span class="keyword">val</span> list = <span class="type">List</span>(<span class="number">1</span>, <span class="number">4</span>, <span class="number">9</span>)</span><br><span class="line">list.maxBy(_% <span class="number">7</span>)</span><br><span class="line"><span class="comment">// return: Int = 4</span></span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<h3 id="minBy">minBy</h3><ul>
+<li>作用：以指定的条件衡量每个元素的价值，找价值最小的。</li>
+<li>样例：  <figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 找mod 7 之后最小的元素</span></span><br><span class="line"><span class="keyword">val</span> list = <span class="type">List</span>(<span class="number">1</span>, <span class="number">4</span>, <span class="number">9</span>)</span><br><span class="line"><span class="comment">// return: Int = 1</span></span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<h3 id="partition">partition</h3><ul>
+<li>作用：按照指定的条件，将容器分成两部分，前一部分满足条件，后半部分不满足。</li>
+<li>样例：  <figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 将奇数和偶数分离</span></span><br><span class="line"><span class="keyword">val</span> list = <span class="type">List</span>(<span class="number">1</span>, <span class="number">4</span>, <span class="number">9</span>)</span><br><span class="line">list.partition(_ % <span class="number">2</span> == <span class="number">0</span>)</span><br><span class="line"><span class="comment">// return : (List[Int], List[Int]) = (List(4), List(1, 9))</span></span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<h3 id="prefixLength">prefixLength</h3><ul>
+<li>作用：计算满足长度的最长前缀的长度</li>
+<li>样例：  <figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 从前往后满足小于8的前缀的长度</span></span><br><span class="line"><span class="keyword">val</span> list = <span class="type">List</span>(<span class="number">1</span>, <span class="number">4</span>, <span class="number">9</span>)</span><br><span class="line">list.prefixLength(_ &lt; <span class="number">8</span>)</span><br><span class="line"><span class="comment">//return : Int = 2</span></span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<h3 id="reduce">reduce</h3><ul>
+<li>作用：规约，对容器中的每两个元素进行一次二元操作，直到只剩下最后一个元素，其顺序不固定。</li>
+<li>样例：  <figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 计算元素的和</span></span><br><span class="line"><span class="keyword">val</span> list = <span class="type">List</span>(<span class="number">1</span>, <span class="number">4</span>, <span class="number">9</span>)</span><br><span class="line">list.reduce(_ + _)</span><br><span class="line"><span class="comment">// return: Int = 14</span></span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<h3 id="reduceOption">reduceOption</h3><ul>
+<li>作用：规约，对容器中每两个元素执行二元操作，知道只剩下最后一个元素，返回Option。</li>
+<li>样例：  <figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 计算元素的积</span></span><br><span class="line"><span class="keyword">val</span> list = <span class="type">List</span>(<span class="number">1</span>, <span class="number">4</span>, <span class="number">9</span>)</span><br><span class="line">list.reduceOption(_ * _)</span><br><span class="line"><span class="comment">// return: Option[Int] = Some(36)</span></span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<h3 id="reverseMap">reverseMap</h3><ul>
+<li>作用：逆序执行Map</li>
+<li>样例：  <figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 逆序列表并乘以2</span></span><br><span class="line"><span class="keyword">val</span> list = <span class="type">List</span>(<span class="number">1</span>, <span class="number">4</span>, <span class="number">9</span>)</span><br><span class="line">list.reverseMap(_ * <span class="number">2</span>)</span><br><span class="line"><span class="comment">// return: List[Int] = List(18, 8, 2)</span></span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<h3 id="runWith">runWith</h3><ul>
+<li>作用：执行偏函数，当参数不在定义域内时，返回false，否则返回true，并执行action。</li>
+<li>样例：  <figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 偏函数将奇数*2，然后打印结果</span></span><br><span class="line"><span class="keyword">val</span> pf: <span class="type">PartialFunction</span>[<span class="type">Int</span>, <span class="type">Int</span>] = &#123; <span class="keyword">case</span> m: <span class="type">Int</span> <span class="keyword">if</span> m % <span class="number">2</span> == <span class="number">1</span>=&gt; m * <span class="number">2</span> &#125;</span><br><span class="line">pf.runWtih(println)(<span class="number">3</span>)</span><br><span class="line"><span class="comment">// return: Boolean = true</span></span><br><span class="line">pf.runWith(println)(<span class="number">2</span>)</span><br><span class="line"><span class="comment">// return: Boolean = false</span></span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<h3 id="scan">scan</h3><ul>
+<li>作用：折叠，与fold的动作类似，但会将每一次折叠的结果存放到另一个容器中，然后那个容器。</li>
+<li>样例：  <figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 求1-10的阶乘</span></span><br><span class="line">(<span class="number">1</span> to <span class="number">10</span>).scan(<span class="number">1</span>)(_ * _)</span><br><span class="line"><span class="comment">//return :scala.collection.immutable.IndexedSeq[Int] = Vector(1, 1, 2, 6, 24, 120, 720, 5040, 40320, 362880, 3628800)</span></span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<h3 id="sortWith">sortWith</h3><ul>
+<li>作用：用指定的函数排序</li>
+<li>样例：  <figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 倒排</span></span><br><span class="line"><span class="keyword">val</span> list = <span class="type">List</span>(<span class="number">1</span>, <span class="number">4</span>, <span class="number">9</span>)</span><br><span class="line">list.sortWith(_ &gt; _)</span><br><span class="line"><span class="comment">// return: List[Int] = List(9, 4, 1)</span></span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<h3 id="span">span</h3><ul>
+<li>作用：以指定的条件切分列表，满足条件的最长前缀和其余的部分作为一个元组返回。</li>
+<li>样例：  <figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 查找小于8的前缀，以及剩下部分</span></span><br><span class="line"><span class="keyword">val</span> list = <span class="type">List</span>(<span class="number">1</span>, <span class="number">4</span>, <span class="number">9</span>)</span><br><span class="line">list span(_ &lt; <span class="number">8</span>)</span><br><span class="line"><span class="comment">// return : (List[Int], List[Int]) = (List(1, 4), List(9))</span></span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<h3 id="takeWhile">takeWhile</h3><ul>
+<li>作用：以指定的条件截取最长的前缀</li>
+<li>样例：  <figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 小于8的前缀</span></span><br><span class="line"><span class="keyword">val</span> list = <span class="type">List</span>(<span class="number">1</span>, <span class="number">4</span>, <span class="number">9</span>)</span><br><span class="line">list.takeWhile(_ &lt; <span class="number">8</span>)</span><br><span class="line"><span class="comment">// return: List[Int] = List(1, 4)</span></span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<h2 id="后记">后记</h2><p>前后一共花了三天时间才搞定这个文档，从一开始对这些函数一无所知，翻阅各种文档，在StackOverFlow上找结果，最终还是搞定了这个文档。当然，这个函数创造的本意是提高效率，而不是为了学习这些函数而学习。目前还没有对容器中高阶函数的详细介绍，希望这个文档能对学习Scala的人有所帮助。</p>
+<h2 id="参考资料">参考资料</h2><ul>
+<li><a href="http://www.scala-lang.org/api/current/#scala.collection.immutable.List" target="_blank" rel="external">Scala Standard Library</a></li>
+<li><a href="http://twitter.github.io/scala_school/zh_cn/collections.html" target="_blank" rel="external">Scala School</a></li>
+</ul>
+  
+	</div>
+		<footer class="article-footer clearfix">
+<div class="article-catetags">
+
+<div class="article-categories">
+  <span></span>
+  <a class="article-category-link" href="/categories/Code/">Code</a>
+</div>
+
+
+  <div class="article-tags">
+  
+  <span></span> <a href="/tags/Scala/">Scala</a><a href="/tags/高阶函数/">高阶函数</a>
+  </div>
+
+</div>
+
+
+
+	<div class="article-share" id="share">
+	
+	  <div data-url="http://wanghuanming.com/2014/12/Scala-highorder-function/" data-title="Scala容器中的高阶函数 | Hello Code" data-tsina="null" class="share clearfix">
+	  </div>
+	
+	</div>
+
+
+</footer>
+
+   	       
+	</article>
+	
+<nav class="article-nav clearfix">
+ 
+ <div class="prev" >
+ <a href="/2014/12/mesos-deploy/" title="Mesos 0.21.0部署实战">
+  <strong>上一篇：</strong><br/>
+  <span>
+  Mesos 0.21.0部署实战</span>
+</a>
+</div>
+
+
+<div class="next">
+<a href="/2014/12/currying-in-Scala/"  title="Scala的函数Curry化">
+ <strong>下一篇：</strong><br/> 
+ <span>Scala的函数Curry化
+</span>
+</a>
+</div>
+
+</nav>
+
+	
+<section id="comments" class="comment">
+	<div class="ds-thread" data-thread-key="2014/12/Scala-highorder-function/" data-title="Scala容器中的高阶函数" data-url="http://wanghuanming.com/2014/12/Scala-highorder-function/"></div>
+</section>
+
+
+</div>  
+      <div class="openaside"><a class="navbutton" href="#" title="显示侧边栏"></a></div>
+
+  <div id="toc" class="toc-aside">
+  <strong class="toc-title">文章目录</strong>
+ 
+ <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#List"><span class="toc-number">1.</span> <span class="toc-text">List</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#aggregate"><span class="toc-number">1.1.</span> <span class="toc-text">aggregate</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#andThen"><span class="toc-number">1.2.</span> <span class="toc-text">andThen</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#collect"><span class="toc-number">1.3.</span> <span class="toc-text">collect</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#collectFirst"><span class="toc-number">1.4.</span> <span class="toc-text">collectFirst</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#compose"><span class="toc-number">1.5.</span> <span class="toc-text">compose</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#corresponds"><span class="toc-number">1.6.</span> <span class="toc-text">corresponds</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#count"><span class="toc-number">1.7.</span> <span class="toc-text">count</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#dropWhile"><span class="toc-number">1.8.</span> <span class="toc-text">dropWhile</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#exists"><span class="toc-number">1.9.</span> <span class="toc-text">exists</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#filter"><span class="toc-number">1.10.</span> <span class="toc-text">filter</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#filterNot"><span class="toc-number">1.11.</span> <span class="toc-text">filterNot</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#find"><span class="toc-number">1.12.</span> <span class="toc-text">find</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#flatten"><span class="toc-number">1.13.</span> <span class="toc-text">flatten</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#fold"><span class="toc-number">1.14.</span> <span class="toc-text">fold</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#forall"><span class="toc-number">1.15.</span> <span class="toc-text">forall</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#foreach"><span class="toc-number">1.16.</span> <span class="toc-text">foreach</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#groupBy"><span class="toc-number">1.17.</span> <span class="toc-text">groupBy</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#indexWhere"><span class="toc-number">1.18.</span> <span class="toc-text">indexWhere</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#map"><span class="toc-number">1.19.</span> <span class="toc-text">map</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#maxBy"><span class="toc-number">1.20.</span> <span class="toc-text">maxBy</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#minBy"><span class="toc-number">1.21.</span> <span class="toc-text">minBy</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#partition"><span class="toc-number">1.22.</span> <span class="toc-text">partition</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#prefixLength"><span class="toc-number">1.23.</span> <span class="toc-text">prefixLength</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#reduce"><span class="toc-number">1.24.</span> <span class="toc-text">reduce</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#reduceOption"><span class="toc-number">1.25.</span> <span class="toc-text">reduceOption</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#reverseMap"><span class="toc-number">1.26.</span> <span class="toc-text">reverseMap</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#runWith"><span class="toc-number">1.27.</span> <span class="toc-text">runWith</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#scan"><span class="toc-number">1.28.</span> <span class="toc-text">scan</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#sortWith"><span class="toc-number">1.29.</span> <span class="toc-text">sortWith</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#span"><span class="toc-number">1.30.</span> <span class="toc-text">span</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#takeWhile"><span class="toc-number">1.31.</span> <span class="toc-text">takeWhile</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#后记"><span class="toc-number">2.</span> <span class="toc-text">后记</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#参考资料"><span class="toc-number">3.</span> <span class="toc-text">参考资料</span></a></li></ol>
+ 
+  </div>
+
+<div id="asidepart">
+<div class="closeaside"><a class="closebutton" href="#" title="隐藏侧边栏"></a></div>
+<aside class="clearfix">
+
+  
+<div class="categorieslist">
+	<p class="asidetitle">分类</p>
+		<ul>
+		
+		  
+			<li><a href="/categories/Code/" title="Code">Code<sup>39</sup></a></li>
+		  
+		
+		  
+			<li><a href="/categories/Life-Work/" title="Life &amp; Work">Life &amp; Work<sup>10</sup></a></li>
+		  
+		
+		  
+			<li><a href="/categories/Reading/" title="Reading">Reading<sup>4</sup></a></li>
+		  
+		
+		  
+			<li><a href="/categories/Tech-Tool/" title="Tech &amp; Tool">Tech &amp; Tool<sup>24</sup></a></li>
+		  
+		
+		</ul>
+</div>
+
+
+  
+<div class="tagslist">
+	<p class="asidetitle">标签</p>
+		<ul class="clearfix">
+		
+			
+				<li><a href="/tags/C/" title="C++">C++<sup>9</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Scala/" title="Scala">Scala<sup>6</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/编译原理/" title="编译原理">编译原理<sup>4</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/LLVM/" title="LLVM">LLVM<sup>4</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/数据结构/" title="数据结构">数据结构<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Spark/" title="Spark">Spark<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/javascript/" title="javascript">javascript<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/OS/" title="OS">OS<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/ACM/" title="ACM">ACM<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/虚拟机/" title="虚拟机">虚拟机<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/线段树/" title="线段树">线段树<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/解释器/" title="解释器">解释器<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/C语言/" title="C语言">C语言<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/进程/" title="进程">进程<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Linux/" title="Linux">Linux<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Coursera/" title="Coursera">Coursera<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/ssh/" title="ssh">ssh<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/openwrt/" title="openwrt">openwrt<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/C/" title="C">C<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/函数式编程/" title="函数式编程">函数式编程<sup>2</sup></a></li>
+			
+		
+		</ul>
+</div>
+
+
+  <div class="rsspart">
+	<a href="/atom.xml" target="_blank" title="rss">RSS 订阅</a>
+</div>
+
+</aside>
+</div>
+    </div>
+    <footer><div id="footer" >
+	
+	<div class="line">
+		<span></span>
+		<div class="author"></div>
+	</div>
+	
+	
+	<div class="social-font" class="clearfix">
+		
+		<a href="http://weibo.com/5108629996" target="_blank" class="icon-weibo" title="微博"></a>
+		
+		
+		<a href="https://github.com/HelloCodeMing" target="_blank" class="icon-github" title="github"></a>
+		
+		
+		
+		
+		
+		
+		<a href="https://www.douban.com/people/94795087" target="_blank" class="icon-douban" title="豆瓣"></a>
+		
+		
+		<a href="https://www.zhihu.com/people/hellocode-67" target="_blank" class="icon-zhihu" title="知乎"></a>
+		
+		
+		
+		<a href="mailto:huanmingwong@163.com" target="_blank" class="icon-email" title="Email Me"></a>
+		
+	</div>
+			
+		
+
+		<p class="copyright">
+		Powered by <a href="http://hexo.io" target="_blank" title="hexo">hexo</a> and Theme by <a href="https://github.com/wuchong/jacman" target="_blank" title="Jacman">Jacman</a> © 2016 
+		
+		<a href="http://wanghuanming.com/about" target="_blank" title="王欢明">王欢明</a>
+		
+		
+		</p>
+</div>
+</footer>
+    <script src="/js/jquery-2.0.3.min.js"></script>
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  $('.navbar').click(function(){
+    $('header nav').toggleClass('shownav');
+  });
+  var myWidth = 0;
+  function getSize(){
+    if( typeof( window.innerWidth ) == 'number' ) {
+      myWidth = window.innerWidth;
+    } else if( document.documentElement && document.documentElement.clientWidth) {
+      myWidth = document.documentElement.clientWidth;
+    };
+  };
+  var m = $('#main'),
+      a = $('#asidepart'),
+      c = $('.closeaside'),
+      o = $('.openaside');
+  c.click(function(){
+    a.addClass('fadeOut').css('display', 'none');
+    o.css('display', 'block').addClass('fadeIn');
+    m.addClass('moveMain');
+  });
+  o.click(function(){
+    o.css('display', 'none').removeClass('beforeFadeIn');
+    a.css('display', 'block').removeClass('fadeOut').addClass('fadeIn');      
+    m.removeClass('moveMain');
+  });
+  $(window).scroll(function(){
+    o.css("top",Math.max(80,260-$(this).scrollTop()));
+  });
+  
+  $(window).resize(function(){
+    getSize(); 
+    if (myWidth >= 1024) {
+      $('header nav').removeClass('shownav');
+    }else{
+      m.removeClass('moveMain');
+      a.css('display', 'block').removeClass('fadeOut');
+      o.css('display', 'none');
+      
+      $('#toc.toc-aside').css('display', 'none');
+        
+    }
+  });
+});
+</script>
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  var ai = $('.article-content>iframe'),
+      ae = $('.article-content>embed'),
+      t  = $('#toc'),
+      ta = $('#toc.toc-aside'),
+      o  = $('.openaside'),
+      c  = $('.closeaside');
+  if(ai.length>0){
+    ai.wrap('<div class="video-container" />');
+  };
+  if(ae.length>0){
+   ae.wrap('<div class="video-container" />');
+  };
+  c.click(function(){
+    ta.css('display', 'block').addClass('fadeIn');
+  });
+  o.click(function(){
+    ta.css('display', 'none');
+  });
+  $(window).scroll(function(){
+    ta.css("top",Math.max(140,320-$(this).scrollTop()));
+  });
+});
+</script>
+
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  var $this = $('.share'),
+      url = $this.attr('data-url'),
+      encodedUrl = encodeURIComponent(url),
+      title = $this.attr('data-title'),
+      tsina = $this.attr('data-tsina'),
+      description = $this.attr('description');
+  var html = [
+  '<a href="#" class="overlay" id="qrcode"></a>',
+  '<div class="qrcode clearfix"><span>扫描二维码分享到微信朋友圈</span><a class="qrclose" href="#nothing"></a><strong>Loading...Please wait</strong><img id="qrcode-pic" data-src="http://s.jiathis.com/qrcode.php?url=' + encodedUrl + '"/></div>',
+  '<a href="https://www.facebook.com/sharer.php?u=' + encodedUrl + '" class="article-share-facebook" target="_blank" title="Facebook"></a>',
+  '<a href="https://twitter.com/intent/tweet?url=' + encodedUrl + '" class="article-share-twitter" target="_blank" title="Twitter"></a>',
+  '<a href="#qrcode" class="article-share-qrcode" title="微信"></a>',
+  '<a href="http://widget.renren.com/dialog/share?resourceUrl=' + encodedUrl + '&srcUrl=' + encodedUrl + '&title=' + title +'" class="article-share-renren" target="_blank" title="人人"></a>',
+  '<a href="http://service.weibo.com/share/share.php?title='+title+'&url='+encodedUrl +'&ralateUid='+ tsina +'&searchPic=true&style=number' +'" class="article-share-weibo" target="_blank" title="微博"></a>',
+  '<span title="Share to"></span>'
+  ].join('');
+  $this.append(html);
+  $('.article-share-qrcode').click(function(){
+    var imgSrc = $('#qrcode-pic').attr('data-src');
+    $('#qrcode-pic').attr('src', imgSrc);
+    $('#qrcode-pic').load(function(){
+        $('.qrcode strong').text(' ');
+    });
+  });
+});     
+</script>
+
+
+
+<script type="text/javascript">
+  var duoshuoQuery = {short_name:"wanghuanming"};
+  (function() {
+    var ds = document.createElement('script');
+    ds.type = 'text/javascript';ds.async = true;
+    ds.src = '//static.duoshuo.com/embed.js';
+    ds.charset = 'UTF-8';
+    (document.getElementsByTagName('head')[0] 
+    || document.getElementsByTagName('body')[0]).appendChild(ds);
+  })();
+</script> 
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+$(document).ready(function(){ 
+  $('.article-content').each(function(i){
+    $(this).find('img').each(function(){
+      if ($(this).parent().hasClass('fancybox')) return;
+      var alt = this.alt;
+      if (alt) $(this).after('<span class="caption">' + alt + '</span>');
+      $(this).wrap('<a href="' + this.src + '" title="' + alt + '" class="fancybox"></a>');
+    });
+    $(this).find('.fancybox').each(function(){
+      $(this).attr('rel', 'article' + i);
+    });
+  });
+  if($.fancybox){
+    $('.fancybox').fancybox();
+  }
+}); 
+</script>
+
+
+
+<!-- Analytics Begin -->
+
+
+
+
+
+<!-- Analytics End -->
+
+<!-- Totop Begin -->
+
+	<div id="totop">
+	<a title="返回顶部"><img src="/img/scrollup.png"/></a>
+	</div>
+	<script src="/js/totop.js"></script>
+
+<!-- Totop End -->
+
+<!-- MathJax Begin -->
+<!-- mathjax config similar to math.stackexchange -->
+
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    tex2jax: {
+      inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+      processEscapes: true
+    }
+  });
+</script>
+
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: {
+        skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+      }
+    });
+</script>
+
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Queue(function() {
+        var all = MathJax.Hub.getAllJax(), i;
+        for(i=0; i < all.length; i += 1) {
+            all[i].SourceElement().parentNode.className += ' has-jax';
+        }
+    });
+</script>
+
+<script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+</script>
+
+
+<!-- MathJax End -->
+
+<!-- Tiny_search Begin -->
+
+<!-- Tiny_search End -->
+
+  </body>
+</html>

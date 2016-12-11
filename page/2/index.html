@@ -1,0 +1,589 @@
+
+ <!DOCTYPE HTML>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  
+    <title>Hello Code</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1,user-scalable=no">
+    
+    <meta name="author" content="王欢明">
+    
+
+    
+    <meta name="description">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Hello Code">
+<meta property="og:url" content="http://wanghuanming.com/page/2/index.html">
+<meta property="og:site_name" content="Hello Code">
+<meta property="og:description">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Hello Code">
+<meta name="twitter:description">
+
+    
+    <link rel="alternative" href="/atom.xml" title="Hello Code" type="application/atom+xml">
+    
+    
+    <link rel="icon" href="/img/panda-icon.ico">
+    
+    
+    <link rel="apple-touch-icon" href="/img/panda.png">
+    <link rel="apple-touch-icon-precomposed" href="/img/panda.png">
+    
+    <link rel="stylesheet" href="/css/style.css" type="text/css">
+</head>
+
+  <body>
+    <header>
+      <div>
+		
+			<div id="imglogo">
+				<a href="/"><img src="/img/panda.png" alt="Hello Code" title="Hello Code"/></a>
+			</div>
+			
+			<div id="textlogo">
+				<h1 class="site-name"><a href="/" title="Hello Code">Hello Code</a></h1>
+				<h2 class="blog-motto"></h2>
+			</div>
+			<div class="navbar"><a class="navbutton navmobile" href="#" title="菜单">
+			</a></div>
+			<nav class="animated">
+				<ul>
+					<ul>
+					 
+						<li><a href="/">首页</a></li>
+					
+						<li><a href="/archives">归档</a></li>
+					
+						<li><a href="/about">关于</a></li>
+					
+					<li>
+ 					
+					<form class="search" action="//google.com/search" method="get" accept-charset="utf-8">
+						<label>Search</label>
+						<input type="search" id="search" name="q" autocomplete="off" maxlength="20" placeholder="搜索" />
+						<input type="hidden" name="q" value="site:wanghuanming.com">
+					</form>
+					
+					</li>
+				</ul>
+			</nav>			
+</div>
+    </header>
+    <div id="container">
+      <div id="main">
+
+  
+<section class="post" itemscope itemprop="blogitem">
+  
+    <a href="/2015/08/implementation of future/promise/" title="future/promise的简单实现" itemprop="url">
+  
+    <h1 itemprop="name">future/promise的简单实现</h1>
+    
+     
+           <p itemprop="description" >之前看过很多次C++11 concurrency的API，但是还是不太明白期中的原理，而API的花样又很多，不同的语言有不同的API，在实际使用的时候还是很茫然。早上坐在窗口发呆的时候突然想明白future/promise模式，遂写下几行代码验证，果然是这么回事。
+概述futur</p>
+        
+    
+    <time datetime="2015-08-22T02:33:39.000Z" itemprop="datePublished">2015 Aug 22</time>
+  </a>
+</section>
+
+
+
+
+
+
+  
+<section class="post" itemscope itemprop="blogitem">
+  
+    <a href="/2015/07/implementation of parallel containers/" title="并行容器的实现" itemprop="url">
+  
+    <h1 itemprop="name">并行容器的实现</h1>
+    
+     
+           <p itemprop="description" >简介之前说到functional-style容器，它最大的优势在于容易并行化。那么这里就简单地实现一下并行容器，以达到加速计算的目的。
+先放一个性能测试的结果：
+并行容器在functional-style的容器的基础上实现并行化还是比较简单的。例如我们要实现并行的foreach，</p>
+        
+    
+    <time datetime="2015-07-25T02:05:19.000Z" itemprop="datePublished">2015 Jul 25</time>
+  </a>
+</section>
+
+
+
+
+
+
+  
+<section class="post" itemscope itemprop="blogitem">
+  
+    <a href="/2015/07/stream api for C++ container/" title="C++容器stream API的实现" itemprop="url">
+  
+    <h1 itemprop="name">C++容器stream API的实现</h1>
+    
+     
+       <p itemprop="description" >概述前面说到给C++实现了placeholder，以为C++就能变得函数式了，但事实上，它的用途还是很局限，因为每一个placeholder的功能都很小巧，只有当这些微小的部件组合在一起之后它才能发挥强大的功能。而函数式语言的容器通常都伴随着stream风格的API，使得对容器的</p>
+      
+    
+    <time datetime="2015-07-07T11:53:17.000Z" itemprop="datePublished">2015 Jul 7</time>
+  </a>
+</section>
+
+
+
+
+
+
+  
+<section class="post" itemscope itemprop="blogitem">
+  
+    <a href="/2015/07/placeholder lambda for C++/" title="C++占位符Lambda的实现" itemprop="url">
+  
+    <h1 itemprop="name">C++占位符Lambda的实现</h1>
+    
+     
+           <p itemprop="description" >概述在很多函数式编程语言中都有着占位符表达式的语法，例如，Scala中可以写出这样的代码，(1 to 10).map( _ + 1).foreach(println)，其中，下划线_便代表了一个形参，_ + 1 可以得到一个_ =&amp;gt; _ + 1这样的lambda表达式。占位</p>
+        
+    
+    <time datetime="2015-07-03T10:20:13.000Z" itemprop="datePublished">2015 Jul 3</time>
+  </a>
+</section>
+
+
+
+
+
+
+  
+<section class="post" itemscope itemprop="blogitem">
+  
+    <a href="/2015/06/implementation of logical operator in metaprogramming/" title="逻辑运算符元函数的实现" itemprop="url">
+  
+    <h1 itemprop="name">逻辑运算符元函数的实现</h1>
+    
+     
+           <p itemprop="description" >这是《C++ Template Metaprogramming》4-1的题目，要求实现一个logical_or和logicaland元函数，功能和mpl::or等价，并且具有短路求值的性质。
+也就是说，它需要保证以下测试能够通过：
+123456789101112131415161</p>
+        
+    
+    <time datetime="2015-06-05T06:16:14.000Z" itemprop="datePublished">2015 Jun 5</time>
+  </a>
+</section>
+
+
+
+
+
+
+  
+<section class="post" itemscope itemprop="blogitem">
+  
+    <a href="/2015/05/mathematica background for dataflow analysis/" title="数据流分析：数学原理" itemprop="url">
+  
+    <h1 itemprop="name">数据流分析：数学原理</h1>
+    
+     
+           <p itemprop="description" >简介数据流分析是一种在编译时推断值在运行时流动的技术。通常，它会遍历控制流图，收集运行时信息，来为优化提供服务。在数据流分析的基础上，可以实施common-subexression elimination, constant propagation, dead-code elim</p>
+        
+    
+    <time datetime="2015-05-29T03:09:10.000Z" itemprop="datePublished">2015 May 29</time>
+  </a>
+</section>
+
+
+
+
+
+
+  
+<section class="post" itemscope itemprop="blogitem">
+  
+    <a href="/2015/05/implementation of lvn/" title="LVN分析与实现" itemprop="url">
+  
+    <h1 itemprop="name">LVN分析与实现</h1>
+    
+     
+           <p itemprop="description" >概述为了改进所生成代码的质量，优化编译器需要分析代码并且将其重写为一种更加高效的形式。根据优化范围的不同，可以分为局部优化，区域优化，全局优化，过程间优化。期中，局部优化指的是在一个最长的无分支代码序列中进行优化，它也被成为basic block。这是编译器能够使用的最简单的技术</p>
+        
+    
+    <time datetime="2015-05-22T11:32:16.000Z" itemprop="datePublished">2015 May 22</time>
+  </a>
+</section>
+
+
+
+
+
+
+  
+<section class="post" itemscope itemprop="blogitem">
+  
+    <a href="/2015/05/implementation of LSRA/" title="LSRA分析与实现" itemprop="url">
+  
+    <h1 itemprop="name">LSRA分析与实现</h1>
+    
+     
+           <p itemprop="description" >摘要LSRA是一种目前比较流行的寄存器分配算法，其算法简单，并且复杂度较小，相比于传统的图染色寄存器分配算法，更适合JIT编译器。本文分析并实现了LSRA算法。
+寄存器分配概述寄存器分配是编译器后端的一个重要pass，主要目的在于把具有无限地址空间的虚拟寄存器分配到有限的寄存器集</p>
+        
+    
+    <time datetime="2015-05-19T12:10:30.000Z" itemprop="datePublished">2015 May 19</time>
+  </a>
+</section>
+
+
+
+
+
+
+  
+<section class="post" itemscope itemprop="blogitem">
+  
+    <a href="/2015/05/implement-ftp-protocol/" title="简单实现FTP协议" itemprop="url">
+  
+    <h1 itemprop="name">简单实现FTP协议</h1>
+    
+     
+           <p itemprop="description" >前言继续我的造轮子之路，花了一个礼拜时间，简单实现了一下FTP协议。自己真是菜啊，居然要写这么久。
+FTP协议概述FTP协议即文件传输协议，通常用于文件传输。它使用两个连接，一个控制连接，一个数据连接。通常FTP服务运行在21端口，20端口用于传输数据。对于客户端来说，有两种协商</p>
+        
+    
+    <time datetime="2015-05-08T10:53:19.000Z" itemprop="datePublished">2015 May 8</time>
+  </a>
+</section>
+
+
+
+
+
+
+  
+<section class="post" itemscope itemprop="blogitem">
+  
+    <a href="/2015/04/write a simple virtual machine/" title="从解释器到虚拟机" itemprop="url">
+  
+    <h1 itemprop="name">从解释器到虚拟机</h1>
+    
+     
+           <p itemprop="description" >前言上回说到实现一个解释器，从词法分析，到语法分析和语义分析。但事实上，目前的大部分语言并非直接解释执行，而是采用了虚拟机的方式执行的。从实现上讲，在得到语法树之后会转译成字节码，再把字节码放到虚拟机里执行，我们熟悉的大部分语言都是这样做的，例如Java、Python之类。
+而编</p>
+        
+    
+    <time datetime="2015-04-28T09:33:46.000Z" itemprop="datePublished">2015 Apr 28</time>
+  </a>
+</section>
+
+
+
+
+
+
+
+  <nav id="page-nav" class="clearfix unexpand">
+    <a class="extend prev" rel="prev" href="/"><span></span>Prev</a><a class="page-number" href="/">1</a><span class="page-number current">2</span><a class="page-number" href="/page/3/">3</a><a class="page-number" href="/page/4/">4</a><span class="space">&hellip;</span><a class="page-number" href="/page/8/">8</a><a class="extend next" rel="next" href="/page/3/">Next<span></span></a>
+  </nav>
+
+</div>
+      <div class="openaside"><a class="navbutton" href="#" title="显示侧边栏"></a></div>
+
+<div id="asidepart">
+<div class="closeaside"><a class="closebutton" href="#" title="隐藏侧边栏"></a></div>
+<aside class="clearfix">
+
+  
+<div class="categorieslist">
+	<p class="asidetitle">分类</p>
+		<ul>
+		
+		  
+			<li><a href="/categories/Code/" title="Code">Code<sup>39</sup></a></li>
+		  
+		
+		  
+			<li><a href="/categories/Life-Work/" title="Life &amp; Work">Life &amp; Work<sup>10</sup></a></li>
+		  
+		
+		  
+			<li><a href="/categories/Reading/" title="Reading">Reading<sup>4</sup></a></li>
+		  
+		
+		  
+			<li><a href="/categories/Tech-Tool/" title="Tech &amp; Tool">Tech &amp; Tool<sup>24</sup></a></li>
+		  
+		
+		</ul>
+</div>
+
+
+  
+<div class="tagslist">
+	<p class="asidetitle">标签</p>
+		<ul class="clearfix">
+		
+			
+				<li><a href="/tags/C/" title="C++">C++<sup>9</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Scala/" title="Scala">Scala<sup>6</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/编译原理/" title="编译原理">编译原理<sup>4</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/LLVM/" title="LLVM">LLVM<sup>4</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/数据结构/" title="数据结构">数据结构<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Spark/" title="Spark">Spark<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/javascript/" title="javascript">javascript<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/OS/" title="OS">OS<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/ACM/" title="ACM">ACM<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/虚拟机/" title="虚拟机">虚拟机<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/线段树/" title="线段树">线段树<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/解释器/" title="解释器">解释器<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/C语言/" title="C语言">C语言<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/进程/" title="进程">进程<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Linux/" title="Linux">Linux<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Coursera/" title="Coursera">Coursera<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/ssh/" title="ssh">ssh<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/openwrt/" title="openwrt">openwrt<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/C/" title="C">C<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/函数式编程/" title="函数式编程">函数式编程<sup>2</sup></a></li>
+			
+		
+		</ul>
+</div>
+
+
+  <div class="rsspart">
+	<a href="/atom.xml" target="_blank" title="rss">RSS 订阅</a>
+</div>
+
+</aside>
+</div>
+    </div>
+    <footer><div id="footer" >
+	
+	<div class="line">
+		<span></span>
+		<div class="author"></div>
+	</div>
+	
+	
+	<div class="social-font" class="clearfix">
+		
+		<a href="http://weibo.com/5108629996" target="_blank" class="icon-weibo" title="微博"></a>
+		
+		
+		<a href="https://github.com/HelloCodeMing" target="_blank" class="icon-github" title="github"></a>
+		
+		
+		
+		
+		
+		
+		<a href="https://www.douban.com/people/94795087" target="_blank" class="icon-douban" title="豆瓣"></a>
+		
+		
+		<a href="https://www.zhihu.com/people/hellocode-67" target="_blank" class="icon-zhihu" title="知乎"></a>
+		
+		
+		
+		<a href="mailto:huanmingwong@163.com" target="_blank" class="icon-email" title="Email Me"></a>
+		
+	</div>
+			
+		
+
+		<p class="copyright">
+		Powered by <a href="http://hexo.io" target="_blank" title="hexo">hexo</a> and Theme by <a href="https://github.com/wuchong/jacman" target="_blank" title="Jacman">Jacman</a> © 2016 
+		
+		<a href="http://wanghuanming.com/about" target="_blank" title="王欢明">王欢明</a>
+		
+		
+		</p>
+</div>
+</footer>
+    <script src="/js/jquery-2.0.3.min.js"></script>
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  $('.navbar').click(function(){
+    $('header nav').toggleClass('shownav');
+  });
+  var myWidth = 0;
+  function getSize(){
+    if( typeof( window.innerWidth ) == 'number' ) {
+      myWidth = window.innerWidth;
+    } else if( document.documentElement && document.documentElement.clientWidth) {
+      myWidth = document.documentElement.clientWidth;
+    };
+  };
+  var m = $('#main'),
+      a = $('#asidepart'),
+      c = $('.closeaside'),
+      o = $('.openaside');
+  c.click(function(){
+    a.addClass('fadeOut').css('display', 'none');
+    o.css('display', 'block').addClass('fadeIn');
+    m.addClass('moveMain');
+  });
+  o.click(function(){
+    o.css('display', 'none').removeClass('beforeFadeIn');
+    a.css('display', 'block').removeClass('fadeOut').addClass('fadeIn');      
+    m.removeClass('moveMain');
+  });
+  $(window).scroll(function(){
+    o.css("top",Math.max(80,260-$(this).scrollTop()));
+  });
+  
+  $(window).resize(function(){
+    getSize(); 
+    if (myWidth >= 1024) {
+      $('header nav').removeClass('shownav');
+    }else{
+      m.removeClass('moveMain');
+      a.css('display', 'block').removeClass('fadeOut');
+      o.css('display', 'none');
+        
+    }
+  });
+});
+</script>
+
+
+
+
+<script type="text/javascript">
+  var duoshuoQuery = {short_name:"wanghuanming"};
+  (function() {
+    var ds = document.createElement('script');
+    ds.type = 'text/javascript';ds.async = true;
+    ds.src = '//static.duoshuo.com/embed.js';
+    ds.charset = 'UTF-8';
+    (document.getElementsByTagName('head')[0] 
+    || document.getElementsByTagName('body')[0]).appendChild(ds);
+  })();
+</script> 
+
+
+
+
+
+
+
+
+
+<!-- Analytics Begin -->
+
+
+
+
+
+<!-- Analytics End -->
+
+<!-- Totop Begin -->
+
+	<div id="totop">
+	<a title="返回顶部"><img src="/img/scrollup.png"/></a>
+	</div>
+	<script src="/js/totop.js"></script>
+
+<!-- Totop End -->
+
+<!-- MathJax Begin -->
+<!-- mathjax config similar to math.stackexchange -->
+
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    tex2jax: {
+      inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+      processEscapes: true
+    }
+  });
+</script>
+
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: {
+        skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+      }
+    });
+</script>
+
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Queue(function() {
+        var all = MathJax.Hub.getAllJax(), i;
+        for(i=0; i < all.length; i += 1) {
+            all[i].SourceElement().parentNode.className += ' has-jax';
+        }
+    });
+</script>
+
+<script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+</script>
+
+
+<!-- MathJax End -->
+
+<!-- Tiny_search Begin -->
+
+<!-- Tiny_search End -->
+
+  </body>
+ </html>

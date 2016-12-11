@@ -1,0 +1,573 @@
+
+ <!DOCTYPE HTML>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  
+    <title>基于TFIDF算法的文章关键词提取Scala实现 | Hello Code</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1,user-scalable=no">
+    
+    <meta name="author" content="王欢明">
+    
+
+    
+    <meta name="description" content="TFIDF是提取文章关键词的一种简单方法，它基于词频，可能效果没有LDA好，但基本能满足日常需求。而文章关键词即是文章的特征，在此之上又可以对文本进行聚类，或者构建推荐系统。考虑到数据量的庞大，在此用Scala实现了此算法，对于海量数据的处理，亦可移植到Spark，实现了可扩展性。
+TFIDF
+TF-IDF（term frequency–inverse document frequency）是一种">
+<meta property="og:type" content="article">
+<meta property="og:title" content="基于TFIDF算法的文章关键词提取Scala实现">
+<meta property="og:url" content="http://wanghuanming.com/2014/12/tfidf-scala/index.html">
+<meta property="og:site_name" content="Hello Code">
+<meta property="og:description" content="TFIDF是提取文章关键词的一种简单方法，它基于词频，可能效果没有LDA好，但基本能满足日常需求。而文章关键词即是文章的特征，在此之上又可以对文本进行聚类，或者构建推荐系统。考虑到数据量的庞大，在此用Scala实现了此算法，对于海量数据的处理，亦可移植到Spark，实现了可扩展性。
+TFIDF
+TF-IDF（term frequency–inverse document frequency）是一种">
+<meta property="og:image" content="http://image.beekka.com/blog/201303/bg2013031505.png">
+<meta property="og:image" content="http://image.beekka.com/blog/201303/bg2013031506.png">
+<meta property="og:image" content="http://image.beekka.com/blog/201303/bg2013031507.png">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="基于TFIDF算法的文章关键词提取Scala实现">
+<meta name="twitter:description" content="TFIDF是提取文章关键词的一种简单方法，它基于词频，可能效果没有LDA好，但基本能满足日常需求。而文章关键词即是文章的特征，在此之上又可以对文本进行聚类，或者构建推荐系统。考虑到数据量的庞大，在此用Scala实现了此算法，对于海量数据的处理，亦可移植到Spark，实现了可扩展性。
+TFIDF
+TF-IDF（term frequency–inverse document frequency）是一种">
+
+    
+    <link rel="alternative" href="/atom.xml" title="Hello Code" type="application/atom+xml">
+    
+    
+    <link rel="icon" href="/img/panda-icon.ico">
+    
+    
+    <link rel="apple-touch-icon" href="/img/panda.png">
+    <link rel="apple-touch-icon-precomposed" href="/img/panda.png">
+    
+    <link rel="stylesheet" href="/css/style.css" type="text/css">
+</head>
+
+  <body>
+    <header>
+      <div>
+		
+			<div id="imglogo">
+				<a href="/"><img src="/img/panda.png" alt="Hello Code" title="Hello Code"/></a>
+			</div>
+			
+			<div id="textlogo">
+				<h1 class="site-name"><a href="/" title="Hello Code">Hello Code</a></h1>
+				<h2 class="blog-motto"></h2>
+			</div>
+			<div class="navbar"><a class="navbutton navmobile" href="#" title="菜单">
+			</a></div>
+			<nav class="animated">
+				<ul>
+					<ul>
+					 
+						<li><a href="/">首页</a></li>
+					
+						<li><a href="/archives">归档</a></li>
+					
+						<li><a href="/about">关于</a></li>
+					
+					<li>
+ 					
+					<form class="search" action="//google.com/search" method="get" accept-charset="utf-8">
+						<label>Search</label>
+						<input type="search" id="search" name="q" autocomplete="off" maxlength="20" placeholder="搜索" />
+						<input type="hidden" name="q" value="site:wanghuanming.com">
+					</form>
+					
+					</li>
+				</ul>
+			</nav>			
+</div>
+    </header>
+    <div id="container">
+      <div id="main" class="post" itemscope itemprop="blogPost">
+  
+	<article itemprop="articleBody"> 
+		<header class="article-info clearfix">
+  <h1 itemprop="name">
+    
+      <a href="/2014/12/tfidf-scala/" title="基于TFIDF算法的文章关键词提取Scala实现" itemprop="url">基于TFIDF算法的文章关键词提取Scala实现</a>
+  </h1>
+  <p class="article-author">By
+       
+		<a href="http://wanghuanming.com/about" title="王欢明" target="_blank" itemprop="author">王欢明</a>
+		
+  <p class="article-time">
+    <time datetime="2014-12-25T02:20:54.000Z" itemprop="datePublished"> 发表于 2014 Dec 25</time>
+    
+  </p>
+</header>
+	<div class="article-content">
+		
+		<div id="toc" class="toc-article">
+			<strong class="toc-title">文章目录</strong>
+		
+			<ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#TFIDF"><span class="toc-number">1.</span> <span class="toc-text">TFIDF</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#依赖"><span class="toc-number">2.</span> <span class="toc-text">依赖</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#实现"><span class="toc-number">3.</span> <span class="toc-text">实现</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#参考资料"><span class="toc-number">4.</span> <span class="toc-text">参考资料</span></a></li></ol>
+		
+		</div>
+		
+		<p>TFIDF是提取文章关键词的一种简单方法，它基于词频，可能效果没有LDA好，但基本能满足日常需求。而文章关键词即是文章的特征，在此之上又可以对文本进行聚类，或者构建推荐系统。考虑到数据量的庞大，在此用Scala实现了此算法，对于海量数据的处理，亦可移植到Spark，实现了可扩展性。</p>
+<h2 id="TFIDF">TFIDF</h2><blockquote>
+<p>TF-IDF（term frequency–inverse document frequency）是一种用于资讯检索与文本挖掘的常用加权技术。TF-IDF是一种统计方法，用以评估一字词对于一个文件集或一个语料库中的其中一份文件的重要程度。字词的重要性随着它在文件中出现的次数成正比增加，但同时会随着它在语料库中出现的频率成反比下降。TF-IDF加权的各种形式常被搜索引擎应用，作为文件与用户查询之间相关程度的度量或评级。除了TF-IDF以外，互联网上的搜索引擎还会使用基于连结分析的评级方法，以确定文件在搜寻结果中出现的顺序。</p>
+<p>–wikipedia</p>
+</blockquote>
+<p>它基于一种很简单的思想，关键词在文章中的出现频率会比较高，但是在语料库中出现的频率会很低，所以用单词频率，乘以此单词在语料库中的权重，即语料库中出现频率的倒数的对数，对单词进行评分，最后基于评分高低得出关键词。</p>
+<p>这里引用阮一峰老师的两个公式：<br><img src="http://image.beekka.com/blog/201303/bg2013031505.png" alt=" "></p>
+<p><img src="http://image.beekka.com/blog/201303/bg2013031506.png" alt=" "></p>
+<p><img src="http://image.beekka.com/blog/201303/bg2013031507.png" alt=" "></p>
+<h2 id="依赖">依赖</h2><ul>
+<li>中文分词器：<a href="https://github.com/NLPchina/ansj_seg" target="_blank" rel="external">ansj_seg</a>。</li>
+<li>中文停用词表：<a href="http://wenku.baidu.com/view/b9e8d2721711cc7930b7160c.html" target="_blank" rel="external">1208个中文停用词-百度文库</a></li>
+<li>语料库：使用了源文档作为语料库</li>
+</ul>
+<h2 id="实现">实现</h2><p>代码在<a href="https://github.com/HelloCodeMing/scala-tfidf" target="_blank" rel="external">github</a></p>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> com.wanghuanming</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> java.io.<span class="type">File</span></span><br><span class="line"><span class="keyword">import</span> java.io.<span class="type">PrintWriter</span></span><br><span class="line"><span class="keyword">import</span> scala.<span class="type">Array</span>.canBuildFrom</span><br><span class="line"><span class="keyword">import</span> scala.io.<span class="type">Source</span></span><br><span class="line"><span class="keyword">import</span> org.ansj.splitWord.analysis.<span class="type">BaseAnalysis</span></span><br><span class="line"><span class="keyword">import</span> org.ansj.splitWord.analysis.<span class="type">ToAnalysis</span></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">object</span> <span class="title">TFIDF</span> &#123;</span></span><br><span class="line">  <span class="keyword">val</span> stopwords = <span class="type">List</span>(<span class="string">"resource/engStopwords.txt"</span>, <span class="string">"resource/zhStopwords.txt"</span>).flatMap(<span class="type">Source</span>.fromFile(_).getLines.map(_.trim))</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">def</span> <span class="title">getKeywords</span>(</span>content: <span class="type">String</span>, topN: <span class="type">Int</span> = <span class="number">10</span>, corpus: <span class="type">String</span>) = &#123;</span><br><span class="line">    <span class="keyword">val</span> allWords = <span class="type">ToAnalysis</span>.parse(content).toArray.map(_.toString.split(<span class="string">"/"</span>)).filter(_.length &gt;= <span class="number">1</span>).map(_(<span class="number">0</span>)).toList</span><br><span class="line">    <span class="keyword">val</span> tf = <span class="type">TF</span>(allWords.filter &#123; word =&gt; word.length &gt;= <span class="number">2</span> &amp;&amp; !stopwords.contains(word) &#125;)</span><br><span class="line">    <span class="keyword">val</span> idf = <span class="type">IDF</span>(corpus)</span><br><span class="line">    <span class="keyword">val</span> tfidf = tf.map &#123; item =&gt;</span><br><span class="line">      <span class="comment">// word -&gt; frequency</span></span><br><span class="line">      item._1 -&gt; item._2 * idf.getOrElse(item._1, <span class="number">3.76</span>)</span><br><span class="line">    &#125;.toList</span><br><span class="line">    tfidf.sortBy(_._2).reverse.take(topN)</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">def</span> <span class="title">IDF</span>(</span>corpus: <span class="type">String</span>): <span class="type">Map</span>[<span class="type">String</span>, <span class="type">Double</span>] = &#123;</span><br><span class="line">    <span class="keyword">if</span> (<span class="keyword">new</span> <span class="type">File</span>(<span class="string">"resource/IDF.cache"</span>).exists) &#123;</span><br><span class="line">      <span class="keyword">return</span> <span class="type">Source</span>.fromFile(<span class="string">"resource/IDF.cache"</span>).getLines.map(_.split(<span class="string">" "</span>)).filter(_.length == <span class="number">2</span>)</span><br><span class="line">        .map &#123; item =&gt; item(<span class="number">0</span>) -&gt; item(<span class="number">1</span>).toDouble &#125;.toMap</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">val</span> files = <span class="keyword">new</span> <span class="type">File</span>(corpus).listFiles</span><br><span class="line">    <span class="keyword">val</span> fileCnt = files.length</span><br><span class="line">    <span class="keyword">val</span> writer = <span class="keyword">new</span> <span class="type">PrintWriter</span>(<span class="string">"resource/IDF.cache"</span>)</span><br><span class="line">    <span class="keyword">val</span> res = files.map &#123; file =&gt;</span><br><span class="line">      <span class="type">ToAnalysis</span>.parse(<span class="type">Source</span>.fromFile(file).getLines.reduce(_ + _))</span><br><span class="line">        .toArray.map(_.toString.split(<span class="string">"/"</span>)(<span class="number">0</span>)).toList.distinct</span><br><span class="line">    &#125;.flatten.groupBy(x =&gt; x).map &#123; item =&gt; item._1 -&gt; <span class="type">Math</span>.log(fileCnt * <span class="number">1.0</span> / (item._2.length + <span class="number">1</span>)) &#125;</span><br><span class="line">    res.foreach &#123; item =&gt; writer.println(item._1 + <span class="string">" "</span> + item._2) &#125;</span><br><span class="line">    writer.close</span><br><span class="line">    <span class="keyword">return</span> res</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">def</span> <span class="title">TF</span>(</span>article: <span class="type">List</span>[<span class="type">String</span>]) = &#123;</span><br><span class="line">    <span class="keyword">val</span> sum = article.length</span><br><span class="line">    article.groupBy(x =&gt; x).map &#123;</span><br><span class="line">      item =&gt;  item._1 -&gt; item._2.length * <span class="number">1.0</span> / sum </span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="参考资料">参考资料</h2><ul>
+<li><a href="http://www.ruanyifeng.com/blog/2013/03/tf-idf.html" target="_blank" rel="external">TF-IDF与余弦相似性的应用（一）：自动提取关键词</a></li>
+</ul>
+  
+	</div>
+		<footer class="article-footer clearfix">
+<div class="article-catetags">
+
+<div class="article-categories">
+  <span></span>
+  <a class="article-category-link" href="/categories/Code/">Code</a>
+</div>
+
+
+  <div class="article-tags">
+  
+  <span></span> <a href="/tags/Scala/">Scala</a><a href="/tags/TFIDF/">TFIDF</a><a href="/tags/关键词提取/">关键词提取</a>
+  </div>
+
+</div>
+
+
+
+	<div class="article-share" id="share">
+	
+	  <div data-url="http://wanghuanming.com/2014/12/tfidf-scala/" data-title="基于TFIDF算法的文章关键词提取Scala实现 | Hello Code" data-tsina="null" class="share clearfix">
+	  </div>
+	
+	</div>
+
+
+</footer>
+
+   	       
+	</article>
+	
+<nav class="article-nav clearfix">
+ 
+ <div class="prev" >
+ <a href="/2015/01/named-capture/" title="让JS也支持命名捕获吧">
+  <strong>上一篇：</strong><br/>
+  <span>
+  让JS也支持命名捕获吧</span>
+</a>
+</div>
+
+
+<div class="next">
+<a href="/2014/12/thread-and-process/"  title="Linux中线程即进程的一个佐证">
+ <strong>下一篇：</strong><br/> 
+ <span>Linux中线程即进程的一个佐证
+</span>
+</a>
+</div>
+
+</nav>
+
+	
+<section id="comments" class="comment">
+	<div class="ds-thread" data-thread-key="2014/12/tfidf-scala/" data-title="基于TFIDF算法的文章关键词提取Scala实现" data-url="http://wanghuanming.com/2014/12/tfidf-scala/"></div>
+</section>
+
+
+</div>  
+      <div class="openaside"><a class="navbutton" href="#" title="显示侧边栏"></a></div>
+
+  <div id="toc" class="toc-aside">
+  <strong class="toc-title">文章目录</strong>
+ 
+ <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#TFIDF"><span class="toc-number">1.</span> <span class="toc-text">TFIDF</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#依赖"><span class="toc-number">2.</span> <span class="toc-text">依赖</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#实现"><span class="toc-number">3.</span> <span class="toc-text">实现</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#参考资料"><span class="toc-number">4.</span> <span class="toc-text">参考资料</span></a></li></ol>
+ 
+  </div>
+
+<div id="asidepart">
+<div class="closeaside"><a class="closebutton" href="#" title="隐藏侧边栏"></a></div>
+<aside class="clearfix">
+
+  
+<div class="categorieslist">
+	<p class="asidetitle">分类</p>
+		<ul>
+		
+		  
+			<li><a href="/categories/Code/" title="Code">Code<sup>39</sup></a></li>
+		  
+		
+		  
+			<li><a href="/categories/Life-Work/" title="Life &amp; Work">Life &amp; Work<sup>10</sup></a></li>
+		  
+		
+		  
+			<li><a href="/categories/Reading/" title="Reading">Reading<sup>4</sup></a></li>
+		  
+		
+		  
+			<li><a href="/categories/Tech-Tool/" title="Tech &amp; Tool">Tech &amp; Tool<sup>24</sup></a></li>
+		  
+		
+		</ul>
+</div>
+
+
+  
+<div class="tagslist">
+	<p class="asidetitle">标签</p>
+		<ul class="clearfix">
+		
+			
+				<li><a href="/tags/C/" title="C++">C++<sup>9</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Scala/" title="Scala">Scala<sup>6</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/编译原理/" title="编译原理">编译原理<sup>4</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/LLVM/" title="LLVM">LLVM<sup>4</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/数据结构/" title="数据结构">数据结构<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Spark/" title="Spark">Spark<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/javascript/" title="javascript">javascript<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/OS/" title="OS">OS<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/ACM/" title="ACM">ACM<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/虚拟机/" title="虚拟机">虚拟机<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/线段树/" title="线段树">线段树<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/解释器/" title="解释器">解释器<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/C语言/" title="C语言">C语言<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/进程/" title="进程">进程<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Linux/" title="Linux">Linux<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Coursera/" title="Coursera">Coursera<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/ssh/" title="ssh">ssh<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/openwrt/" title="openwrt">openwrt<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/C/" title="C">C<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/函数式编程/" title="函数式编程">函数式编程<sup>2</sup></a></li>
+			
+		
+		</ul>
+</div>
+
+
+  <div class="rsspart">
+	<a href="/atom.xml" target="_blank" title="rss">RSS 订阅</a>
+</div>
+
+</aside>
+</div>
+    </div>
+    <footer><div id="footer" >
+	
+	<div class="line">
+		<span></span>
+		<div class="author"></div>
+	</div>
+	
+	
+	<div class="social-font" class="clearfix">
+		
+		<a href="http://weibo.com/5108629996" target="_blank" class="icon-weibo" title="微博"></a>
+		
+		
+		<a href="https://github.com/HelloCodeMing" target="_blank" class="icon-github" title="github"></a>
+		
+		
+		
+		
+		
+		
+		<a href="https://www.douban.com/people/94795087" target="_blank" class="icon-douban" title="豆瓣"></a>
+		
+		
+		<a href="https://www.zhihu.com/people/hellocode-67" target="_blank" class="icon-zhihu" title="知乎"></a>
+		
+		
+		
+		<a href="mailto:huanmingwong@163.com" target="_blank" class="icon-email" title="Email Me"></a>
+		
+	</div>
+			
+		
+
+		<p class="copyright">
+		Powered by <a href="http://hexo.io" target="_blank" title="hexo">hexo</a> and Theme by <a href="https://github.com/wuchong/jacman" target="_blank" title="Jacman">Jacman</a> © 2016 
+		
+		<a href="http://wanghuanming.com/about" target="_blank" title="王欢明">王欢明</a>
+		
+		
+		</p>
+</div>
+</footer>
+    <script src="/js/jquery-2.0.3.min.js"></script>
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  $('.navbar').click(function(){
+    $('header nav').toggleClass('shownav');
+  });
+  var myWidth = 0;
+  function getSize(){
+    if( typeof( window.innerWidth ) == 'number' ) {
+      myWidth = window.innerWidth;
+    } else if( document.documentElement && document.documentElement.clientWidth) {
+      myWidth = document.documentElement.clientWidth;
+    };
+  };
+  var m = $('#main'),
+      a = $('#asidepart'),
+      c = $('.closeaside'),
+      o = $('.openaside');
+  c.click(function(){
+    a.addClass('fadeOut').css('display', 'none');
+    o.css('display', 'block').addClass('fadeIn');
+    m.addClass('moveMain');
+  });
+  o.click(function(){
+    o.css('display', 'none').removeClass('beforeFadeIn');
+    a.css('display', 'block').removeClass('fadeOut').addClass('fadeIn');      
+    m.removeClass('moveMain');
+  });
+  $(window).scroll(function(){
+    o.css("top",Math.max(80,260-$(this).scrollTop()));
+  });
+  
+  $(window).resize(function(){
+    getSize(); 
+    if (myWidth >= 1024) {
+      $('header nav').removeClass('shownav');
+    }else{
+      m.removeClass('moveMain');
+      a.css('display', 'block').removeClass('fadeOut');
+      o.css('display', 'none');
+      
+      $('#toc.toc-aside').css('display', 'none');
+        
+    }
+  });
+});
+</script>
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  var ai = $('.article-content>iframe'),
+      ae = $('.article-content>embed'),
+      t  = $('#toc'),
+      ta = $('#toc.toc-aside'),
+      o  = $('.openaside'),
+      c  = $('.closeaside');
+  if(ai.length>0){
+    ai.wrap('<div class="video-container" />');
+  };
+  if(ae.length>0){
+   ae.wrap('<div class="video-container" />');
+  };
+  c.click(function(){
+    ta.css('display', 'block').addClass('fadeIn');
+  });
+  o.click(function(){
+    ta.css('display', 'none');
+  });
+  $(window).scroll(function(){
+    ta.css("top",Math.max(140,320-$(this).scrollTop()));
+  });
+});
+</script>
+
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  var $this = $('.share'),
+      url = $this.attr('data-url'),
+      encodedUrl = encodeURIComponent(url),
+      title = $this.attr('data-title'),
+      tsina = $this.attr('data-tsina'),
+      description = $this.attr('description');
+  var html = [
+  '<a href="#" class="overlay" id="qrcode"></a>',
+  '<div class="qrcode clearfix"><span>扫描二维码分享到微信朋友圈</span><a class="qrclose" href="#nothing"></a><strong>Loading...Please wait</strong><img id="qrcode-pic" data-src="http://s.jiathis.com/qrcode.php?url=' + encodedUrl + '"/></div>',
+  '<a href="https://www.facebook.com/sharer.php?u=' + encodedUrl + '" class="article-share-facebook" target="_blank" title="Facebook"></a>',
+  '<a href="https://twitter.com/intent/tweet?url=' + encodedUrl + '" class="article-share-twitter" target="_blank" title="Twitter"></a>',
+  '<a href="#qrcode" class="article-share-qrcode" title="微信"></a>',
+  '<a href="http://widget.renren.com/dialog/share?resourceUrl=' + encodedUrl + '&srcUrl=' + encodedUrl + '&title=' + title +'" class="article-share-renren" target="_blank" title="人人"></a>',
+  '<a href="http://service.weibo.com/share/share.php?title='+title+'&url='+encodedUrl +'&ralateUid='+ tsina +'&searchPic=true&style=number' +'" class="article-share-weibo" target="_blank" title="微博"></a>',
+  '<span title="Share to"></span>'
+  ].join('');
+  $this.append(html);
+  $('.article-share-qrcode').click(function(){
+    var imgSrc = $('#qrcode-pic').attr('data-src');
+    $('#qrcode-pic').attr('src', imgSrc);
+    $('#qrcode-pic').load(function(){
+        $('.qrcode strong').text(' ');
+    });
+  });
+});     
+</script>
+
+
+
+<script type="text/javascript">
+  var duoshuoQuery = {short_name:"wanghuanming"};
+  (function() {
+    var ds = document.createElement('script');
+    ds.type = 'text/javascript';ds.async = true;
+    ds.src = '//static.duoshuo.com/embed.js';
+    ds.charset = 'UTF-8';
+    (document.getElementsByTagName('head')[0] 
+    || document.getElementsByTagName('body')[0]).appendChild(ds);
+  })();
+</script> 
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+$(document).ready(function(){ 
+  $('.article-content').each(function(i){
+    $(this).find('img').each(function(){
+      if ($(this).parent().hasClass('fancybox')) return;
+      var alt = this.alt;
+      if (alt) $(this).after('<span class="caption">' + alt + '</span>');
+      $(this).wrap('<a href="' + this.src + '" title="' + alt + '" class="fancybox"></a>');
+    });
+    $(this).find('.fancybox').each(function(){
+      $(this).attr('rel', 'article' + i);
+    });
+  });
+  if($.fancybox){
+    $('.fancybox').fancybox();
+  }
+}); 
+</script>
+
+
+
+<!-- Analytics Begin -->
+
+
+
+
+
+<!-- Analytics End -->
+
+<!-- Totop Begin -->
+
+	<div id="totop">
+	<a title="返回顶部"><img src="/img/scrollup.png"/></a>
+	</div>
+	<script src="/js/totop.js"></script>
+
+<!-- Totop End -->
+
+<!-- MathJax Begin -->
+<!-- mathjax config similar to math.stackexchange -->
+
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    tex2jax: {
+      inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+      processEscapes: true
+    }
+  });
+</script>
+
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: {
+        skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+      }
+    });
+</script>
+
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Queue(function() {
+        var all = MathJax.Hub.getAllJax(), i;
+        for(i=0; i < all.length; i += 1) {
+            all[i].SourceElement().parentNode.className += ' has-jax';
+        }
+    });
+</script>
+
+<script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+</script>
+
+
+<!-- MathJax End -->
+
+<!-- Tiny_search Begin -->
+
+<!-- Tiny_search End -->
+
+  </body>
+</html>

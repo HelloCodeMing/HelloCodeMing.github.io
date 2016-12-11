@@ -1,0 +1,581 @@
+
+ <!DOCTYPE HTML>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  
+    <title>豆瓣爬虫使用小结 | Hello Code</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1,user-scalable=no">
+    
+    <meta name="author" content="王欢明">
+    
+
+    
+    <meta name="description" content="最近我们有一个小组在做推荐系统，需要一点数据来测试推荐系统的准确性，所以写了一个爬虫，获取一点豆瓣上的数据来进行测试。
+豆瓣电影我们主要是需要电影的评分数据，即每个用户对一部电影的评分。在豆瓣的API上，没有找到合适的API去读取电影的评分数据。但是在网页上，是可以获得的。
+例如最近的一部电影，银河护卫队的评价页面上，就可以看到用户对他的评分数据。
+
+页面上显示的是五角星，我们来看看五角星背后是什">
+<meta property="og:type" content="article">
+<meta property="og:title" content="豆瓣爬虫使用小结">
+<meta property="og:url" content="http://wanghuanming.com/2014/10/豆瓣爬虫使用小结/index.html">
+<meta property="og:site_name" content="Hello Code">
+<meta property="og:description" content="最近我们有一个小组在做推荐系统，需要一点数据来测试推荐系统的准确性，所以写了一个爬虫，获取一点豆瓣上的数据来进行测试。
+豆瓣电影我们主要是需要电影的评分数据，即每个用户对一部电影的评分。在豆瓣的API上，没有找到合适的API去读取电影的评分数据。但是在网页上，是可以获得的。
+例如最近的一部电影，银河护卫队的评价页面上，就可以看到用户对他的评分数据。
+
+页面上显示的是五角星，我们来看看五角星背后是什">
+<meta property="og:image" content="http://huanming-blog.qiniudn.com/douban-movie-comments.png">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="豆瓣爬虫使用小结">
+<meta name="twitter:description" content="最近我们有一个小组在做推荐系统，需要一点数据来测试推荐系统的准确性，所以写了一个爬虫，获取一点豆瓣上的数据来进行测试。
+豆瓣电影我们主要是需要电影的评分数据，即每个用户对一部电影的评分。在豆瓣的API上，没有找到合适的API去读取电影的评分数据。但是在网页上，是可以获得的。
+例如最近的一部电影，银河护卫队的评价页面上，就可以看到用户对他的评分数据。
+
+页面上显示的是五角星，我们来看看五角星背后是什">
+
+    
+    <link rel="alternative" href="/atom.xml" title="Hello Code" type="application/atom+xml">
+    
+    
+    <link rel="icon" href="/img/panda-icon.ico">
+    
+    
+    <link rel="apple-touch-icon" href="/img/panda.png">
+    <link rel="apple-touch-icon-precomposed" href="/img/panda.png">
+    
+    <link rel="stylesheet" href="/css/style.css" type="text/css">
+</head>
+
+  <body>
+    <header>
+      <div>
+		
+			<div id="imglogo">
+				<a href="/"><img src="/img/panda.png" alt="Hello Code" title="Hello Code"/></a>
+			</div>
+			
+			<div id="textlogo">
+				<h1 class="site-name"><a href="/" title="Hello Code">Hello Code</a></h1>
+				<h2 class="blog-motto"></h2>
+			</div>
+			<div class="navbar"><a class="navbutton navmobile" href="#" title="菜单">
+			</a></div>
+			<nav class="animated">
+				<ul>
+					<ul>
+					 
+						<li><a href="/">首页</a></li>
+					
+						<li><a href="/archives">归档</a></li>
+					
+						<li><a href="/about">关于</a></li>
+					
+					<li>
+ 					
+					<form class="search" action="//google.com/search" method="get" accept-charset="utf-8">
+						<label>Search</label>
+						<input type="search" id="search" name="q" autocomplete="off" maxlength="20" placeholder="搜索" />
+						<input type="hidden" name="q" value="site:wanghuanming.com">
+					</form>
+					
+					</li>
+				</ul>
+			</nav>			
+</div>
+    </header>
+    <div id="container">
+      <div id="main" class="post" itemscope itemprop="blogPost">
+  
+	<article itemprop="articleBody"> 
+		<header class="article-info clearfix">
+  <h1 itemprop="name">
+    
+      <a href="/2014/10/豆瓣爬虫使用小结/" title="豆瓣爬虫使用小结" itemprop="url">豆瓣爬虫使用小结</a>
+  </h1>
+  <p class="article-author">By
+       
+		<a href="http://wanghuanming.com/about" title="王欢明" target="_blank" itemprop="author">王欢明</a>
+		
+  <p class="article-time">
+    <time datetime="2014-10-12T01:17:44.000Z" itemprop="datePublished"> 发表于 2014 Oct 12</time>
+    
+  </p>
+</header>
+	<div class="article-content">
+		
+		<div id="toc" class="toc-article">
+			<strong class="toc-title">文章目录</strong>
+		
+			<ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#豆瓣电影"><span class="toc-number">1.</span> <span class="toc-text">豆瓣电影</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#实现"><span class="toc-number">2.</span> <span class="toc-text">实现</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#问题"><span class="toc-number">3.</span> <span class="toc-text">问题</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#代码"><span class="toc-number">4.</span> <span class="toc-text">代码</span></a></li></ol>
+		
+		</div>
+		
+		<p>最近我们有一个小组在做推荐系统，需要一点数据来测试推荐系统的准确性，所以写了一个爬虫，获取一点豆瓣上的数据来进行测试。</p>
+<h2 id="豆瓣电影">豆瓣电影</h2><p>我们主要是需要电影的评分数据，即每个用户对一部电影的评分。在<a href="http://developers.douban.com/wiki/?title=movie_v2" target="_blank" rel="external">豆瓣的API</a>上，没有找到合适的API去读取电影的评分数据。但是在网页上，是可以获得的。</p>
+<p>例如最近的一部电影，<a href="http://movie.douban.com/subject/7065154/collections" target="_blank" rel="external">银河护卫队</a>的评价页面上，就可以看到用户对他的评分数据。</p>
+<p><img src="http://huanming-blog.qiniudn.com/douban-movie-comments.png" alt=" "></p>
+<p>页面上显示的是五角星，我们来看看五角星背后是什么东西。<br><figure class="highlight html"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="title">table</span> <span class="attribute">width</span>=<span class="value">"100%"</span> <span class="attribute">class</span>=<span class="value">""</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="title">tr</span>&gt;</span></span><br><span class="line">                <span class="tag">&lt;<span class="title">td</span> <span class="attribute">width</span>=<span class="value">"80"</span> <span class="attribute">valign</span>=<span class="value">"top"</span>&gt;</span></span><br><span class="line">                    <span class="tag">&lt;<span class="title">a</span> <span class="attribute">href</span>=<span class="value">"http://movie.douban.com/people/chenkongkong/"</span>&gt;</span></span><br><span class="line">                        <span class="tag">&lt;<span class="title">img</span> <span class="attribute">class</span>=<span class="value">""</span> <span class="attribute">src</span>=<span class="value">"http://img3.douban.com/icon/u16126065-5.jpg"</span> <span class="attribute">alt</span>=<span class="value">"艳艳C"</span> /&gt;</span></span><br><span class="line">                    <span class="tag">&lt;/<span class="title">a</span>&gt;</span></span><br><span class="line">                <span class="tag">&lt;/<span class="title">td</span>&gt;</span></span><br><span class="line">                <span class="tag">&lt;<span class="title">td</span> <span class="attribute">valign</span>=<span class="value">"top"</span>&gt;</span></span><br><span class="line">                    <span class="tag">&lt;<span class="title">div</span> <span class="attribute">class</span>=<span class="value">"pl2"</span>&gt;</span></span><br><span class="line">                        <span class="tag">&lt;<span class="title">a</span> <span class="attribute">href</span>=<span class="value">"http://movie.douban.com/people/chenkongkong/"</span> <span class="attribute">class</span>=<span class="value">""</span>&gt;</span>艳艳C</span><br><span class="line">                            <span class="tag">&lt;<span class="title">span</span> <span class="attribute">style</span>=<span class="value">"font-size:12px;"</span>&gt;</span>(Stuttgart)<span class="tag">&lt;/<span class="title">span</span>&gt;</span></span><br><span class="line">                        <span class="tag">&lt;/<span class="title">a</span>&gt;</span></span><br><span class="line">                    <span class="tag">&lt;/<span class="title">div</span>&gt;</span></span><br><span class="line">                    <span class="tag">&lt;<span class="title">p</span> <span class="attribute">class</span>=<span class="value">"pl"</span>&gt;</span>2014-10-12</span><br><span class="line">                            &amp;nbsp;<span class="tag">&lt;<span class="title">span</span> <span class="attribute">class</span>=<span class="value">"allstar50"</span> <span class="attribute">title</span>=<span class="value">"力荐"</span>&gt;</span><span class="tag">&lt;/<span class="title">span</span>&gt;</span></span><br><span class="line">                    <span class="tag">&lt;/<span class="title">p</span>&gt;</span></span><br><span class="line">                <span class="tag">&lt;/<span class="title">td</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;/<span class="title">tr</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;/<span class="title">table</span>&gt;</span></span><br></pre></td></tr></table></figure></p>
+<p>可以看到，用户信息在链接里能够找到，用户id直接写在了链接里，处理一下很方便。那么用户的评分，乍一看没有发现，其实它是用css处理的，那么五角星就是“allstar50”的具体表现了。再看看其他的，可以发现评分是从“allstar10”到“allstar50”的，那么我们只需要把最后第二个字符截取出来就可以当做一部电影的评分了。</p>
+<p>再来看看电影的链接格式，<a href="http://movie.douban.com/subject/7065154/collections。" target="_blank" rel="external">http://movie.douban.com/subject/7065154/collections。</a></p>
+<p>最后第二块的那个数字就是电影ID了，但我尝试更改一下ID之后，发现它并不全是电影的ID，有一部分是图书的信息。如果先遍历ID然后判断这是电影还是图书的话，效率显然太低，最好还是先获得电影的ID信息，在抓取详细信息。</p>
+<p>豆瓣电影的API里仍然没有可以直接使用的API，但是看起来搜索和分类的接口可以完成类似的功能。</p>
+<p>在<a href="http://movie.douban.com/tag/%E7%88%B1%E6%83%85" target="_blank" rel="external">分类页面</a>里，可以查到许多电影的信息，并且我们只要切换标签就可以获得更多的数据。</p>
+<p>并且，豆瓣有这样一个API，<a href="http://movie.douban.com/j/search_subjects?type=movie&amp;tag=%E7%83%AD%E9%97%A8&amp;sort=time&amp;page_limit=20&amp;page_start=0，返回json数据。" target="_blank" rel="external">http://movie.douban.com/j/search_subjects?type=movie&amp;tag=%E7%83%AD%E9%97%A8&amp;sort=time&amp;page_limit=20&amp;page_start=0，返回json数据。</a></p>
+<p>到这里基本上框架可以确定了。</p>
+<h2 id="实现">实现</h2><p>由于是豆瓣的数据，我们不可能开许多线程去并发地爬取，否则IP肯定会被封掉。那么就不可以不考虑性能的问题，编程效率最高的功率才是第一选择。</p>
+<p>我选择了nodejs作为编程语言，一来编程方便，二来现成的轮子也相对丰富。</p>
+<p>HTTP客户端选择了<a href="https://www.npmjs.org/package/request" target="_blank" rel="external">request</a>，相对与原生的HTTP客户端更加方便。HTML解析比较麻烦，本来想使用jQuery，但是尝试了半天依然无法使用，不过好在还有<a href="https://www.npmjs.org/package/cheerio" target="_blank" rel="external">cheerio</a>，它的语法类似jQuery，据作者说，这个库更加高效、轻量级，使用也很简单。其他的一些轮子，还有<a href="https://www.npmjs.org/package/async" target="_blank" rel="external">async</a>，<a href="https://www.npmjs.org/package/colors" target="_blank" rel="external">colors</a>，<a href="https://www.npmjs.org/package/log" target="_blank" rel="external">log</a>，这些比较常用。</p>
+<p>爬虫的结构实在太简单，也没什么好分析，感觉还没有之前写的一个抓取学校数据的爬虫复杂。</p>
+<p>先从分类页面获取电影的ID数据，标签设置成参数以便修改。之后遍历每一个ID去抓取详细的评分数据，用户ID和评分都可以用cheerio解析，由于评分会有分页，所以我们还需要跟踪下一页，直到终点。</p>
+<p>为了控制频率，就把电影的源数据放到一个工作队列，然后用一个工作线程去队列里拿数据，这样设计的一个好处就是评分的下一页信息可以直接放到队列里，省去了递归抓取的麻烦。</p>
+<h2 id="问题">问题</h2><ol>
+<li>试用了一下之后，发现有很多空白页面，也就是说评分是有数量限制的，虽然有几万条评论，但通过公共页面只能看到200条，不过一般来说也够了。</li>
+<li>nodejs的异步和同步问题。这个很蛋疼，有两个异步的函数需要同步执行，并且有依赖关系。本来想直接用async的waterfall方法来同步执行，并且可以传递变量。但使用之后才发现，还是不能实现，因为在waterfall里参数传递是通过回调函数的，但问题是异步函数还没有执行完那个回调函数就已经执行了，参数根本就没有执行。可能是我对nodejs的异步代码编写经验还不够，最后还是迫于无奈用了回调的方式。也就是在前一个函数加一个next的回调函数，把第二个函数放到next函数里执行，这样也可以做到先后执行并且没有参数传递的问题。</li>
+</ol>
+<h2 id="代码">代码</h2><p>在我的<a href="https://github.com/HelloCodeMing/douban-spider" target="_blank" rel="external">github</a>上。</p>
+  
+	</div>
+		<footer class="article-footer clearfix">
+<div class="article-catetags">
+
+<div class="article-categories">
+  <span></span>
+  <a class="article-category-link" href="/categories/Tech-Tool/">Tech & Tool</a>
+</div>
+
+
+  <div class="article-tags">
+  
+  <span></span> <a href="/tags/nodejs/">nodejs</a><a href="/tags/爬虫/">爬虫</a><a href="/tags/豆瓣/">豆瓣</a>
+  </div>
+
+</div>
+
+
+
+	<div class="article-share" id="share">
+	
+	  <div data-url="http://wanghuanming.com/2014/10/豆瓣爬虫使用小结/" data-title="豆瓣爬虫使用小结 | Hello Code" data-tsina="null" class="share clearfix">
+	  </div>
+	
+	</div>
+
+
+</footer>
+
+   	       
+	</article>
+	
+<nav class="article-nav clearfix">
+ 
+ <div class="prev" >
+ <a href="/2014/10/实现一个简单的JSON解析器/" title="实现一个简单的JSON解析器">
+  <strong>上一篇：</strong><br/>
+  <span>
+  实现一个简单的JSON解析器</span>
+</a>
+</div>
+
+
+<div class="next">
+<a href="/2014/10/introductiontoSpark/"  title="Spark入门">
+ <strong>下一篇：</strong><br/> 
+ <span>Spark入门
+</span>
+</a>
+</div>
+
+</nav>
+
+	
+<section id="comments" class="comment">
+	<div class="ds-thread" data-thread-key="2014/10/豆瓣爬虫使用小结/" data-title="豆瓣爬虫使用小结" data-url="http://wanghuanming.com/2014/10/豆瓣爬虫使用小结/"></div>
+</section>
+
+
+</div>  
+      <div class="openaside"><a class="navbutton" href="#" title="显示侧边栏"></a></div>
+
+  <div id="toc" class="toc-aside">
+  <strong class="toc-title">文章目录</strong>
+ 
+ <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#豆瓣电影"><span class="toc-number">1.</span> <span class="toc-text">豆瓣电影</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#实现"><span class="toc-number">2.</span> <span class="toc-text">实现</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#问题"><span class="toc-number">3.</span> <span class="toc-text">问题</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#代码"><span class="toc-number">4.</span> <span class="toc-text">代码</span></a></li></ol>
+ 
+  </div>
+
+<div id="asidepart">
+<div class="closeaside"><a class="closebutton" href="#" title="隐藏侧边栏"></a></div>
+<aside class="clearfix">
+
+  
+<div class="categorieslist">
+	<p class="asidetitle">分类</p>
+		<ul>
+		
+		  
+			<li><a href="/categories/Code/" title="Code">Code<sup>39</sup></a></li>
+		  
+		
+		  
+			<li><a href="/categories/Life-Work/" title="Life &amp; Work">Life &amp; Work<sup>10</sup></a></li>
+		  
+		
+		  
+			<li><a href="/categories/Reading/" title="Reading">Reading<sup>4</sup></a></li>
+		  
+		
+		  
+			<li><a href="/categories/Tech-Tool/" title="Tech &amp; Tool">Tech &amp; Tool<sup>24</sup></a></li>
+		  
+		
+		</ul>
+</div>
+
+
+  
+<div class="tagslist">
+	<p class="asidetitle">标签</p>
+		<ul class="clearfix">
+		
+			
+				<li><a href="/tags/C/" title="C++">C++<sup>9</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Scala/" title="Scala">Scala<sup>6</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/编译原理/" title="编译原理">编译原理<sup>4</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/LLVM/" title="LLVM">LLVM<sup>4</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/数据结构/" title="数据结构">数据结构<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Spark/" title="Spark">Spark<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/javascript/" title="javascript">javascript<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/OS/" title="OS">OS<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/ACM/" title="ACM">ACM<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/虚拟机/" title="虚拟机">虚拟机<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/线段树/" title="线段树">线段树<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/解释器/" title="解释器">解释器<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/C语言/" title="C语言">C语言<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/进程/" title="进程">进程<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Linux/" title="Linux">Linux<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Coursera/" title="Coursera">Coursera<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/ssh/" title="ssh">ssh<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/openwrt/" title="openwrt">openwrt<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/C/" title="C">C<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/函数式编程/" title="函数式编程">函数式编程<sup>2</sup></a></li>
+			
+		
+		</ul>
+</div>
+
+
+  <div class="rsspart">
+	<a href="/atom.xml" target="_blank" title="rss">RSS 订阅</a>
+</div>
+
+</aside>
+</div>
+    </div>
+    <footer><div id="footer" >
+	
+	<div class="line">
+		<span></span>
+		<div class="author"></div>
+	</div>
+	
+	
+	<div class="social-font" class="clearfix">
+		
+		<a href="http://weibo.com/5108629996" target="_blank" class="icon-weibo" title="微博"></a>
+		
+		
+		<a href="https://github.com/HelloCodeMing" target="_blank" class="icon-github" title="github"></a>
+		
+		
+		
+		
+		
+		
+		<a href="https://www.douban.com/people/94795087" target="_blank" class="icon-douban" title="豆瓣"></a>
+		
+		
+		<a href="https://www.zhihu.com/people/hellocode-67" target="_blank" class="icon-zhihu" title="知乎"></a>
+		
+		
+		
+		<a href="mailto:huanmingwong@163.com" target="_blank" class="icon-email" title="Email Me"></a>
+		
+	</div>
+			
+		
+
+		<p class="copyright">
+		Powered by <a href="http://hexo.io" target="_blank" title="hexo">hexo</a> and Theme by <a href="https://github.com/wuchong/jacman" target="_blank" title="Jacman">Jacman</a> © 2016 
+		
+		<a href="http://wanghuanming.com/about" target="_blank" title="王欢明">王欢明</a>
+		
+		
+		</p>
+</div>
+</footer>
+    <script src="/js/jquery-2.0.3.min.js"></script>
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  $('.navbar').click(function(){
+    $('header nav').toggleClass('shownav');
+  });
+  var myWidth = 0;
+  function getSize(){
+    if( typeof( window.innerWidth ) == 'number' ) {
+      myWidth = window.innerWidth;
+    } else if( document.documentElement && document.documentElement.clientWidth) {
+      myWidth = document.documentElement.clientWidth;
+    };
+  };
+  var m = $('#main'),
+      a = $('#asidepart'),
+      c = $('.closeaside'),
+      o = $('.openaside');
+  c.click(function(){
+    a.addClass('fadeOut').css('display', 'none');
+    o.css('display', 'block').addClass('fadeIn');
+    m.addClass('moveMain');
+  });
+  o.click(function(){
+    o.css('display', 'none').removeClass('beforeFadeIn');
+    a.css('display', 'block').removeClass('fadeOut').addClass('fadeIn');      
+    m.removeClass('moveMain');
+  });
+  $(window).scroll(function(){
+    o.css("top",Math.max(80,260-$(this).scrollTop()));
+  });
+  
+  $(window).resize(function(){
+    getSize(); 
+    if (myWidth >= 1024) {
+      $('header nav').removeClass('shownav');
+    }else{
+      m.removeClass('moveMain');
+      a.css('display', 'block').removeClass('fadeOut');
+      o.css('display', 'none');
+      
+      $('#toc.toc-aside').css('display', 'none');
+        
+    }
+  });
+});
+</script>
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  var ai = $('.article-content>iframe'),
+      ae = $('.article-content>embed'),
+      t  = $('#toc'),
+      ta = $('#toc.toc-aside'),
+      o  = $('.openaside'),
+      c  = $('.closeaside');
+  if(ai.length>0){
+    ai.wrap('<div class="video-container" />');
+  };
+  if(ae.length>0){
+   ae.wrap('<div class="video-container" />');
+  };
+  c.click(function(){
+    ta.css('display', 'block').addClass('fadeIn');
+  });
+  o.click(function(){
+    ta.css('display', 'none');
+  });
+  $(window).scroll(function(){
+    ta.css("top",Math.max(140,320-$(this).scrollTop()));
+  });
+});
+</script>
+
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  var $this = $('.share'),
+      url = $this.attr('data-url'),
+      encodedUrl = encodeURIComponent(url),
+      title = $this.attr('data-title'),
+      tsina = $this.attr('data-tsina'),
+      description = $this.attr('description');
+  var html = [
+  '<a href="#" class="overlay" id="qrcode"></a>',
+  '<div class="qrcode clearfix"><span>扫描二维码分享到微信朋友圈</span><a class="qrclose" href="#nothing"></a><strong>Loading...Please wait</strong><img id="qrcode-pic" data-src="http://s.jiathis.com/qrcode.php?url=' + encodedUrl + '"/></div>',
+  '<a href="https://www.facebook.com/sharer.php?u=' + encodedUrl + '" class="article-share-facebook" target="_blank" title="Facebook"></a>',
+  '<a href="https://twitter.com/intent/tweet?url=' + encodedUrl + '" class="article-share-twitter" target="_blank" title="Twitter"></a>',
+  '<a href="#qrcode" class="article-share-qrcode" title="微信"></a>',
+  '<a href="http://widget.renren.com/dialog/share?resourceUrl=' + encodedUrl + '&srcUrl=' + encodedUrl + '&title=' + title +'" class="article-share-renren" target="_blank" title="人人"></a>',
+  '<a href="http://service.weibo.com/share/share.php?title='+title+'&url='+encodedUrl +'&ralateUid='+ tsina +'&searchPic=true&style=number' +'" class="article-share-weibo" target="_blank" title="微博"></a>',
+  '<span title="Share to"></span>'
+  ].join('');
+  $this.append(html);
+  $('.article-share-qrcode').click(function(){
+    var imgSrc = $('#qrcode-pic').attr('data-src');
+    $('#qrcode-pic').attr('src', imgSrc);
+    $('#qrcode-pic').load(function(){
+        $('.qrcode strong').text(' ');
+    });
+  });
+});     
+</script>
+
+
+
+<script type="text/javascript">
+  var duoshuoQuery = {short_name:"wanghuanming"};
+  (function() {
+    var ds = document.createElement('script');
+    ds.type = 'text/javascript';ds.async = true;
+    ds.src = '//static.duoshuo.com/embed.js';
+    ds.charset = 'UTF-8';
+    (document.getElementsByTagName('head')[0] 
+    || document.getElementsByTagName('body')[0]).appendChild(ds);
+  })();
+</script> 
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+$(document).ready(function(){ 
+  $('.article-content').each(function(i){
+    $(this).find('img').each(function(){
+      if ($(this).parent().hasClass('fancybox')) return;
+      var alt = this.alt;
+      if (alt) $(this).after('<span class="caption">' + alt + '</span>');
+      $(this).wrap('<a href="' + this.src + '" title="' + alt + '" class="fancybox"></a>');
+    });
+    $(this).find('.fancybox').each(function(){
+      $(this).attr('rel', 'article' + i);
+    });
+  });
+  if($.fancybox){
+    $('.fancybox').fancybox();
+  }
+}); 
+</script>
+
+
+
+<!-- Analytics Begin -->
+
+
+
+
+
+<!-- Analytics End -->
+
+<!-- Totop Begin -->
+
+	<div id="totop">
+	<a title="返回顶部"><img src="/img/scrollup.png"/></a>
+	</div>
+	<script src="/js/totop.js"></script>
+
+<!-- Totop End -->
+
+<!-- MathJax Begin -->
+<!-- mathjax config similar to math.stackexchange -->
+
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    tex2jax: {
+      inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+      processEscapes: true
+    }
+  });
+</script>
+
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: {
+        skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+      }
+    });
+</script>
+
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Queue(function() {
+        var all = MathJax.Hub.getAllJax(), i;
+        for(i=0; i < all.length; i += 1) {
+            all[i].SourceElement().parentNode.className += ' has-jax';
+        }
+    });
+</script>
+
+<script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+</script>
+
+
+<!-- MathJax End -->
+
+<!-- Tiny_search Begin -->
+
+<!-- Tiny_search End -->
+
+  </body>
+</html>

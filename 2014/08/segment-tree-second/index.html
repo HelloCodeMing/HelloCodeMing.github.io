@@ -1,0 +1,571 @@
+
+ <!DOCTYPE HTML>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  
+    <title>线段树学习之二 | Hello Code</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1,user-scalable=no">
+    
+    <meta name="author" content="王欢明">
+    
+
+    
+    <meta name="description" content="简述今天学习的是线段树的区间修改，据说是新手的一道坎。
+
+当用户修改一个区间的值时，如果联通其子孙全部修改，则改动的结点数必定会远远超过O（log n）个。因而，如果想把区间修改操作也控制在O（log n）的时间内，只修改O（log n）个节点的信息就成为必要。借鉴前一节区间查询用到的思路：区间修改时如果修改了一个节点所表示的区间，也不用去修改它的儿子节点。然而，对于被修改节点的祖先节点，也必须更">
+<meta property="og:type" content="article">
+<meta property="og:title" content="线段树学习之二">
+<meta property="og:url" content="http://wanghuanming.com/2014/08/segment-tree-second/index.html">
+<meta property="og:site_name" content="Hello Code">
+<meta property="og:description" content="简述今天学习的是线段树的区间修改，据说是新手的一道坎。
+
+当用户修改一个区间的值时，如果联通其子孙全部修改，则改动的结点数必定会远远超过O（log n）个。因而，如果想把区间修改操作也控制在O（log n）的时间内，只修改O（log n）个节点的信息就成为必要。借鉴前一节区间查询用到的思路：区间修改时如果修改了一个节点所表示的区间，也不用去修改它的儿子节点。然而，对于被修改节点的祖先节点，也必须更">
+<meta property="og:image" content="http://dongxicheng.org/wp-content/uploads/2011/04/update.jpg">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="线段树学习之二">
+<meta name="twitter:description" content="简述今天学习的是线段树的区间修改，据说是新手的一道坎。
+
+当用户修改一个区间的值时，如果联通其子孙全部修改，则改动的结点数必定会远远超过O（log n）个。因而，如果想把区间修改操作也控制在O（log n）的时间内，只修改O（log n）个节点的信息就成为必要。借鉴前一节区间查询用到的思路：区间修改时如果修改了一个节点所表示的区间，也不用去修改它的儿子节点。然而，对于被修改节点的祖先节点，也必须更">
+
+    
+    <link rel="alternative" href="/atom.xml" title="Hello Code" type="application/atom+xml">
+    
+    
+    <link rel="icon" href="/img/panda-icon.ico">
+    
+    
+    <link rel="apple-touch-icon" href="/img/panda.png">
+    <link rel="apple-touch-icon-precomposed" href="/img/panda.png">
+    
+    <link rel="stylesheet" href="/css/style.css" type="text/css">
+</head>
+
+  <body>
+    <header>
+      <div>
+		
+			<div id="imglogo">
+				<a href="/"><img src="/img/panda.png" alt="Hello Code" title="Hello Code"/></a>
+			</div>
+			
+			<div id="textlogo">
+				<h1 class="site-name"><a href="/" title="Hello Code">Hello Code</a></h1>
+				<h2 class="blog-motto"></h2>
+			</div>
+			<div class="navbar"><a class="navbutton navmobile" href="#" title="菜单">
+			</a></div>
+			<nav class="animated">
+				<ul>
+					<ul>
+					 
+						<li><a href="/">首页</a></li>
+					
+						<li><a href="/archives">归档</a></li>
+					
+						<li><a href="/about">关于</a></li>
+					
+					<li>
+ 					
+					<form class="search" action="//google.com/search" method="get" accept-charset="utf-8">
+						<label>Search</label>
+						<input type="search" id="search" name="q" autocomplete="off" maxlength="20" placeholder="搜索" />
+						<input type="hidden" name="q" value="site:wanghuanming.com">
+					</form>
+					
+					</li>
+				</ul>
+			</nav>			
+</div>
+    </header>
+    <div id="container">
+      <div id="main" class="post" itemscope itemprop="blogPost">
+  
+	<article itemprop="articleBody"> 
+		<header class="article-info clearfix">
+  <h1 itemprop="name">
+    
+      <a href="/2014/08/segment-tree-second/" title="线段树学习之二" itemprop="url">线段树学习之二</a>
+  </h1>
+  <p class="article-author">By
+       
+		<a href="http://wanghuanming.com/about" title="王欢明" target="_blank" itemprop="author">王欢明</a>
+		
+  <p class="article-time">
+    <time datetime="2014-08-03T13:34:12.000Z" itemprop="datePublished"> 发表于 2014 Aug 3</time>
+    
+  </p>
+</header>
+	<div class="article-content">
+		
+		<div id="toc" class="toc-article">
+			<strong class="toc-title">文章目录</strong>
+		
+			<ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#简述"><span class="toc-number">1.</span> <span class="toc-text">简述</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#代码"><span class="toc-number">2.</span> <span class="toc-text">代码</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#参考资料"><span class="toc-number">3.</span> <span class="toc-text">参考资料</span></a></li></ol>
+		
+		</div>
+		
+		<h2 id="简述">简述</h2><p>今天学习的是线段树的区间修改，据说是新手的一道坎。</p>
+<blockquote>
+<p>当用户修改一个区间的值时，如果联通其子孙全部修改，则改动的结点数必定会远远超过O（log n）个。因而，如果想把区间修改操作也控制在O（log n）的时间内，只修改O（log n）个节点的信息就成为必要。<br>借鉴前一节区间查询用到的思路：区间修改时如果修改了一个节点所表示的区间，也不用去修改它的儿子节点。然而，对于被修改节点的祖先节点，也必须更新它所记录的值，否则查询操作就肯定会出问题（正如修改单个节点的情况一样）。<br>这些选出的节点的祖先节点直接更新值即可，而选出的节点的子孙却显然不能这么简单地处理：每个节点的值必须能由两个儿子节点的值得到，如这幅图中的例子：<br><img src="http://dongxicheng.org/wp-content/uploads/2011/04/update.jpg" alt="区间修改"><br>这里，节点[0,1]的值应该是4，但是两个儿子的值又分别是3和5。如果查询[0,0]区间的RMQ，算出来的结果会是3，而正确答案显然是4。<br>问题显然在于，尽管修改了一个节点以后，不用修改它的儿子节点，但是它的儿子节点的信息事实上已经被改变了。这就需要我们在节点里增设一个域：标记。把对节点的修改情况储存在标记里面，这样，当我们自上而下地访问某节点时，就能把一路上所遇到的所有标记都考虑进去。<br>但是，在一个节点带上标记时，会给更新这个节点的值带来一些麻烦。继续上面的例子，如果我把位置0的数字从4改成了3，区间[0,0]的值应该变回3，但实际上，由于区间[0,1]有一个“添加了1”的标记，如果直接把值修改为3，则查询区间[0,0]的时候我们会得到3+1=4这个错误结果。但是，把这个3改成2，虽然正确，却并不直观，更不利于推广（参见下面的一个例子）。<br>为此我们引入延迟标记的一些概念。每个结点新增加一个标记，记录这个结点是否被进行了某种修改操作(这种修改操作会影响其子结点)。还是像上面的一样，对于任意区间的修改，我们先按照查询的方式将其划分成线段树中的结点，然后修改这些结点的信息，并给这些结点标上代表这种修改操作的标记。在修改和查询的时候，如果我们到了一个结点p ，并且决定考虑其子结点，那么我们就要看看结点p 有没有标记，如果有，就要按照标记修改其子结点的信息，并且给子结点都标上相同的标记，同时消掉p 的标记。代码框架为：<br><figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">update</span><span class="params">(<span class="keyword">int</span> index, <span class="keyword">int</span> S, <span class="keyword">int</span> E)</span> </span>&#123;</span><br><span class="line">	<span class="keyword">if</span> (S &lt;= tree[index].L &amp;&amp; tree[index].R &lt;= E) &#123;</span><br><span class="line">		<span class="comment">//修改当前节点的值，并且更新标记</span></span><br><span class="line">		<span class="keyword">return</span> ;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="comment">//向下传递标记，很重要！！</span></span><br><span class="line">	push_down(index);</span><br><span class="line">	<span class="comment">//更新子节点</span></span><br><span class="line">	<span class="keyword">int</span> mid = (tree[index].L + tree[index].R) &gt;&gt; <span class="number">1</span>;</span><br><span class="line">	<span class="keyword">if</span> (S &lt;= mid)</span><br><span class="line">		update(lson, S, E);</span><br><span class="line">	<span class="keyword">if</span> (mid &lt; E)</span><br><span class="line">		update(rson, S, E);</span><br><span class="line">	push_up(index);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+</blockquote>
+<p>以上内容摘自<a href="http://dongxicheng.org/structure/segment-tree/" target="_blank" rel="external">董的博客</a>，稍作修改，感谢作者。</p>
+<p>总的来说，最重要的一点是push_down操作，也就是把标记从父节点传递到子节点，这样子的话，就能起到“懒惰更新”的作用了，在区间更新的时候就不用每次都更新到所有子节点了。</p>
+<p>说道具体的push_down操作，还是挺讲究的。举一个例子。<br><figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">push_down</span><span class="params">(<span class="keyword">int</span> index)</span> </span>&#123;</span><br><span class="line">	<span class="comment">//子节点的懒惰标记可能一直被更新却不能传递下去，所以需要累加。</span></span><br><span class="line">	<span class="keyword">if</span> (tree[index]) &#123;</span><br><span class="line">		tree[lson].add += tree[index].add; </span><br><span class="line">		tree[rson].add += tree[index].add;</span><br><span class="line">		<span class="comment">//这里需要注意的是，子节点的区间和需要不断累加，并且累加的是区间长度乘以增量值，也就是父节点的标记值。</span></span><br><span class="line">		tree[lson].sum += (tree[lson].R - tree[lson].L + <span class="number">1</span>) * tree[index].add;</span><br><span class="line">		tree[rson].sum += (tree[rson].R - tree[rson].L + <span class="number">1</span>) * tree[index].add;</span><br><span class="line">		tree[index].add = <span class="number">0</span>;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<h2 id="代码">代码</h2><ul>
+<li><p><a href="http://acm.hdu.edu.cn/showproblem.php?pid=1698" target="_blank" rel="external">hdoj1698</a></p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br></pre></td><td class="code"><pre><span class="line"><span class="preprocessor">#<span class="keyword">include</span> <span class="string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="preprocessor">#<span class="keyword">include</span> <span class="string">&lt;cstdio&gt;</span></span></span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> <span class="built_in">std</span>;</span><br><span class="line"><span class="preprocessor">#<span class="keyword">define</span> lson index&lt;&lt;<span class="number">1</span></span></span><br><span class="line"><span class="preprocessor">#<span class="keyword">define</span> rson index&lt;&lt;<span class="number">1</span>|<span class="number">1</span></span></span><br><span class="line"><span class="keyword">const</span> <span class="keyword">int</span> maxn = <span class="number">100005</span>;</span><br><span class="line"><span class="keyword">struct</span> node &#123;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">int</span> L, R;</span><br><span class="line">	<span class="keyword">int</span> sum, val;</span><br><span class="line">&#125;tree[maxn&lt;&lt;<span class="number">2</span>];</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">build</span><span class="params">(<span class="keyword">int</span> index, <span class="keyword">int</span> L, <span class="keyword">int</span> R)</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">	tree[index].L = L;</span><br><span class="line">	tree[index].R = R;</span><br><span class="line">	tree[index].sum = R - L + <span class="number">1</span>;</span><br><span class="line">	tree[index].val = <span class="number">0</span>;</span><br><span class="line">	<span class="keyword">if</span> (L == R)</span><br><span class="line">		<span class="keyword">return</span>;</span><br><span class="line">	<span class="keyword">int</span> mid = (L + R) &gt;&gt; <span class="number">1</span>;</span><br><span class="line">	build(lson, L, mid);</span><br><span class="line">	build(rson, mid+<span class="number">1</span>, R);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">push_down</span><span class="params">(<span class="keyword">int</span> index)</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (tree[index].val) &#123;</span><br><span class="line"></span><br><span class="line">		tree[lson].val = tree[rson].val = tree[index].val;</span><br><span class="line">		tree[lson].sum = (tree[lson].R - tree[lson].L + <span class="number">1</span>) * tree[index].val;</span><br><span class="line">		tree[rson].sum = (tree[rson].R - tree[rson].L + <span class="number">1</span>) * tree[index].val;</span><br><span class="line">		tree[index].val = <span class="number">0</span>;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">update</span><span class="params">(<span class="keyword">int</span> index, <span class="keyword">int</span> S, <span class="keyword">int</span> E, <span class="keyword">int</span> val)</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (S &lt;= tree[index].L &amp;&amp; tree[index].R &lt;= E) &#123;</span><br><span class="line"></span><br><span class="line">		tree[index].val = val;</span><br><span class="line">		tree[index].sum = (tree[index].R - tree[index].L + <span class="number">1</span>) * val;</span><br><span class="line">		<span class="keyword">return</span> ;</span><br><span class="line">	&#125;</span><br><span class="line">	push_down(index);</span><br><span class="line">	<span class="keyword">int</span> mid = (tree[index].L + tree[index].R) &gt;&gt; <span class="number">1</span>;</span><br><span class="line">	<span class="keyword">if</span> (S &lt;= mid)</span><br><span class="line">		update(lson, S, E, val);</span><br><span class="line">	<span class="keyword">if</span> (mid &lt; E)</span><br><span class="line">		update(rson, S, E, val);</span><br><span class="line">	tree[index].sum = tree[lson].sum + tree[rson].sum;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">query</span><span class="params">(<span class="keyword">int</span> index, <span class="keyword">int</span> S, <span class="keyword">int</span> E)</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (S &lt;= tree[index].L &amp;&amp; tree[index].R &lt;= E)</span><br><span class="line">		<span class="keyword">return</span> tree[index].sum;</span><br><span class="line">	<span class="keyword">int</span> mid = (tree[index].L + tree[index].R) &gt;&gt; <span class="number">1</span>;</span><br><span class="line">	<span class="keyword">int</span> res = <span class="number">0</span>;</span><br><span class="line">	<span class="keyword">if</span> (S &lt;= mid)</span><br><span class="line">		res += query(lson, S, E);</span><br><span class="line">	<span class="keyword">if</span> (mid &lt; E)</span><br><span class="line">		res += query(rson, S, E);</span><br><span class="line">	<span class="keyword">return</span> res;</span><br><span class="line">&#125;</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span></span><br><span class="line"></span>&#123;</span><br><span class="line"></span><br><span class="line">	freopen(<span class="string">"in.txt"</span>, <span class="string">"r"</span>, <span class="built_in">stdin</span>);</span><br><span class="line">	<span class="keyword">int</span> t, n, opr, st, ed, val;</span><br><span class="line">	<span class="built_in">cin</span> &gt;&gt; t;</span><br><span class="line">	<span class="keyword">for</span> (<span class="keyword">int</span> k = <span class="number">1</span>; k &lt;= t; k++) &#123;</span><br><span class="line">		<span class="built_in">cin</span> &gt;&gt; n &gt;&gt; opr;</span><br><span class="line">		build(<span class="number">1</span>, <span class="number">1</span>, n);</span><br><span class="line">		<span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; opr; i++) &#123;</span><br><span class="line">			<span class="built_in">scanf</span>(<span class="string">"%d %d %d"</span>, &amp;st, &amp;ed, &amp;val);</span><br><span class="line">			update(<span class="number">1</span>, st, ed, val);</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="built_in">printf</span>(<span class="string">"Case %d: The total value of the hook is %d.\n"</span>, k, query(<span class="number">1</span>, <span class="number">1</span>, n));</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p><a href="http://poj.org/problem?id=3468" target="_blank" rel="external">poj3468</a></p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br></pre></td><td class="code"><pre><span class="line"><span class="preprocessor">#<span class="keyword">include</span> <span class="string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="preprocessor">#<span class="keyword">include</span> <span class="string">&lt;cstdio&gt;</span></span></span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> <span class="built_in">std</span>;</span><br><span class="line"><span class="preprocessor">#<span class="keyword">define</span> lson index&lt;&lt;<span class="number">1</span></span></span><br><span class="line"><span class="preprocessor">#<span class="keyword">define</span> rson index&lt;&lt;<span class="number">1</span>|<span class="number">1</span></span></span><br><span class="line"><span class="keyword">const</span> <span class="keyword">int</span> maxn = <span class="number">100010</span>;</span><br><span class="line"><span class="keyword">struct</span> node &#123;</span><br><span class="line">	<span class="keyword">int</span> L, R;</span><br><span class="line">	<span class="keyword">long</span> <span class="keyword">long</span> sum, add;</span><br><span class="line">&#125;tree[maxn&lt;&lt;<span class="number">2</span>];</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">build</span><span class="params">(<span class="keyword">int</span> index, <span class="keyword">int</span> L, <span class="keyword">int</span> R)</span> </span>&#123;</span><br><span class="line">	tree[index].L = L;</span><br><span class="line">	tree[index].R = R;</span><br><span class="line">	tree[index].add = <span class="number">0</span>;</span><br><span class="line">	<span class="keyword">if</span> (L == R) &#123;</span><br><span class="line">		<span class="built_in">scanf</span>(<span class="string">"%lld"</span>, &amp;tree[index].sum);</span><br><span class="line">		<span class="keyword">return</span>;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">int</span> mid = (L + R) &gt;&gt; <span class="number">1</span>;</span><br><span class="line">	build(lson, L, mid);</span><br><span class="line">	build(rson, mid+<span class="number">1</span>, R);</span><br><span class="line">	tree[index].sum = tree[lson].sum + tree[rson].sum;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">push_down</span><span class="params">(<span class="keyword">int</span> index)</span> </span>&#123;</span><br><span class="line">	<span class="keyword">if</span> (tree[index].add) &#123;</span><br><span class="line">		tree[lson].add += tree[index].add;</span><br><span class="line">		tree[rson].add += tree[index].add;</span><br><span class="line">		tree[lson].sum += (tree[lson].R - tree[lson].L + <span class="number">1</span>) * tree[index].add; </span><br><span class="line">		<span class="comment">//这里错了很多次，</span></span><br><span class="line">		tree[rson].sum += (tree[rson].R - tree[rson].L + <span class="number">1</span>) * tree[index].add; </span><br><span class="line">		<span class="comment">//叠加上去的应该是父结点的增值，不是结点本身。</span></span><br><span class="line">		tree[index].add = <span class="number">0</span>;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">update</span><span class="params">(<span class="keyword">int</span> index, <span class="keyword">int</span> S, <span class="keyword">int</span> E, <span class="keyword">int</span> add)</span> </span>&#123;</span><br><span class="line">	<span class="keyword">if</span> (S &lt;= tree[index].L &amp;&amp; tree[index].R &lt;= E) &#123;</span><br><span class="line">		tree[index].add += add;</span><br><span class="line">		tree[index].sum += (<span class="keyword">long</span> <span class="keyword">long</span>)add * (tree[index].R - tree[index].L + <span class="number">1</span>);</span><br><span class="line">		<span class="keyword">return</span>;</span><br><span class="line">	&#125;</span><br><span class="line">	push_down(index);</span><br><span class="line">	<span class="keyword">int</span> mid = (tree[index].L + tree[index].R) &gt;&gt; <span class="number">1</span>;</span><br><span class="line">	<span class="keyword">if</span> (S &lt;= mid)</span><br><span class="line">		update(lson, S, E, add);</span><br><span class="line">	<span class="keyword">if</span> (mid &lt; E)</span><br><span class="line">		update(rson, S, E, add);</span><br><span class="line">	tree[index].sum = tree[lson].sum + tree[rson].sum;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">long</span> <span class="keyword">long</span>  <span class="title">query</span><span class="params">(<span class="keyword">int</span> index, <span class="keyword">int</span> S, <span class="keyword">int</span> E)</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (S &lt;= tree[index].L &amp;&amp; tree[index].R &lt;= E) &#123;</span><br><span class="line">		<span class="keyword">return</span> tree[index].sum;</span><br><span class="line">	&#125;</span><br><span class="line">	push_down(index);</span><br><span class="line">	<span class="keyword">int</span> mid = (tree[index].L + tree[index].R ) &gt;&gt; <span class="number">1</span>;</span><br><span class="line">	<span class="keyword">long</span> <span class="keyword">long</span> res = <span class="number">0</span>;</span><br><span class="line">	<span class="keyword">if</span> (S &lt;= mid)</span><br><span class="line">		res += query(lson, S, E);</span><br><span class="line">	<span class="keyword">if</span> (mid &lt; E)</span><br><span class="line">		res += query(rson, S, E);</span><br><span class="line">	<span class="keyword">return</span> res;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span></span><br><span class="line"></span>&#123;</span><br><span class="line">	freopen(<span class="string">"in.txt"</span>, <span class="string">"r"</span>, <span class="built_in">stdin</span>);</span><br><span class="line">	<span class="keyword">int</span> num, opr;</span><br><span class="line">	<span class="keyword">int</span> st, ed, add;</span><br><span class="line">	<span class="keyword">char</span> str[<span class="number">3</span>];</span><br><span class="line">	<span class="keyword">while</span> (<span class="built_in">cin</span> &gt;&gt; num &gt;&gt; opr) &#123;</span><br><span class="line">		build(<span class="number">1</span>, <span class="number">1</span>, num);</span><br><span class="line">		<span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; opr; i++) &#123;</span><br><span class="line">			<span class="built_in">scanf</span>(<span class="string">"%s"</span>, str);</span><br><span class="line">			<span class="keyword">if</span> (str[<span class="number">0</span>] == <span class="string">'Q'</span>) &#123;</span><br><span class="line">				<span class="built_in">scanf</span>(<span class="string">"%d %d"</span>, &amp;st, &amp;ed);</span><br><span class="line">				<span class="built_in">printf</span>(<span class="string">"%lld\n"</span>, query(<span class="number">1</span>, st, ed));</span><br><span class="line">			&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">				<span class="built_in">scanf</span>(<span class="string">"%d %d %d"</span>, &amp;st, &amp;ed, &amp;add);</span><br><span class="line">				update(<span class="number">1</span>, st, ed, add);</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p><a href="http://poj.org/problem?id=2528" target="_blank" rel="external">poj2528</a><br>最后一道题比较复杂，要用到离散化。因为线段树的区间太大，不可能开下那么大的区间，所以我们需要把离散的线段挤在一起。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br></pre></td><td class="code"><pre><span class="line"><span class="preprocessor">#<span class="keyword">include</span> <span class="string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="preprocessor">#<span class="keyword">include</span> <span class="string">&lt;cstdio&gt;</span></span></span><br><span class="line"><span class="preprocessor">#<span class="keyword">include</span> <span class="string">&lt;vector&gt;</span></span></span><br><span class="line"><span class="preprocessor">#<span class="keyword">include</span> <span class="string">&lt;set&gt;</span></span></span><br><span class="line"><span class="preprocessor">#<span class="keyword">include</span> <span class="string">&lt;algorithm&gt;</span></span></span><br><span class="line"><span class="preprocessor">#<span class="keyword">define</span> lson index&lt;&lt;<span class="number">1</span></span></span><br><span class="line"><span class="preprocessor">#<span class="keyword">define</span> rson index&lt;&lt;<span class="number">1</span>|<span class="number">1</span></span></span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> <span class="built_in">std</span>;</span><br><span class="line"><span class="keyword">const</span> <span class="keyword">int</span> maxn = <span class="number">10005</span>;</span><br><span class="line"><span class="keyword">struct</span> segment &#123;</span><br><span class="line">	<span class="keyword">int</span> st, ed;</span><br><span class="line">&#125;seg[maxn];</span><br><span class="line"></span><br><span class="line"><span class="keyword">struct</span> node &#123;</span><br><span class="line">	<span class="keyword">int</span> L, R;</span><br><span class="line">	<span class="keyword">int</span> col;</span><br><span class="line">&#125;tree[maxn&lt;&lt;<span class="number">3</span>];</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">build</span><span class="params">(<span class="keyword">int</span> index, <span class="keyword">int</span> L, <span class="keyword">int</span> R)</span> </span>&#123;</span><br><span class="line">	tree[index].L = L;</span><br><span class="line">	tree[index].R = R;</span><br><span class="line">	tree[index].col = <span class="number">0</span>;</span><br><span class="line">	<span class="keyword">if</span> (L == R)</span><br><span class="line">		<span class="keyword">return</span>;</span><br><span class="line">	<span class="keyword">int</span> mid = (L + R) &gt;&gt; <span class="number">1</span>;</span><br><span class="line">	build(lson, L, mid);</span><br><span class="line">	build(rson, mid+<span class="number">1</span>, R);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">push_down</span><span class="params">(<span class="keyword">int</span> index)</span> </span>&#123;</span><br><span class="line">	<span class="keyword">if</span> (tree[index].col) &#123;</span><br><span class="line">		tree[lson].col = tree[rson].col = tree[index].col;</span><br><span class="line">		tree[index].col = <span class="number">0</span>;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">update</span><span class="params">(<span class="keyword">int</span> index, <span class="keyword">int</span> S, <span class="keyword">int</span> E, <span class="keyword">int</span> col)</span> </span>&#123;</span><br><span class="line">	<span class="keyword">if</span> (S &lt;= tree[index].L &amp;&amp; tree[index].R &lt;= E) &#123;</span><br><span class="line">		tree[index].col = col;</span><br><span class="line">		<span class="keyword">return</span>;</span><br><span class="line">	&#125;</span><br><span class="line">	push_down(index);</span><br><span class="line">	<span class="keyword">int</span> mid = (tree[index].L + tree[index].R) &gt;&gt; <span class="number">1</span>;</span><br><span class="line">	<span class="keyword">if</span> (S &lt;= mid)</span><br><span class="line">		update(lson, S, E, col);</span><br><span class="line">	<span class="keyword">if</span> (mid &lt; E)</span><br><span class="line">		update(rson, S, E, col);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">query</span><span class="params">(<span class="keyword">int</span> index, <span class="keyword">int</span> S, <span class="keyword">int</span> E, <span class="built_in">set</span>&lt;<span class="keyword">int</span>&gt; &amp;Set)</span> </span>&#123;</span><br><span class="line">	<span class="keyword">if</span> (tree[index].col) &#123;</span><br><span class="line">		Set.insert(tree[index].col);</span><br><span class="line">		<span class="keyword">return</span>;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">if</span> (tree[index].L == tree[index].R)</span><br><span class="line">		<span class="keyword">return</span>;</span><br><span class="line">	query(lson, S, E, Set);</span><br><span class="line">	query(rson, S, E, Set);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">bin_search</span><span class="params">(<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; &amp;v, <span class="keyword">int</span> val)</span> </span>&#123;</span><br><span class="line">	<span class="keyword">int</span> left = <span class="number">0</span>, right = v.size() - <span class="number">1</span>;</span><br><span class="line">	<span class="keyword">while</span> (left &lt;= right) &#123;</span><br><span class="line"></span><br><span class="line">		<span class="keyword">int</span> mid = (left + right) &gt;&gt; <span class="number">1</span>;</span><br><span class="line">		<span class="keyword">if</span> (v[mid] == val) </span><br><span class="line">			<span class="keyword">return</span> mid;</span><br><span class="line">		<span class="keyword">if</span> (v[mid] &lt; val)</span><br><span class="line">			left = mid + <span class="number">1</span>;</span><br><span class="line">		<span class="keyword">else</span></span><br><span class="line">			right = mid -<span class="number">1</span>;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> -<span class="number">1</span>;</span><br><span class="line">&#125;</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span></span><br><span class="line"></span>&#123;</span><br><span class="line">	freopen(<span class="string">"in.txt"</span>, <span class="string">"r"</span>, <span class="built_in">stdin</span>);</span><br><span class="line">	<span class="keyword">int</span> t, num;</span><br><span class="line">	<span class="built_in">cin</span> &gt;&gt; t;</span><br><span class="line">	<span class="keyword">while</span> (t--) &#123;</span><br><span class="line">		<span class="built_in">cin</span> &gt;&gt; num;</span><br><span class="line">		<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; v;</span><br><span class="line">		<span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">1</span>; i &lt;= num; i++) &#123;</span><br><span class="line">			<span class="built_in">scanf</span>(<span class="string">"%d %d"</span>, &amp;seg[i].st, &amp;seg[i].ed);</span><br><span class="line">			v.push_back(seg[i].st);</span><br><span class="line">			v.push_back(seg[i].ed);</span><br><span class="line">		&#125;</span><br><span class="line">		sort(v.begin(), v.end());</span><br><span class="line">		v.resize(unique(v.begin(), v.end()) - v.begin());</span><br><span class="line">		build(<span class="number">1</span>, <span class="number">0</span>, v.size() - <span class="number">1</span>);</span><br><span class="line">		<span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">1</span>; i &lt;= num; i++) &#123;</span><br><span class="line">			<span class="keyword">int</span> left = bin_search(v, seg[i].st);</span><br><span class="line">			<span class="keyword">int</span> right = bin_search(v, seg[i].ed);</span><br><span class="line">			update(<span class="number">1</span>, left, right, i);</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="built_in">set</span>&lt;<span class="keyword">int</span>&gt; Set;</span><br><span class="line">		query(<span class="number">1</span>, <span class="number">1</span>, v.size(), Set);</span><br><span class="line">		<span class="built_in">cout</span> &lt;&lt; Set.size() &lt;&lt; endl;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<h2 id="参考资料">参考资料</h2><p><a href="http://dongxicheng.org/wp-content/uploads/2011/04/update.jpg" target="_blank" rel="external">董的博客</a><br><a href="http://dongxicheng.org/structure/segment-tree/" target="_blank" rel="external">notonlysuccess</a></p>
+  
+	</div>
+		<footer class="article-footer clearfix">
+<div class="article-catetags">
+
+<div class="article-categories">
+  <span></span>
+  <a class="article-category-link" href="/categories/Code/">Code</a>
+</div>
+
+
+  <div class="article-tags">
+  
+  <span></span> <a href="/tags/ACM/">ACM</a><a href="/tags/数据结构/">数据结构</a><a href="/tags/线段树/">线段树</a>
+  </div>
+
+</div>
+
+
+
+	<div class="article-share" id="share">
+	
+	  <div data-url="http://wanghuanming.com/2014/08/segment-tree-second/" data-title="线段树学习之二 | Hello Code" data-tsina="null" class="share clearfix">
+	  </div>
+	
+	</div>
+
+
+</footer>
+
+   	       
+	</article>
+	
+<nav class="article-nav clearfix">
+ 
+ <div class="prev" >
+ <a href="/2014/08/读《悟空传》/" title="读《悟空传》">
+  <strong>上一篇：</strong><br/>
+  <span>
+  读《悟空传》</span>
+</a>
+</div>
+
+
+<div class="next">
+<a href="/2014/08/segment-tree/"  title="线段树学习之一">
+ <strong>下一篇：</strong><br/> 
+ <span>线段树学习之一
+</span>
+</a>
+</div>
+
+</nav>
+
+	
+<section id="comments" class="comment">
+	<div class="ds-thread" data-thread-key="2014/08/segment-tree-second/" data-title="线段树学习之二" data-url="http://wanghuanming.com/2014/08/segment-tree-second/"></div>
+</section>
+
+
+</div>  
+      <div class="openaside"><a class="navbutton" href="#" title="显示侧边栏"></a></div>
+
+  <div id="toc" class="toc-aside">
+  <strong class="toc-title">文章目录</strong>
+ 
+ <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#简述"><span class="toc-number">1.</span> <span class="toc-text">简述</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#代码"><span class="toc-number">2.</span> <span class="toc-text">代码</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#参考资料"><span class="toc-number">3.</span> <span class="toc-text">参考资料</span></a></li></ol>
+ 
+  </div>
+
+<div id="asidepart">
+<div class="closeaside"><a class="closebutton" href="#" title="隐藏侧边栏"></a></div>
+<aside class="clearfix">
+
+  
+<div class="categorieslist">
+	<p class="asidetitle">分类</p>
+		<ul>
+		
+		  
+			<li><a href="/categories/Code/" title="Code">Code<sup>39</sup></a></li>
+		  
+		
+		  
+			<li><a href="/categories/Life-Work/" title="Life &amp; Work">Life &amp; Work<sup>10</sup></a></li>
+		  
+		
+		  
+			<li><a href="/categories/Reading/" title="Reading">Reading<sup>4</sup></a></li>
+		  
+		
+		  
+			<li><a href="/categories/Tech-Tool/" title="Tech &amp; Tool">Tech &amp; Tool<sup>24</sup></a></li>
+		  
+		
+		</ul>
+</div>
+
+
+  
+<div class="tagslist">
+	<p class="asidetitle">标签</p>
+		<ul class="clearfix">
+		
+			
+				<li><a href="/tags/C/" title="C++">C++<sup>9</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Scala/" title="Scala">Scala<sup>6</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/编译原理/" title="编译原理">编译原理<sup>4</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/LLVM/" title="LLVM">LLVM<sup>4</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/数据结构/" title="数据结构">数据结构<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Spark/" title="Spark">Spark<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/javascript/" title="javascript">javascript<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/OS/" title="OS">OS<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/ACM/" title="ACM">ACM<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/虚拟机/" title="虚拟机">虚拟机<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/线段树/" title="线段树">线段树<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/解释器/" title="解释器">解释器<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/C语言/" title="C语言">C语言<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/进程/" title="进程">进程<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Linux/" title="Linux">Linux<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Coursera/" title="Coursera">Coursera<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/ssh/" title="ssh">ssh<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/openwrt/" title="openwrt">openwrt<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/C/" title="C">C<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/函数式编程/" title="函数式编程">函数式编程<sup>2</sup></a></li>
+			
+		
+		</ul>
+</div>
+
+
+  <div class="rsspart">
+	<a href="/atom.xml" target="_blank" title="rss">RSS 订阅</a>
+</div>
+
+</aside>
+</div>
+    </div>
+    <footer><div id="footer" >
+	
+	<div class="line">
+		<span></span>
+		<div class="author"></div>
+	</div>
+	
+	
+	<div class="social-font" class="clearfix">
+		
+		<a href="http://weibo.com/5108629996" target="_blank" class="icon-weibo" title="微博"></a>
+		
+		
+		<a href="https://github.com/HelloCodeMing" target="_blank" class="icon-github" title="github"></a>
+		
+		
+		
+		
+		
+		
+		<a href="https://www.douban.com/people/94795087" target="_blank" class="icon-douban" title="豆瓣"></a>
+		
+		
+		<a href="https://www.zhihu.com/people/hellocode-67" target="_blank" class="icon-zhihu" title="知乎"></a>
+		
+		
+		
+		<a href="mailto:huanmingwong@163.com" target="_blank" class="icon-email" title="Email Me"></a>
+		
+	</div>
+			
+		
+
+		<p class="copyright">
+		Powered by <a href="http://hexo.io" target="_blank" title="hexo">hexo</a> and Theme by <a href="https://github.com/wuchong/jacman" target="_blank" title="Jacman">Jacman</a> © 2016 
+		
+		<a href="http://wanghuanming.com/about" target="_blank" title="王欢明">王欢明</a>
+		
+		
+		</p>
+</div>
+</footer>
+    <script src="/js/jquery-2.0.3.min.js"></script>
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  $('.navbar').click(function(){
+    $('header nav').toggleClass('shownav');
+  });
+  var myWidth = 0;
+  function getSize(){
+    if( typeof( window.innerWidth ) == 'number' ) {
+      myWidth = window.innerWidth;
+    } else if( document.documentElement && document.documentElement.clientWidth) {
+      myWidth = document.documentElement.clientWidth;
+    };
+  };
+  var m = $('#main'),
+      a = $('#asidepart'),
+      c = $('.closeaside'),
+      o = $('.openaside');
+  c.click(function(){
+    a.addClass('fadeOut').css('display', 'none');
+    o.css('display', 'block').addClass('fadeIn');
+    m.addClass('moveMain');
+  });
+  o.click(function(){
+    o.css('display', 'none').removeClass('beforeFadeIn');
+    a.css('display', 'block').removeClass('fadeOut').addClass('fadeIn');      
+    m.removeClass('moveMain');
+  });
+  $(window).scroll(function(){
+    o.css("top",Math.max(80,260-$(this).scrollTop()));
+  });
+  
+  $(window).resize(function(){
+    getSize(); 
+    if (myWidth >= 1024) {
+      $('header nav').removeClass('shownav');
+    }else{
+      m.removeClass('moveMain');
+      a.css('display', 'block').removeClass('fadeOut');
+      o.css('display', 'none');
+      
+      $('#toc.toc-aside').css('display', 'none');
+        
+    }
+  });
+});
+</script>
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  var ai = $('.article-content>iframe'),
+      ae = $('.article-content>embed'),
+      t  = $('#toc'),
+      ta = $('#toc.toc-aside'),
+      o  = $('.openaside'),
+      c  = $('.closeaside');
+  if(ai.length>0){
+    ai.wrap('<div class="video-container" />');
+  };
+  if(ae.length>0){
+   ae.wrap('<div class="video-container" />');
+  };
+  c.click(function(){
+    ta.css('display', 'block').addClass('fadeIn');
+  });
+  o.click(function(){
+    ta.css('display', 'none');
+  });
+  $(window).scroll(function(){
+    ta.css("top",Math.max(140,320-$(this).scrollTop()));
+  });
+});
+</script>
+
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  var $this = $('.share'),
+      url = $this.attr('data-url'),
+      encodedUrl = encodeURIComponent(url),
+      title = $this.attr('data-title'),
+      tsina = $this.attr('data-tsina'),
+      description = $this.attr('description');
+  var html = [
+  '<a href="#" class="overlay" id="qrcode"></a>',
+  '<div class="qrcode clearfix"><span>扫描二维码分享到微信朋友圈</span><a class="qrclose" href="#nothing"></a><strong>Loading...Please wait</strong><img id="qrcode-pic" data-src="http://s.jiathis.com/qrcode.php?url=' + encodedUrl + '"/></div>',
+  '<a href="https://www.facebook.com/sharer.php?u=' + encodedUrl + '" class="article-share-facebook" target="_blank" title="Facebook"></a>',
+  '<a href="https://twitter.com/intent/tweet?url=' + encodedUrl + '" class="article-share-twitter" target="_blank" title="Twitter"></a>',
+  '<a href="#qrcode" class="article-share-qrcode" title="微信"></a>',
+  '<a href="http://widget.renren.com/dialog/share?resourceUrl=' + encodedUrl + '&srcUrl=' + encodedUrl + '&title=' + title +'" class="article-share-renren" target="_blank" title="人人"></a>',
+  '<a href="http://service.weibo.com/share/share.php?title='+title+'&url='+encodedUrl +'&ralateUid='+ tsina +'&searchPic=true&style=number' +'" class="article-share-weibo" target="_blank" title="微博"></a>',
+  '<span title="Share to"></span>'
+  ].join('');
+  $this.append(html);
+  $('.article-share-qrcode').click(function(){
+    var imgSrc = $('#qrcode-pic').attr('data-src');
+    $('#qrcode-pic').attr('src', imgSrc);
+    $('#qrcode-pic').load(function(){
+        $('.qrcode strong').text(' ');
+    });
+  });
+});     
+</script>
+
+
+
+<script type="text/javascript">
+  var duoshuoQuery = {short_name:"wanghuanming"};
+  (function() {
+    var ds = document.createElement('script');
+    ds.type = 'text/javascript';ds.async = true;
+    ds.src = '//static.duoshuo.com/embed.js';
+    ds.charset = 'UTF-8';
+    (document.getElementsByTagName('head')[0] 
+    || document.getElementsByTagName('body')[0]).appendChild(ds);
+  })();
+</script> 
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+$(document).ready(function(){ 
+  $('.article-content').each(function(i){
+    $(this).find('img').each(function(){
+      if ($(this).parent().hasClass('fancybox')) return;
+      var alt = this.alt;
+      if (alt) $(this).after('<span class="caption">' + alt + '</span>');
+      $(this).wrap('<a href="' + this.src + '" title="' + alt + '" class="fancybox"></a>');
+    });
+    $(this).find('.fancybox').each(function(){
+      $(this).attr('rel', 'article' + i);
+    });
+  });
+  if($.fancybox){
+    $('.fancybox').fancybox();
+  }
+}); 
+</script>
+
+
+
+<!-- Analytics Begin -->
+
+
+
+
+
+<!-- Analytics End -->
+
+<!-- Totop Begin -->
+
+	<div id="totop">
+	<a title="返回顶部"><img src="/img/scrollup.png"/></a>
+	</div>
+	<script src="/js/totop.js"></script>
+
+<!-- Totop End -->
+
+<!-- MathJax Begin -->
+<!-- mathjax config similar to math.stackexchange -->
+
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    tex2jax: {
+      inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+      processEscapes: true
+    }
+  });
+</script>
+
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: {
+        skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+      }
+    });
+</script>
+
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Queue(function() {
+        var all = MathJax.Hub.getAllJax(), i;
+        for(i=0; i < all.length; i += 1) {
+            all[i].SourceElement().parentNode.className += ' has-jax';
+        }
+    });
+</script>
+
+<script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+</script>
+
+
+<!-- MathJax End -->
+
+<!-- Tiny_search Begin -->
+
+<!-- Tiny_search End -->
+
+  </body>
+</html>

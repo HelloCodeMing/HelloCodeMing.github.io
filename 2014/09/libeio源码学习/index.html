@@ -1,0 +1,597 @@
+
+ <!DOCTYPE HTML>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  
+    <title>libeio源码学习 | Hello Code</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1,user-scalable=no">
+    
+    <meta name="author" content="王欢明">
+    
+
+    
+    <meta name="description" content="##libeiolibeio是用C语言开发的异步IO库，提供了文件的异步IO操作（不包括网络）。
+初识libeio是因为nodejs，它用的libuv库封装了linux下的libeio和libev，libev提供事件驱动，而libeio则提供异步IO，作者都是Marc Lehmann。
+异步IO的原理并不复杂， 自己也写了一个简单实现，但是想要做到高性能却是很难的。linux下的异步IO，目前比较">
+<meta property="og:type" content="article">
+<meta property="og:title" content="libeio源码学习">
+<meta property="og:url" content="http://wanghuanming.com/2014/09/libeio源码学习/index.html">
+<meta property="og:site_name" content="Hello Code">
+<meta property="og:description" content="##libeiolibeio是用C语言开发的异步IO库，提供了文件的异步IO操作（不包括网络）。
+初识libeio是因为nodejs，它用的libuv库封装了linux下的libeio和libev，libev提供事件驱动，而libeio则提供异步IO，作者都是Marc Lehmann。
+异步IO的原理并不复杂， 自己也写了一个简单实现，但是想要做到高性能却是很难的。linux下的异步IO，目前比较">
+<meta property="og:image" content="http://huanming-blog.qiniudn.com/allthreads.jpg">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="libeio源码学习">
+<meta name="twitter:description" content="##libeiolibeio是用C语言开发的异步IO库，提供了文件的异步IO操作（不包括网络）。
+初识libeio是因为nodejs，它用的libuv库封装了linux下的libeio和libev，libev提供事件驱动，而libeio则提供异步IO，作者都是Marc Lehmann。
+异步IO的原理并不复杂， 自己也写了一个简单实现，但是想要做到高性能却是很难的。linux下的异步IO，目前比较">
+
+    
+    <link rel="alternative" href="/atom.xml" title="Hello Code" type="application/atom+xml">
+    
+    
+    <link rel="icon" href="/img/panda-icon.ico">
+    
+    
+    <link rel="apple-touch-icon" href="/img/panda.png">
+    <link rel="apple-touch-icon-precomposed" href="/img/panda.png">
+    
+    <link rel="stylesheet" href="/css/style.css" type="text/css">
+</head>
+
+  <body>
+    <header>
+      <div>
+		
+			<div id="imglogo">
+				<a href="/"><img src="/img/panda.png" alt="Hello Code" title="Hello Code"/></a>
+			</div>
+			
+			<div id="textlogo">
+				<h1 class="site-name"><a href="/" title="Hello Code">Hello Code</a></h1>
+				<h2 class="blog-motto"></h2>
+			</div>
+			<div class="navbar"><a class="navbutton navmobile" href="#" title="菜单">
+			</a></div>
+			<nav class="animated">
+				<ul>
+					<ul>
+					 
+						<li><a href="/">首页</a></li>
+					
+						<li><a href="/archives">归档</a></li>
+					
+						<li><a href="/about">关于</a></li>
+					
+					<li>
+ 					
+					<form class="search" action="//google.com/search" method="get" accept-charset="utf-8">
+						<label>Search</label>
+						<input type="search" id="search" name="q" autocomplete="off" maxlength="20" placeholder="搜索" />
+						<input type="hidden" name="q" value="site:wanghuanming.com">
+					</form>
+					
+					</li>
+				</ul>
+			</nav>			
+</div>
+    </header>
+    <div id="container">
+      <div id="main" class="post" itemscope itemprop="blogPost">
+  
+	<article itemprop="articleBody"> 
+		<header class="article-info clearfix">
+  <h1 itemprop="name">
+    
+      <a href="/2014/09/libeio源码学习/" title="libeio源码学习" itemprop="url">libeio源码学习</a>
+  </h1>
+  <p class="article-author">By
+       
+		<a href="http://wanghuanming.com/about" title="王欢明" target="_blank" itemprop="author">王欢明</a>
+		
+  <p class="article-time">
+    <time datetime="2014-09-01T10:05:53.000Z" itemprop="datePublished"> 发表于 2014 Sep 1</time>
+    
+  </p>
+</header>
+	<div class="article-content">
+		
+		<div id="toc" class="toc-article">
+			<strong class="toc-title">文章目录</strong>
+		
+			
+		
+		</div>
+		
+		<p>##libeio<br>libeio是用C语言开发的异步IO库，提供了文件的异步IO操作（不包括网络）。</p>
+<p>初识libeio是因为nodejs，它用的libuv库封装了linux下的libeio和libev，libev提供事件驱动，而libeio则提供异步IO，作者都是Marc Lehmann。</p>
+<p>异步IO的原理并不复杂， 自己也写了一个<a href="http://www.wanghuanming.com/2014/09/C%E8%AF%AD%E8%A8%80%E5%AE%9E%E7%8E%B0%E7%AE%80%E5%8D%95AIO/" target="_blank" rel="external">简单实现</a>，但是想要做到高性能却是很难的。linux下的异步IO，目前比较出色的有Kernel Native AIO，由内核实现异步通知，但据说它无法使用系统缓存，性能还是有问题。还有Glibc AIO则因为bug饱受诟病。libeio据说性能还不错，开销比glibc要小，于是理所当然我选择了它作为学习异步IO的开始。</p>
+<p>##从接口开始<br>libeio有一份<a href="http://pod.tst.eu/http://cvs.schmorp.de/libeio/eio.pod" target="_blank" rel="external">官方文档</a>，写的很详细。不过要看接口，头文件也是一个不错的选择。<br><figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">int eio_init (void (*want_poll)(void), void (*done_poll)(void));</span><br><span class="line">/* must be called regularly to handle pending requests */</span><br><span class="line">/* returns 0 if all requests were handled, -1 if not, or the value of EIO_FINISH if != 0 */</span><br><span class="line">int eio_poll (void);</span><br><span class="line"></span><br><span class="line">/* stop polling if poll took longer than duration seconds */</span><br><span class="line">void eio_set_max_poll_time (eio_tstamp nseconds);</span><br><span class="line">/* do not handle more then count requests in one call to eio_poll_cb */</span><br><span class="line">void eio_set_max_poll_reqs (unsigned int nreqs);</span><br><span class="line"></span><br><span class="line">/* set minimum required number</span><br><span class="line"> * maximum wanted number</span><br><span class="line"> * or maximum idle number of threads */</span><br><span class="line">void eio_set_min_parallel (unsigned int nthreads);</span><br><span class="line">void eio_set_max_parallel (unsigned int nthreads);</span><br><span class="line">void eio_set_max_idle     (unsigned int nthreads);</span><br><span class="line">void eio_set_idle_timeout (unsigned int seconds);</span><br><span class="line"></span><br><span class="line">unsigned int eio_nreqs    (void); /* number of requests in-flight */</span><br><span class="line">unsigned int eio_nready   (void); /* number of not-yet handled requests */</span><br><span class="line">unsigned int eio_npending (void); /* number of finished but unhandled requests */</span><br><span class="line">unsigned int eio_nthreads (void); /* number of worker threads in use currently */</span><br></pre></td></tr></table></figure></p>
+<p>主要的配置函数就这些，eio_init作为初始化，eio_poll则是调用处理回调函数（不太明白）。除此之外，还可以设置timeout，以及其他一些参数。最后一块则是查询工作状态的，request队列大小，response，pending和线程数量都在这里。</p>
+<p>接下来呢，就是实际的工作接口了。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">......</span><br><span class="line"><span class="function">eio_req *<span class="title">eio_sync_file_range</span> <span class="params">(<span class="keyword">int</span> fd, off_t offset, size_t nbytes, <span class="keyword">unsigned</span> <span class="keyword">int</span> flags, <span class="keyword">int</span> pri, eio_cb cb, <span class="keyword">void</span> *data)</span></span>;</span><br><span class="line"><span class="function">eio_req *<span class="title">eio_fallocate</span> <span class="params">(<span class="keyword">int</span> fd, <span class="keyword">int</span> mode, off_t offset, size_t len, <span class="keyword">int</span> pri, eio_cb cb, <span class="keyword">void</span> *data)</span></span>;</span><br><span class="line"><span class="function">eio_req *<span class="title">eio_close</span>     <span class="params">(<span class="keyword">int</span> fd, <span class="keyword">int</span> pri, eio_cb cb, <span class="keyword">void</span> *data)</span></span>;</span><br><span class="line"><span class="function">eio_req *<span class="title">eio_readahead</span> <span class="params">(<span class="keyword">int</span> fd, off_t offset, size_t length, <span class="keyword">int</span> pri, eio_cb cb, <span class="keyword">void</span> *data)</span></span>;</span><br><span class="line"><span class="function">eio_req *<span class="title">eio_seek</span>      <span class="params">(<span class="keyword">int</span> fd, off_t offset, <span class="keyword">int</span> whence, <span class="keyword">int</span> pri, eio_cb cb, <span class="keyword">void</span> *data)</span></span>;</span><br><span class="line"><span class="function">eio_req *<span class="title">eio_read</span>      <span class="params">(<span class="keyword">int</span> fd, <span class="keyword">void</span> *buf, size_t length, off_t offset, <span class="keyword">int</span> pri, eio_cb cb, <span class="keyword">void</span> *data)</span></span>;</span><br><span class="line"><span class="function">eio_req *<span class="title">eio_write</span>     <span class="params">(<span class="keyword">int</span> fd, <span class="keyword">void</span> *buf, size_t length, off_t offset, <span class="keyword">int</span> pri, eio_cb cb, <span class="keyword">void</span> *data)</span></span>;</span><br><span class="line">......</span><br></pre></td></tr></table></figure></p>
+<p>它不仅提供了read和write的接口，还有许多丰富的文件操作接口。还有一些其他的接口，在头文件里都有写。</p>
+<p>##demo<br>看完接口，我们基本可以写一个demo了，官方下载的文件里就有一个demo。在这里我们自己写一个简单的测试，了解libeio的具体使用。（参考<a href="http://codingcat.net/blog/2012/11/01/libeio-source-analytics/" target="_blank" rel="external">libeio源码浅析</a>）</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="preprocessor">#<span class="keyword">include</span><span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="preprocessor">#<span class="keyword">include</span><span class="string">&lt;eio.h&gt;</span></span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">want_poll</span> <span class="params">()</span> </span>&#123;</span><br><span class="line">  <span class="built_in">printf</span> (<span class="string">"I want poll\n"</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">done_poll</span> <span class="params">()</span> </span>&#123;</span><br><span class="line">  <span class="built_in">printf</span> (<span class="string">"I done poll\n"</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">res_cb</span> <span class="params">(eio_req *req)</span> </span>&#123;</span><br><span class="line">  <span class="built_in">printf</span> (<span class="string">"res_cb(%d|%s) = %d\n"</span>, req-&gt;type, req-&gt;data ? req-&gt;data : <span class="string">"?"</span>, EIO_RESULT (req));</span><br><span class="line">  <span class="keyword">if</span> (req-&gt;result &lt; <span class="number">0</span>)</span><br><span class="line">       <span class="built_in">exit</span>(<span class="number">1</span>);</span><br><span class="line">  <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">void</span>)</span> </span><br><span class="line"></span>&#123;</span><br><span class="line">  <span class="keyword">if</span> (eio_init (want_poll, done_poll)) &#123;</span><br><span class="line">      <span class="built_in">printf</span> (<span class="string">"fail to init eio.\n"</span>);</span><br><span class="line">     <span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">  &#125;</span><br><span class="line">  eio_mkdir (<span class="string">"eio-test-dir"</span>, <span class="number">0777</span>, <span class="number">0</span>, res_cb, <span class="string">"mkdir"</span>);</span><br><span class="line">  <span class="built_in">printf</span> (<span class="string">"entering event loop\n"</span>);</span><br><span class="line">  <span class="keyword">while</span> (eio_nreqs ()) &#123;</span><br><span class="line">      <span class="built_in">printf</span> (<span class="string">"eio_poll () = %d\n"</span>, eio_poll ());</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="built_in">printf</span> (<span class="string">"leaving event loop\n"</span>);</span><br><span class="line">  <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>可以把demo和eio.c一起编译，或者先安装libeio，再把动态库和demo一起编译。</p>
+<p>使用起来时还是很方便的，基本符合一般的异步IO操作，但有一点比较奇怪，设置的回调函数不会由eio自己调用，我们必须用eio_poll手动触发，可能是方便在外面套一个事件循环。</p>
+<p>初始化的eio_init有两个参数，want_poll在eio有任务的时候也就是有新的请求到达空的req队列时触发，而donepoll则是完成所有任务时触发。需要注意的是，它们都是边缘触发，在队列由空和非空转换的时候才会触发。</p>
+<p>##从线程分析<br>init函数如下：<br><figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line">static int ecb_cold</span><br><span class="line">etp_init (void (*want_poll)(void), void (*done_poll)(void))</span><br><span class="line">&#123;</span><br><span class="line">  X_MUTEX_CREATE (wrklock);            //初始化互斥锁和条件变量</span><br><span class="line">  X_MUTEX_CREATE (reslock);</span><br><span class="line">  X_MUTEX_CREATE (reqlock);</span><br><span class="line">  X_COND_CREATE  (reqwait);</span><br><span class="line"></span><br><span class="line">  reqq_init (&amp;req_queue);        //request队列初始化</span><br><span class="line">  reqq_init (&amp;res_queue);        //response队列初始化</span><br><span class="line"></span><br><span class="line">  wrk_first.next =</span><br><span class="line">  wrk_first.prev = &amp;wrk_first;</span><br><span class="line"></span><br><span class="line">  started  = 0;            //参数设置</span><br><span class="line">  idle     = 0;</span><br><span class="line">  nreqs    = 0;</span><br><span class="line">  nready   = 0;</span><br><span class="line">  npending = 0;</span><br><span class="line"></span><br><span class="line">  want_poll_cb = want_poll;        //注册回调</span><br><span class="line">  done_poll_cb = done_poll;</span><br><span class="line"></span><br><span class="line">  return 0;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>看起来比较奇怪的是，它根本没有做其他的工作，没有去启动后台线程，也没有spawn工作线程，只是初始化了一下。</p>
+<p>我用gdb单步调试了一下之后，发现它用了一种懒惰机制。</p>
+<p>在eio_mkdir中<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">eio_req *<span class="title">eio_mkdir</span> <span class="params">(<span class="keyword">const</span> <span class="keyword">char</span> *path, mode_t mode, <span class="keyword">int</span> pri, eio_cb cb, <span class="keyword">void</span> *data)</span></span><br><span class="line"></span>&#123;</span><br><span class="line">  REQ (EIO_MKDIR); PATH; req-&gt;int2 = (<span class="keyword">long</span>)mode; SEND;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>前面三个语句负责初始化req，SEND则是把req放到req队列中。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">etp_submit</span> <span class="params">(ETP_REQ *req)</span></span><br><span class="line"></span>&#123;</span><br><span class="line">    .....</span><br><span class="line">     X_LOCK (reqlock);</span><br><span class="line">     ++nreqs;</span><br><span class="line">     ++nready;</span><br><span class="line">     reqq_push (&amp;req_queue, req);</span><br><span class="line">     X_COND_SIGNAL (reqwait);</span><br><span class="line">     X_UNLOCK (reqlock);</span><br><span class="line">     etp_maybe_start_thread ();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>也就是说，只有在线程不够用的时候才会去增加worker线程，真是很明智的做法。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span></span><br><span class="line"><span class="title">etp_maybe_start_thread</span> <span class="params">(<span class="keyword">void</span>)</span></span><br><span class="line"></span>&#123;</span><br><span class="line">  <span class="keyword">if</span> (ecb_expect_true (etp_nthreads () &gt;= wanted))</span><br><span class="line">    <span class="keyword">return</span>;</span><br><span class="line">  </span><br><span class="line">  <span class="comment">/* todo: maybe use idle here, but might be less exact */</span></span><br><span class="line">  <span class="keyword">if</span> (ecb_expect_true (<span class="number">0</span> &lt;= (<span class="keyword">int</span>)etp_nthreads () + (<span class="keyword">int</span>)etp_npending () - (<span class="keyword">int</span>)etp_nreqs ()))</span><br><span class="line">    <span class="keyword">return</span>;</span><br><span class="line"></span><br><span class="line">  etp_start_thread ();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>现在，我们可以完整地看看所有的线程了。（鉴于本人画图太渣，借用一下<a href="http://codingcat.net/blog/2012/11/01/libeio-source-analytics/" target="_blank" rel="external">coding cat</a>的流程图）<br><img src="http://huanming-blog.qiniudn.com/allthreads.jpg" alt="threads"></p>
+<ul>
+<li>主线程：<br>调用read，write，eio把这些请求封装之后放进req队列</li>
+<li>worker线程：<br>从req队列中取出req，执行具体的阻塞操作，得到res，放进res队列。</li>
+<li>主线程再次触发eio_pollres队列中的回调函数，处理结果。</li>
+</ul>
+<p>整个流程还是比较清晰的。</p>
+<p>##worker线程<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> ecb_cold</span><br><span class="line"><span class="title">etp_start_thread</span> <span class="params">(<span class="keyword">void</span>)</span></span><br><span class="line"></span>&#123;</span><br><span class="line">  etp_worker *wrk = <span class="built_in">calloc</span> (<span class="number">1</span>, <span class="keyword">sizeof</span> (etp_worker));</span><br><span class="line">  <span class="comment">/*TODO*/</span></span><br><span class="line">  assert ((<span class="string">"unable to allocate worker thread data"</span>, wrk));</span><br><span class="line"></span><br><span class="line">  X_LOCK (wrklock);</span><br><span class="line"></span><br><span class="line">  <span class="keyword">if</span> (xthread_create (&amp;wrk-&gt;tid, etp_proc, (<span class="keyword">void</span> *)wrk))</span><br><span class="line">    &#123;</span><br><span class="line">      wrk-&gt;prev = &amp;wrk_first;</span><br><span class="line">      wrk-&gt;next = wrk_first.next;</span><br><span class="line">      wrk_first.next-&gt;prev = wrk;</span><br><span class="line">      wrk_first.next = wrk;</span><br><span class="line">      ++started;</span><br><span class="line">    &#125;</span><br><span class="line">  <span class="keyword">else</span></span><br><span class="line">    <span class="built_in">free</span> (wrk);</span><br><span class="line"></span><br><span class="line">  X_UNLOCK (wrklock);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>eio使用了一个循环链表来保存worker线程，创建了线程之后运行的函数是etp_proc，不断地从req队列中取出请求，没有的话则wait，否则调用eio_execute处理具体请求。</p>
+<p>eio_execute则是最底层的处理函数了，它用了一个大的switch-case来根据请求的类型调用相应的阻塞函数操作。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">switch</span> (req-&gt;type)</span><br><span class="line">  &#123;</span><br><span class="line">    <span class="keyword">case</span> EIO_WD_OPEN:   req-&gt;wd = eio__wd_open_sync (&amp;self-&gt;tmpbuf, req-&gt;wd, req-&gt;ptr1);</span><br><span class="line">                        req-&gt;result = req-&gt;wd == EIO_INVALID_WD ? -<span class="number">1</span> : <span class="number">0</span>;</span><br><span class="line">                        <span class="keyword">break</span>;</span><br><span class="line">    <span class="keyword">case</span> EIO_WD_CLOSE:  req-&gt;result = <span class="number">0</span>;</span><br><span class="line">                        eio_wd_close_sync (req-&gt;wd); <span class="keyword">break</span>;</span><br><span class="line">    <span class="keyword">case</span> EIO_SEEK:      eio__lseek (req); <span class="keyword">break</span>;</span><br><span class="line">    <span class="keyword">case</span> EIO_READ:      ALLOC (req-&gt;size);</span><br><span class="line">                        req-&gt;result = req-&gt;offs &gt;= <span class="number">0</span></span><br><span class="line">                                    ? pread     (req-&gt;int1, req-&gt;ptr2, req-&gt;size, req-&gt;offs)</span><br><span class="line">                                    : read      (req-&gt;int1, req-&gt;ptr2, req-&gt;size); <span class="keyword">break</span>;</span><br><span class="line">    ......</span><br></pre></td></tr></table></figure></p>
+<p>问题是，read完就直接返回了，没有放到res队列里？</p>
+<p>往上回溯一层，到etp_proc，<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">ETP_EXECUTE (self, req);</span><br><span class="line">X_LOCK (reslock);</span><br><span class="line">++npending;</span><br><span class="line"><span class="keyword">if</span> (!reqq_push (&amp;res_queue, req) &amp;&amp; want_poll_cb)</span><br><span class="line">  want_poll_cb ();</span><br><span class="line">etp_worker_clear (self);</span><br><span class="line">X_UNLOCK (reslock);</span><br></pre></td></tr></table></figure></p>
+<p>在这里才放进了res队列，与此同时，它会判断一下res队列的大小，如果之前是一个空队列，就会用want_poll通知一下主线程。</p>
+<p>##eio_poll<br>由于所有的回调函数都用eio_poll触发，所以有必要看一下。<br><figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">static int etp_poll (void)</span><br><span class="line">......</span><br><span class="line">      req = reqq_shift (&amp;res_queue);        //取出任务</span><br><span class="line">      .......</span><br><span class="line">      int res = ETP_FINISH (req);                //处理</span><br><span class="line">         return res;</span><br><span class="line">      .....</span><br></pre></td></tr></table></figure></p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="preprocessor"># <span class="keyword">define</span> EIO_FINISH(req)  ((req)-&gt;finish) &amp;&amp; !EIO_CANCELLED (req) ? (req)-&gt;finish (req) : <span class="number">0</span></span></span><br></pre></td></tr></table></figure>
+<p>最最关键的回调，居然只是用一个宏定义就结束，很是遗憾。</p>
+<p>到这里，需要分析的代码也就结束了。</p>
+<p>##总结<br>首先，不喜欢libeio的代码风格，大量的宏定义函数，大量的跳转，不借助ctags根本没办法看代码，许多eio系列的函数只是一个跳板，具体实现还在etp。</p>
+<p>其次呢，和我自己实现的简单AIO相比，libeio性能和功能当然强大了很多，不得不佩服，虽然原理不复杂，但是考虑了鲁棒性之后流程还是很复杂的。</p>
+<p>在看代码的过程中学习了很多C语言的知识，函数指针，宏定义，循环链表之类的，书本上讲的很少，但实际工程中却运用很多。</p>
+<p>##参考资料</p>
+<ul>
+<li><a href="http://cnodejs.org/topic/4f16442ccae1f4aa270010a7" target="_blank" rel="external">linux AIO （异步IO） 那点事儿</a></li>
+<li><a href="http://codingcat.net/blog/2012/11/01/libeio-source-analytics/" target="_blank" rel="external">libeio源码浅析</a></li>
+<li><a href="http://blog.csdn.net/lanyan822/article/details/7644745" target="_blank" rel="external">libeio-异步IO库初窥</a></li>
+<li><a href="http://pod.tst.eu/http://cvs.schmorp.de/libeio/eio.pod" target="_blank" rel="external">官方文档</a></li>
+</ul>
+  
+	</div>
+		<footer class="article-footer clearfix">
+<div class="article-catetags">
+
+<div class="article-categories">
+  <span></span>
+  <a class="article-category-link" href="/categories/Code/">Code</a>
+</div>
+
+
+  <div class="article-tags">
+  
+  <span></span> <a href="/tags/AIO/">AIO</a><a href="/tags/libeio/">libeio</a>
+  </div>
+
+</div>
+
+
+
+	<div class="article-share" id="share">
+	
+	  <div data-url="http://wanghuanming.com/2014/09/libeio源码学习/" data-title="libeio源码学习 | Hello Code" data-tsina="null" class="share clearfix">
+	  </div>
+	
+	</div>
+
+
+</footer>
+
+   	       
+	</article>
+	
+<nav class="article-nav clearfix">
+ 
+ <div class="prev" >
+ <a href="/2014/09/lua源码学习/" title="lua源码学习">
+  <strong>上一篇：</strong><br/>
+  <span>
+  lua源码学习</span>
+</a>
+</div>
+
+
+<div class="next">
+<a href="/2014/09/c-aio/"  title="C语言实现简单AIO">
+ <strong>下一篇：</strong><br/> 
+ <span>C语言实现简单AIO
+</span>
+</a>
+</div>
+
+</nav>
+
+	
+<section id="comments" class="comment">
+	<div class="ds-thread" data-thread-key="2014/09/libeio源码学习/" data-title="libeio源码学习" data-url="http://wanghuanming.com/2014/09/libeio源码学习/"></div>
+</section>
+
+
+</div>  
+      <div class="openaside"><a class="navbutton" href="#" title="显示侧边栏"></a></div>
+
+  <div id="toc" class="toc-aside">
+  <strong class="toc-title">文章目录</strong>
+ 
+ 
+ 
+  </div>
+
+<div id="asidepart">
+<div class="closeaside"><a class="closebutton" href="#" title="隐藏侧边栏"></a></div>
+<aside class="clearfix">
+
+  
+<div class="categorieslist">
+	<p class="asidetitle">分类</p>
+		<ul>
+		
+		  
+			<li><a href="/categories/Code/" title="Code">Code<sup>39</sup></a></li>
+		  
+		
+		  
+			<li><a href="/categories/Life-Work/" title="Life &amp; Work">Life &amp; Work<sup>10</sup></a></li>
+		  
+		
+		  
+			<li><a href="/categories/Reading/" title="Reading">Reading<sup>4</sup></a></li>
+		  
+		
+		  
+			<li><a href="/categories/Tech-Tool/" title="Tech &amp; Tool">Tech &amp; Tool<sup>24</sup></a></li>
+		  
+		
+		</ul>
+</div>
+
+
+  
+<div class="tagslist">
+	<p class="asidetitle">标签</p>
+		<ul class="clearfix">
+		
+			
+				<li><a href="/tags/C/" title="C++">C++<sup>9</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Scala/" title="Scala">Scala<sup>6</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/编译原理/" title="编译原理">编译原理<sup>4</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/LLVM/" title="LLVM">LLVM<sup>4</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/数据结构/" title="数据结构">数据结构<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Spark/" title="Spark">Spark<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/javascript/" title="javascript">javascript<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/OS/" title="OS">OS<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/ACM/" title="ACM">ACM<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/虚拟机/" title="虚拟机">虚拟机<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/线段树/" title="线段树">线段树<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/解释器/" title="解释器">解释器<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/C语言/" title="C语言">C语言<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/进程/" title="进程">进程<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Linux/" title="Linux">Linux<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Coursera/" title="Coursera">Coursera<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/ssh/" title="ssh">ssh<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/openwrt/" title="openwrt">openwrt<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/C/" title="C">C<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/函数式编程/" title="函数式编程">函数式编程<sup>2</sup></a></li>
+			
+		
+		</ul>
+</div>
+
+
+  <div class="rsspart">
+	<a href="/atom.xml" target="_blank" title="rss">RSS 订阅</a>
+</div>
+
+</aside>
+</div>
+    </div>
+    <footer><div id="footer" >
+	
+	<div class="line">
+		<span></span>
+		<div class="author"></div>
+	</div>
+	
+	
+	<div class="social-font" class="clearfix">
+		
+		<a href="http://weibo.com/5108629996" target="_blank" class="icon-weibo" title="微博"></a>
+		
+		
+		<a href="https://github.com/HelloCodeMing" target="_blank" class="icon-github" title="github"></a>
+		
+		
+		
+		
+		
+		
+		<a href="https://www.douban.com/people/94795087" target="_blank" class="icon-douban" title="豆瓣"></a>
+		
+		
+		<a href="https://www.zhihu.com/people/hellocode-67" target="_blank" class="icon-zhihu" title="知乎"></a>
+		
+		
+		
+		<a href="mailto:huanmingwong@163.com" target="_blank" class="icon-email" title="Email Me"></a>
+		
+	</div>
+			
+		
+
+		<p class="copyright">
+		Powered by <a href="http://hexo.io" target="_blank" title="hexo">hexo</a> and Theme by <a href="https://github.com/wuchong/jacman" target="_blank" title="Jacman">Jacman</a> © 2016 
+		
+		<a href="http://wanghuanming.com/about" target="_blank" title="王欢明">王欢明</a>
+		
+		
+		</p>
+</div>
+</footer>
+    <script src="/js/jquery-2.0.3.min.js"></script>
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  $('.navbar').click(function(){
+    $('header nav').toggleClass('shownav');
+  });
+  var myWidth = 0;
+  function getSize(){
+    if( typeof( window.innerWidth ) == 'number' ) {
+      myWidth = window.innerWidth;
+    } else if( document.documentElement && document.documentElement.clientWidth) {
+      myWidth = document.documentElement.clientWidth;
+    };
+  };
+  var m = $('#main'),
+      a = $('#asidepart'),
+      c = $('.closeaside'),
+      o = $('.openaside');
+  c.click(function(){
+    a.addClass('fadeOut').css('display', 'none');
+    o.css('display', 'block').addClass('fadeIn');
+    m.addClass('moveMain');
+  });
+  o.click(function(){
+    o.css('display', 'none').removeClass('beforeFadeIn');
+    a.css('display', 'block').removeClass('fadeOut').addClass('fadeIn');      
+    m.removeClass('moveMain');
+  });
+  $(window).scroll(function(){
+    o.css("top",Math.max(80,260-$(this).scrollTop()));
+  });
+  
+  $(window).resize(function(){
+    getSize(); 
+    if (myWidth >= 1024) {
+      $('header nav').removeClass('shownav');
+    }else{
+      m.removeClass('moveMain');
+      a.css('display', 'block').removeClass('fadeOut');
+      o.css('display', 'none');
+      
+      $('#toc.toc-aside').css('display', 'none');
+        
+    }
+  });
+});
+</script>
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  var ai = $('.article-content>iframe'),
+      ae = $('.article-content>embed'),
+      t  = $('#toc'),
+      ta = $('#toc.toc-aside'),
+      o  = $('.openaside'),
+      c  = $('.closeaside');
+  if(ai.length>0){
+    ai.wrap('<div class="video-container" />');
+  };
+  if(ae.length>0){
+   ae.wrap('<div class="video-container" />');
+  };
+  c.click(function(){
+    ta.css('display', 'block').addClass('fadeIn');
+  });
+  o.click(function(){
+    ta.css('display', 'none');
+  });
+  $(window).scroll(function(){
+    ta.css("top",Math.max(140,320-$(this).scrollTop()));
+  });
+});
+</script>
+
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  var $this = $('.share'),
+      url = $this.attr('data-url'),
+      encodedUrl = encodeURIComponent(url),
+      title = $this.attr('data-title'),
+      tsina = $this.attr('data-tsina'),
+      description = $this.attr('description');
+  var html = [
+  '<a href="#" class="overlay" id="qrcode"></a>',
+  '<div class="qrcode clearfix"><span>扫描二维码分享到微信朋友圈</span><a class="qrclose" href="#nothing"></a><strong>Loading...Please wait</strong><img id="qrcode-pic" data-src="http://s.jiathis.com/qrcode.php?url=' + encodedUrl + '"/></div>',
+  '<a href="https://www.facebook.com/sharer.php?u=' + encodedUrl + '" class="article-share-facebook" target="_blank" title="Facebook"></a>',
+  '<a href="https://twitter.com/intent/tweet?url=' + encodedUrl + '" class="article-share-twitter" target="_blank" title="Twitter"></a>',
+  '<a href="#qrcode" class="article-share-qrcode" title="微信"></a>',
+  '<a href="http://widget.renren.com/dialog/share?resourceUrl=' + encodedUrl + '&srcUrl=' + encodedUrl + '&title=' + title +'" class="article-share-renren" target="_blank" title="人人"></a>',
+  '<a href="http://service.weibo.com/share/share.php?title='+title+'&url='+encodedUrl +'&ralateUid='+ tsina +'&searchPic=true&style=number' +'" class="article-share-weibo" target="_blank" title="微博"></a>',
+  '<span title="Share to"></span>'
+  ].join('');
+  $this.append(html);
+  $('.article-share-qrcode').click(function(){
+    var imgSrc = $('#qrcode-pic').attr('data-src');
+    $('#qrcode-pic').attr('src', imgSrc);
+    $('#qrcode-pic').load(function(){
+        $('.qrcode strong').text(' ');
+    });
+  });
+});     
+</script>
+
+
+
+<script type="text/javascript">
+  var duoshuoQuery = {short_name:"wanghuanming"};
+  (function() {
+    var ds = document.createElement('script');
+    ds.type = 'text/javascript';ds.async = true;
+    ds.src = '//static.duoshuo.com/embed.js';
+    ds.charset = 'UTF-8';
+    (document.getElementsByTagName('head')[0] 
+    || document.getElementsByTagName('body')[0]).appendChild(ds);
+  })();
+</script> 
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+$(document).ready(function(){ 
+  $('.article-content').each(function(i){
+    $(this).find('img').each(function(){
+      if ($(this).parent().hasClass('fancybox')) return;
+      var alt = this.alt;
+      if (alt) $(this).after('<span class="caption">' + alt + '</span>');
+      $(this).wrap('<a href="' + this.src + '" title="' + alt + '" class="fancybox"></a>');
+    });
+    $(this).find('.fancybox').each(function(){
+      $(this).attr('rel', 'article' + i);
+    });
+  });
+  if($.fancybox){
+    $('.fancybox').fancybox();
+  }
+}); 
+</script>
+
+
+
+<!-- Analytics Begin -->
+
+
+
+
+
+<!-- Analytics End -->
+
+<!-- Totop Begin -->
+
+	<div id="totop">
+	<a title="返回顶部"><img src="/img/scrollup.png"/></a>
+	</div>
+	<script src="/js/totop.js"></script>
+
+<!-- Totop End -->
+
+<!-- MathJax Begin -->
+<!-- mathjax config similar to math.stackexchange -->
+
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    tex2jax: {
+      inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+      processEscapes: true
+    }
+  });
+</script>
+
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: {
+        skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+      }
+    });
+</script>
+
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Queue(function() {
+        var all = MathJax.Hub.getAllJax(), i;
+        for(i=0; i < all.length; i += 1) {
+            all[i].SourceElement().parentNode.className += ' has-jax';
+        }
+    });
+</script>
+
+<script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+</script>
+
+
+<!-- MathJax End -->
+
+<!-- Tiny_search Begin -->
+
+<!-- Tiny_search End -->
+
+  </body>
+</html>

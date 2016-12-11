@@ -1,0 +1,617 @@
+
+ <!DOCTYPE HTML>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  
+    <title>数据流分析：数学原理 | Hello Code</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1,user-scalable=no">
+    
+    <meta name="author" content="王欢明">
+    
+
+    
+    <meta name="description" content="简介数据流分析是一种在编译时推断值在运行时流动的技术。通常，它会遍历控制流图，收集运行时信息，来为优化提供服务。在数据流分析的基础上，可以实施common-subexression elimination, constant propagation, dead-code elimination之类的优化，同时，它也是SSA（静态单赋值）形式的一个前提。
+数据流分析牵扯到离散数学中的“偏序关系”和“">
+<meta property="og:type" content="article">
+<meta property="og:title" content="数据流分析：数学原理">
+<meta property="og:url" content="http://wanghuanming.com/2015/05/mathematica background for dataflow analysis/index.html">
+<meta property="og:site_name" content="Hello Code">
+<meta property="og:description" content="简介数据流分析是一种在编译时推断值在运行时流动的技术。通常，它会遍历控制流图，收集运行时信息，来为优化提供服务。在数据流分析的基础上，可以实施common-subexression elimination, constant propagation, dead-code elimination之类的优化，同时，它也是SSA（静态单赋值）形式的一个前提。
+数据流分析牵扯到离散数学中的“偏序关系”和“">
+<meta property="og:image" content="http://huanming-blog.qiniudn.com/图表1.png">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="数据流分析：数学原理">
+<meta name="twitter:description" content="简介数据流分析是一种在编译时推断值在运行时流动的技术。通常，它会遍历控制流图，收集运行时信息，来为优化提供服务。在数据流分析的基础上，可以实施common-subexression elimination, constant propagation, dead-code elimination之类的优化，同时，它也是SSA（静态单赋值）形式的一个前提。
+数据流分析牵扯到离散数学中的“偏序关系”和“">
+
+    
+    <link rel="alternative" href="/atom.xml" title="Hello Code" type="application/atom+xml">
+    
+    
+    <link rel="icon" href="/img/panda-icon.ico">
+    
+    
+    <link rel="apple-touch-icon" href="/img/panda.png">
+    <link rel="apple-touch-icon-precomposed" href="/img/panda.png">
+    
+    <link rel="stylesheet" href="/css/style.css" type="text/css">
+</head>
+
+  <body>
+    <header>
+      <div>
+		
+			<div id="imglogo">
+				<a href="/"><img src="/img/panda.png" alt="Hello Code" title="Hello Code"/></a>
+			</div>
+			
+			<div id="textlogo">
+				<h1 class="site-name"><a href="/" title="Hello Code">Hello Code</a></h1>
+				<h2 class="blog-motto"></h2>
+			</div>
+			<div class="navbar"><a class="navbutton navmobile" href="#" title="菜单">
+			</a></div>
+			<nav class="animated">
+				<ul>
+					<ul>
+					 
+						<li><a href="/">首页</a></li>
+					
+						<li><a href="/archives">归档</a></li>
+					
+						<li><a href="/about">关于</a></li>
+					
+					<li>
+ 					
+					<form class="search" action="//google.com/search" method="get" accept-charset="utf-8">
+						<label>Search</label>
+						<input type="search" id="search" name="q" autocomplete="off" maxlength="20" placeholder="搜索" />
+						<input type="hidden" name="q" value="site:wanghuanming.com">
+					</form>
+					
+					</li>
+				</ul>
+			</nav>			
+</div>
+    </header>
+    <div id="container">
+      <div id="main" class="post" itemscope itemprop="blogPost">
+  
+	<article itemprop="articleBody"> 
+		<header class="article-info clearfix">
+  <h1 itemprop="name">
+    
+      <a href="/2015/05/mathematica background for dataflow analysis/" title="数据流分析：数学原理" itemprop="url">数据流分析：数学原理</a>
+  </h1>
+  <p class="article-author">By
+       
+		<a href="http://wanghuanming.com/about" title="王欢明" target="_blank" itemprop="author">王欢明</a>
+		
+  <p class="article-time">
+    <time datetime="2015-05-29T03:09:10.000Z" itemprop="datePublished"> 发表于 2015 May 29</time>
+    
+  </p>
+</header>
+	<div class="article-content">
+		
+		<div id="toc" class="toc-article">
+			<strong class="toc-title">文章目录</strong>
+		
+			<ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#简介"><span class="toc-number">1.</span> <span class="toc-text">简介</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#数据流分析"><span class="toc-number">2.</span> <span class="toc-text">数据流分析</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#格"><span class="toc-number">3.</span> <span class="toc-text">格</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#迭代解法"><span class="toc-number">4.</span> <span class="toc-text">迭代解法</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#迭代解法的证明"><span class="toc-number">5.</span> <span class="toc-text">迭代解法的证明</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#convergence"><span class="toc-number">5.1.</span> <span class="toc-text">convergence</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#reaching_definition"><span class="toc-number">5.1.1.</span> <span class="toc-text">reaching definition</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#correctness"><span class="toc-number">5.2.</span> <span class="toc-text">correctness</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#speed"><span class="toc-number">5.3.</span> <span class="toc-text">speed</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#递归算法？"><span class="toc-number">6.</span> <span class="toc-text">递归算法？</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#总结"><span class="toc-number">7.</span> <span class="toc-text">总结</span></a></li></ol>
+		
+		</div>
+		
+		<h2 id="简介">简介</h2><p>数据流分析是一种在编译时推断值在运行时流动的技术。通常，它会遍历控制流图，收集运行时信息，来为优化提供服务。在数据流分析的基础上，可以实施common-subexression elimination, constant propagation, dead-code elimination之类的优化，同时，它也是SSA（静态单赋值）形式的一个前提。</p>
+<p>数据流分析牵扯到离散数学中的“偏序关系”和“格”的相关知识，而这些早已被我遗忘，为了搞明白这些问题，我还特地复习了离散数学，消耗了很多脑细胞。写下此文，祭奠我死去的脑细胞。</p>
+<h2 id="数据流分析">数据流分析</h2><p>数据流分析的目的就是要搞清楚一个程序里数据的流向，从变量的定义到使用，为此，我们首先需要为这个问题建立一个模型。</p>
+<p><img src="http://huanming-blog.qiniudn.com/图表1.png" alt="控制流图"></p>
+<p>如图所示，为一个过程（procedure）画出它的控制流图。这里有两个概念：</p>
+<ul>
+<li>Basic Block：它指的是最长的无分支代码序列，如B1、B2</li>
+<li>procedure：Basic Block的组合</li>
+</ul>
+<p>对于每个Block来说，它有输入和输出，定义为in[n], out[n]。对于一个Block来说，我们定义一个函数f来计算它的out[n]: $out[n] = f(in[n])$，我们把它称之为transfer function。那么这时候我们已经把Block内部的数据流向计算出来了。</p>
+<p>而Block之间的数据流向呢？显然，如果一个结点只有一个前驱，它的输入就是前驱的输出，例如$in[2] = out[1]$。但是，如果这个结点有两个前驱呢，如B3？</p>
+<p>这时候，我们定义一个运算符，$in[3] = out[2] \bigcup out[7]$，这个运算符同样适用于多个前驱的情况。我们把这个运算符称之为meet operator，但是需要注意的是它和我们俗称的“交”运算并不等价。</p>
+<p>至此，我们建立的模型已经能够刻画在一个过程内的数据流向了：数据由顶端流入，经过Block的时候由transfer function映射，在Block之间由meet operator来计算。</p>
+<p>不过在继续之前，我们先小结一些这里用到的一些概念和定义：</p>
+<ol>
+<li>Basic Block（Block）：不包含分支的最长代码序列</li>
+<li>procedure：多个Basic Block的组合，也是一个连续的代码序列</li>
+<li>in[n]： Block n的输入</li>
+<li>out[n]: Block n的输出</li>
+<li>transfer function：从in[n] 到 out[n] 的映射</li>
+<li>meet operator：计算Block之间的数据流向，$in[n] = out[x] \bigcup out[y], x,y \in pred[n]$，</li>
+</ol>
+<h2 id="格">格</h2><p>（如果不需要证明迭代解法，此部分可以跳过，直接看迭代解法）</p>
+<p>有了上面的模型，我们其实可以很容易发现，它和离散数学中的“格”非常像，我们再来回顾一下格(lattice)的概念。</p>
+<p>格可以由偏序集（poset）定义，如果一个偏序集$ &lt; A, \leq &gt;$, 中的任意两个元素都有最小上界和最大下界，那么我们把它称之为格。在格中我们定义两个运算$\bigvee和\bigwedge$，对于任意的a，b，$a \bigvee b$表示a和b的最小上界，$a \bigwedge b$表示a和b的最大下界。并且，lattice满足以下定理：</p>
+<ul>
+<li>commutative: $a \bigwedge b = b \bigwedge a$</li>
+<li>associative: $a \bigwedge ( b \bigwedge c) = ( a \bigwedge b ) \bigwedge c $</li>
+<li>idempotent: $a \bigwedge a = a$</li>
+<li>transitivity: $a \leq b, b \leq c \Rightarrow a \leq c$</li>
+<li>antisymmetry: $a \leq b, b \leq a \Rightarrow a = b$</li>
+<li>reflexitivity: $a \leq a$</li>
+<li>$a \leq b \Leftarrow \Rightarrow a \bigwedge b = a$</li>
+</ul>
+<p>由最后一条定理其实我们也可以得到格的另一种定义方式：用meet operator去定义。只要满足$a \bigwedge b = a$即满足偏序关系，进而如果有最小上界和最大下界的话就是格了。</p>
+<p>这样定义的意义在于，我们之前建立的模型，并没有用到偏序关系，只用到了meet operator，不过好在由于它们的等价性，我们还是得到了一个格。</p>
+<p>等等，我们还没有证明之前的模型一定有上确界和下确界呢！是的，并且我们其实也无法证明，==！</p>
+<p>不过可以肯定的是，这个过程只有一个入口，因此它是有上确界的，我们把这个模型叫做semi-lattice。（类似于群与半群的关系）</p>
+<p>在得到我们的模型是semi-lattice的结论之后，同样也可以使用之前的几条性质，例如可交换、可结合、幂等、传递、反对称、自反。</p>
+<h2 id="迭代解法">迭代解法</h2><p>然后，有了这些性质有什么用呢？我们的目的并不是为了这些性质，而是——求解方程。</p>
+<p>之前得到的两个方程：</p>
+<ul>
+<li>$in[n] = out[x] \bigcup out[y], x, y \in pred[n] $</li>
+<li>$out[n] = f(in[n])$</li>
+</ul>
+<p>利用这两个方程，如何求解数据才是最为关键的地方，再次重申我们的目标——计算每个Block的in和out。</p>
+<p>不过到这里可能大家会有疑惑，方程中还有未知数f，以及meet operator，如何计算呢。这里其实不用着急，这两个变量因问题而异，不同的问题会有不同的transfer function和meet operator，这也是我们这两个方程的厉害之处——可以应付很多问题。所以在下面的讨论中，都假定$f$和$\bigcup$为已知量。</p>
+<p>其实这个问题也已经显而易见了，从前往后递推呗。知道了B1的输入，就知道了B1的输出，进而确定B2和B4的输入，从而算出B3、B5、B6的输出……算B7输入的时候使用meet operator把B5和B6的输入统一起来。</p>
+<p>很简单？如果只是纯数学的讨论，问题基本可以结束了。但是作为计算机科学的一个问题，我们还需要把这个算法形式化，至少要写出伪代码的。</p>
+<p>大部分教科书都是使用的迭代法求不动点来求解这个问题，我们先来解释这个算法。</p>
+<figure class="highlight oxygene"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">n &lt;- |N| - <span class="number">1</span></span><br><span class="line">changed &lt;- <span class="keyword">true</span></span><br><span class="line"><span class="keyword">while</span> (changed)</span><br><span class="line">    changed &lt;- <span class="keyword">false</span></span><br><span class="line">    </span><br><span class="line">    <span class="keyword">for</span> i &lt;- <span class="number">1</span> <span class="keyword">to</span> n</span><br><span class="line">        temp &lt;- <span class="comment">&#123;i&#125;</span> U f(<span class="keyword">in</span>[j]), <span class="keyword">for</span> j <span class="keyword">in</span> pred[i]</span><br><span class="line">        <span class="keyword">if</span> temp != <span class="keyword">in</span>[i] <span class="keyword">then</span></span><br><span class="line">            <span class="keyword">out</span>[i] &lt;- temp</span><br><span class="line">            changed &lt;- <span class="keyword">true</span></span><br></pre></td></tr></table></figure>
+<p>简单来说，就是不断迭代，应用以上的两个方程来计算out[n]，知道整个状态不变，我们也把这个状态称之为不动点（和Y combinator不一样)。并且，迭代时遍历的顺序不影响最后的结果，最多只影响算法效率。</p>
+<h2 id="迭代解法的证明">迭代解法的证明</h2><p>我们之前只是给出了不动点算法的形式化描述，却没有证明它的正确性，比如，这个算法会停止吗，它是正确的吗，它的效率如何？</p>
+<h3 id="convergence">convergence</h3><p>收敛性也就是可停止性，如果在迭代过程中集合不断收敛，必然会达到一个不动点。</p>
+<p>我们来看transfer function，$out[n] = f(in[n])$，如果f是一个单调函数（monotone），那么要么out集合不断变小，或者不变，最后必然到达不动点；或者out集合不断变大或不变，最后由于整个输入数据是finite，也会导致收敛。那么我们只要证明它的单调性。</p>
+<p>当然，f不可能在任意情况下都是单调的，因为这个函数是一个变量，我们需要证明的是它在特定情况下是单调的。</p>
+<p>为了确定f的domain，我们把问题具象化，来考虑一下reaching definition的问题。</p>
+<h4 id="reaching_definition">reaching definition</h4><p>这个问题说的是，一个变量在某一处的赋值，是否会直接影响到另一处的使用，如果能够影响，我们说这个definition 能够reach 某个使用。</p>
+<p>在这个问题中，我们可以得到transfer function为$out[n] = gen[n] \bigcup ( in[n] - kill[n] )$。$gen$指的是Block中新生成的定义（赋值），$kill$指的是新的定义把旧的kill了。</p>
+<p>对于这个transfer function，显然它是单调的，因为$in[a] \leq in[b] =&gt; gen[a] \bigcup (in[a] - kill[a]) \leq gen[b] \bigcup ( in[b] - kill[b]) $。这里就不证明了。</p>
+<p>事实上对于这样的问题我们基本都能证明transfer function的单调性，进而收敛性也得到证明。</p>
+<h3 id="correctness">correctness</h3><p>关于正确性，我们的计算在Block之内是满足方程$out[n] = f(in[n])$，关键是要证明meet operator是否能够推导出$temp &lt;= {i} \bigcup (\bigcap_{j\in preds(i)} in[j])$。这一点其实可以由meet operator的结合律和交换律已经幂等律得到保证，不作证明，请自行冥思。</p>
+<h3 id="speed">speed</h3><p>速度的话，收敛速度取决于遍历的方式，最理想的遍历方式是在求一个out结点之前我们已经把它的predecessor都计算好了，但迭代算法显然不能达到。近似，我们可以采用Reverse Post Order（RPO）的顺序遍历，和后序遍历的顺序相反，从而尽量做到在访问一个结点之前先访问它的predecessor。</p>
+<h2 id="递归算法？">递归算法？</h2><p>关于数据流分析的数学原理已经基本讲完，不过大家肯定会发现这并没有什么卵用——因为我们还没有把它的应用讲出来嘛，会在下一期讲述数据流分析的应用。</p>
+<p>其实这个迭代不动点算法困扰我很久的原因在于，它用到了格的知识，但事实上这个格的知识只是为了证明算法的正确性。我们如果只想算出整个CFG的out集合，是不需要这些复杂的数学知识的。并且， 根据我的理解，也不需要迭代地计算这个问题，直接递归不就好了，并且也不需要证明它的正确性，递归算法完全符合方程的直观表示。</p>
+<p>举例来说，我们定义一个IN函数来求in，那么$IN(n) = f(IN(x)) \bigcup f(IN(y))$，完全可以递归地去求解，为了效率的话还可以采取一定的记忆化措施，哪里需要什么迭代、不动点。说不定这些年来这个问题一直被复杂化了。。</p>
+<p>当然，我还没从实践上证明递归的解法更加优秀，不过很快就会得到证明的。</p>
+<h2 id="总结">总结</h2><p>花了好几天，终于搞定这个问题，收获还是蛮多的，复习了离散数学，看来接下来还要把图论再复习一下才能应付标量优化的部分。一开始看这个公式方程十分头疼，看多才总算找到门道。另外，数学总是能在我意想不到的地方给我致命一击，证明我的愚蠢，还是对当初没有好好学数学有一点点小遗憾的，不过好在时间还多，可以慢慢补回来。</p>
+  
+	</div>
+		<footer class="article-footer clearfix">
+<div class="article-catetags">
+
+<div class="article-categories">
+  <span></span>
+  <a class="article-category-link" href="/categories/Reading/">Reading</a>
+</div>
+
+
+  <div class="article-tags">
+  
+  <span></span> <a href="/tags/数学/">数学</a><a href="/tags/数据流分析/">数据流分析</a><a href="/tags/编译优化/">编译优化</a><a href="/tags/编译原理/">编译原理</a>
+  </div>
+
+</div>
+
+
+
+	<div class="article-share" id="share">
+	
+	  <div data-url="http://wanghuanming.com/2015/05/mathematica background for dataflow analysis/" data-title="数据流分析：数学原理 | Hello Code" data-tsina="null" class="share clearfix">
+	  </div>
+	
+	</div>
+
+
+</footer>
+
+   	       
+	</article>
+	
+<nav class="article-nav clearfix">
+ 
+ <div class="prev" >
+ <a href="/2015/06/implementation of logical operator in metaprogramming/" title="逻辑运算符元函数的实现">
+  <strong>上一篇：</strong><br/>
+  <span>
+  逻辑运算符元函数的实现</span>
+</a>
+</div>
+
+
+<div class="next">
+<a href="/2015/05/implementation of lvn/"  title="LVN分析与实现">
+ <strong>下一篇：</strong><br/> 
+ <span>LVN分析与实现
+</span>
+</a>
+</div>
+
+</nav>
+
+	
+<section id="comments" class="comment">
+	<div class="ds-thread" data-thread-key="2015/05/mathematica background for dataflow analysis/" data-title="数据流分析：数学原理" data-url="http://wanghuanming.com/2015/05/mathematica background for dataflow analysis/"></div>
+</section>
+
+
+</div>  
+      <div class="openaside"><a class="navbutton" href="#" title="显示侧边栏"></a></div>
+
+  <div id="toc" class="toc-aside">
+  <strong class="toc-title">文章目录</strong>
+ 
+ <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#简介"><span class="toc-number">1.</span> <span class="toc-text">简介</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#数据流分析"><span class="toc-number">2.</span> <span class="toc-text">数据流分析</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#格"><span class="toc-number">3.</span> <span class="toc-text">格</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#迭代解法"><span class="toc-number">4.</span> <span class="toc-text">迭代解法</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#迭代解法的证明"><span class="toc-number">5.</span> <span class="toc-text">迭代解法的证明</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#convergence"><span class="toc-number">5.1.</span> <span class="toc-text">convergence</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#reaching_definition"><span class="toc-number">5.1.1.</span> <span class="toc-text">reaching definition</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#correctness"><span class="toc-number">5.2.</span> <span class="toc-text">correctness</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#speed"><span class="toc-number">5.3.</span> <span class="toc-text">speed</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#递归算法？"><span class="toc-number">6.</span> <span class="toc-text">递归算法？</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#总结"><span class="toc-number">7.</span> <span class="toc-text">总结</span></a></li></ol>
+ 
+  </div>
+
+<div id="asidepart">
+<div class="closeaside"><a class="closebutton" href="#" title="隐藏侧边栏"></a></div>
+<aside class="clearfix">
+
+  
+<div class="categorieslist">
+	<p class="asidetitle">分类</p>
+		<ul>
+		
+		  
+			<li><a href="/categories/Code/" title="Code">Code<sup>39</sup></a></li>
+		  
+		
+		  
+			<li><a href="/categories/Life-Work/" title="Life &amp; Work">Life &amp; Work<sup>10</sup></a></li>
+		  
+		
+		  
+			<li><a href="/categories/Reading/" title="Reading">Reading<sup>4</sup></a></li>
+		  
+		
+		  
+			<li><a href="/categories/Tech-Tool/" title="Tech &amp; Tool">Tech &amp; Tool<sup>24</sup></a></li>
+		  
+		
+		</ul>
+</div>
+
+
+  
+<div class="tagslist">
+	<p class="asidetitle">标签</p>
+		<ul class="clearfix">
+		
+			
+				<li><a href="/tags/C/" title="C++">C++<sup>9</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Scala/" title="Scala">Scala<sup>6</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/编译原理/" title="编译原理">编译原理<sup>4</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/LLVM/" title="LLVM">LLVM<sup>4</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/数据结构/" title="数据结构">数据结构<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Spark/" title="Spark">Spark<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/javascript/" title="javascript">javascript<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/OS/" title="OS">OS<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/ACM/" title="ACM">ACM<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/虚拟机/" title="虚拟机">虚拟机<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/线段树/" title="线段树">线段树<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/解释器/" title="解释器">解释器<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/C语言/" title="C语言">C语言<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/进程/" title="进程">进程<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Linux/" title="Linux">Linux<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Coursera/" title="Coursera">Coursera<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/ssh/" title="ssh">ssh<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/openwrt/" title="openwrt">openwrt<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/C/" title="C">C<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/函数式编程/" title="函数式编程">函数式编程<sup>2</sup></a></li>
+			
+		
+		</ul>
+</div>
+
+
+  <div class="rsspart">
+	<a href="/atom.xml" target="_blank" title="rss">RSS 订阅</a>
+</div>
+
+</aside>
+</div>
+    </div>
+    <footer><div id="footer" >
+	
+	<div class="line">
+		<span></span>
+		<div class="author"></div>
+	</div>
+	
+	
+	<div class="social-font" class="clearfix">
+		
+		<a href="http://weibo.com/5108629996" target="_blank" class="icon-weibo" title="微博"></a>
+		
+		
+		<a href="https://github.com/HelloCodeMing" target="_blank" class="icon-github" title="github"></a>
+		
+		
+		
+		
+		
+		
+		<a href="https://www.douban.com/people/94795087" target="_blank" class="icon-douban" title="豆瓣"></a>
+		
+		
+		<a href="https://www.zhihu.com/people/hellocode-67" target="_blank" class="icon-zhihu" title="知乎"></a>
+		
+		
+		
+		<a href="mailto:huanmingwong@163.com" target="_blank" class="icon-email" title="Email Me"></a>
+		
+	</div>
+			
+		
+
+		<p class="copyright">
+		Powered by <a href="http://hexo.io" target="_blank" title="hexo">hexo</a> and Theme by <a href="https://github.com/wuchong/jacman" target="_blank" title="Jacman">Jacman</a> © 2016 
+		
+		<a href="http://wanghuanming.com/about" target="_blank" title="王欢明">王欢明</a>
+		
+		
+		</p>
+</div>
+</footer>
+    <script src="/js/jquery-2.0.3.min.js"></script>
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  $('.navbar').click(function(){
+    $('header nav').toggleClass('shownav');
+  });
+  var myWidth = 0;
+  function getSize(){
+    if( typeof( window.innerWidth ) == 'number' ) {
+      myWidth = window.innerWidth;
+    } else if( document.documentElement && document.documentElement.clientWidth) {
+      myWidth = document.documentElement.clientWidth;
+    };
+  };
+  var m = $('#main'),
+      a = $('#asidepart'),
+      c = $('.closeaside'),
+      o = $('.openaside');
+  c.click(function(){
+    a.addClass('fadeOut').css('display', 'none');
+    o.css('display', 'block').addClass('fadeIn');
+    m.addClass('moveMain');
+  });
+  o.click(function(){
+    o.css('display', 'none').removeClass('beforeFadeIn');
+    a.css('display', 'block').removeClass('fadeOut').addClass('fadeIn');      
+    m.removeClass('moveMain');
+  });
+  $(window).scroll(function(){
+    o.css("top",Math.max(80,260-$(this).scrollTop()));
+  });
+  
+  $(window).resize(function(){
+    getSize(); 
+    if (myWidth >= 1024) {
+      $('header nav').removeClass('shownav');
+    }else{
+      m.removeClass('moveMain');
+      a.css('display', 'block').removeClass('fadeOut');
+      o.css('display', 'none');
+      
+      $('#toc.toc-aside').css('display', 'none');
+        
+    }
+  });
+});
+</script>
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  var ai = $('.article-content>iframe'),
+      ae = $('.article-content>embed'),
+      t  = $('#toc'),
+      ta = $('#toc.toc-aside'),
+      o  = $('.openaside'),
+      c  = $('.closeaside');
+  if(ai.length>0){
+    ai.wrap('<div class="video-container" />');
+  };
+  if(ae.length>0){
+   ae.wrap('<div class="video-container" />');
+  };
+  c.click(function(){
+    ta.css('display', 'block').addClass('fadeIn');
+  });
+  o.click(function(){
+    ta.css('display', 'none');
+  });
+  $(window).scroll(function(){
+    ta.css("top",Math.max(140,320-$(this).scrollTop()));
+  });
+});
+</script>
+
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  var $this = $('.share'),
+      url = $this.attr('data-url'),
+      encodedUrl = encodeURIComponent(url),
+      title = $this.attr('data-title'),
+      tsina = $this.attr('data-tsina'),
+      description = $this.attr('description');
+  var html = [
+  '<a href="#" class="overlay" id="qrcode"></a>',
+  '<div class="qrcode clearfix"><span>扫描二维码分享到微信朋友圈</span><a class="qrclose" href="#nothing"></a><strong>Loading...Please wait</strong><img id="qrcode-pic" data-src="http://s.jiathis.com/qrcode.php?url=' + encodedUrl + '"/></div>',
+  '<a href="https://www.facebook.com/sharer.php?u=' + encodedUrl + '" class="article-share-facebook" target="_blank" title="Facebook"></a>',
+  '<a href="https://twitter.com/intent/tweet?url=' + encodedUrl + '" class="article-share-twitter" target="_blank" title="Twitter"></a>',
+  '<a href="#qrcode" class="article-share-qrcode" title="微信"></a>',
+  '<a href="http://widget.renren.com/dialog/share?resourceUrl=' + encodedUrl + '&srcUrl=' + encodedUrl + '&title=' + title +'" class="article-share-renren" target="_blank" title="人人"></a>',
+  '<a href="http://service.weibo.com/share/share.php?title='+title+'&url='+encodedUrl +'&ralateUid='+ tsina +'&searchPic=true&style=number' +'" class="article-share-weibo" target="_blank" title="微博"></a>',
+  '<span title="Share to"></span>'
+  ].join('');
+  $this.append(html);
+  $('.article-share-qrcode').click(function(){
+    var imgSrc = $('#qrcode-pic').attr('data-src');
+    $('#qrcode-pic').attr('src', imgSrc);
+    $('#qrcode-pic').load(function(){
+        $('.qrcode strong').text(' ');
+    });
+  });
+});     
+</script>
+
+
+
+<script type="text/javascript">
+  var duoshuoQuery = {short_name:"wanghuanming"};
+  (function() {
+    var ds = document.createElement('script');
+    ds.type = 'text/javascript';ds.async = true;
+    ds.src = '//static.duoshuo.com/embed.js';
+    ds.charset = 'UTF-8';
+    (document.getElementsByTagName('head')[0] 
+    || document.getElementsByTagName('body')[0]).appendChild(ds);
+  })();
+</script> 
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+$(document).ready(function(){ 
+  $('.article-content').each(function(i){
+    $(this).find('img').each(function(){
+      if ($(this).parent().hasClass('fancybox')) return;
+      var alt = this.alt;
+      if (alt) $(this).after('<span class="caption">' + alt + '</span>');
+      $(this).wrap('<a href="' + this.src + '" title="' + alt + '" class="fancybox"></a>');
+    });
+    $(this).find('.fancybox').each(function(){
+      $(this).attr('rel', 'article' + i);
+    });
+  });
+  if($.fancybox){
+    $('.fancybox').fancybox();
+  }
+}); 
+</script>
+
+
+
+<!-- Analytics Begin -->
+
+
+
+
+
+<!-- Analytics End -->
+
+<!-- Totop Begin -->
+
+	<div id="totop">
+	<a title="返回顶部"><img src="/img/scrollup.png"/></a>
+	</div>
+	<script src="/js/totop.js"></script>
+
+<!-- Totop End -->
+
+<!-- MathJax Begin -->
+<!-- mathjax config similar to math.stackexchange -->
+
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    tex2jax: {
+      inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+      processEscapes: true
+    }
+  });
+</script>
+
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: {
+        skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+      }
+    });
+</script>
+
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Queue(function() {
+        var all = MathJax.Hub.getAllJax(), i;
+        for(i=0; i < all.length; i += 1) {
+            all[i].SourceElement().parentNode.className += ' has-jax';
+        }
+    });
+</script>
+
+<script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+</script>
+
+
+<!-- MathJax End -->
+
+<!-- Tiny_search Begin -->
+
+<!-- Tiny_search End -->
+
+  </body>
+</html>

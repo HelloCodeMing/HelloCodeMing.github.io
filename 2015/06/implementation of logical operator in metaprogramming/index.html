@@ -1,0 +1,569 @@
+
+ <!DOCTYPE HTML>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  
+    <title>逻辑运算符元函数的实现 | Hello Code</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1,user-scalable=no">
+    
+    <meta name="author" content="王欢明">
+    
+
+    
+    <meta name="description" content="这是《C++ Template Metaprogramming》4-1的题目，要求实现一个logical_or和logicaland元函数，功能和mpl::or等价，并且具有短路求值的性质。
+也就是说，它需要保证以下测试能够通过：
+1234567891011121314151617181920212223242526272829303132/** * Has no member &quot;type&quot;, s">
+<meta property="og:type" content="article">
+<meta property="og:title" content="逻辑运算符元函数的实现">
+<meta property="og:url" content="http://wanghuanming.com/2015/06/implementation of logical operator in metaprogramming/index.html">
+<meta property="og:site_name" content="Hello Code">
+<meta property="og:description" content="这是《C++ Template Metaprogramming》4-1的题目，要求实现一个logical_or和logicaland元函数，功能和mpl::or等价，并且具有短路求值的性质。
+也就是说，它需要保证以下测试能够通过：
+1234567891011121314151617181920212223242526272829303132/** * Has no member &quot;type&quot;, s">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="逻辑运算符元函数的实现">
+<meta name="twitter:description" content="这是《C++ Template Metaprogramming》4-1的题目，要求实现一个logical_or和logicaland元函数，功能和mpl::or等价，并且具有短路求值的性质。
+也就是说，它需要保证以下测试能够通过：
+1234567891011121314151617181920212223242526272829303132/** * Has no member &quot;type&quot;, s">
+
+    
+    <link rel="alternative" href="/atom.xml" title="Hello Code" type="application/atom+xml">
+    
+    
+    <link rel="icon" href="/img/panda-icon.ico">
+    
+    
+    <link rel="apple-touch-icon" href="/img/panda.png">
+    <link rel="apple-touch-icon-precomposed" href="/img/panda.png">
+    
+    <link rel="stylesheet" href="/css/style.css" type="text/css">
+</head>
+
+  <body>
+    <header>
+      <div>
+		
+			<div id="imglogo">
+				<a href="/"><img src="/img/panda.png" alt="Hello Code" title="Hello Code"/></a>
+			</div>
+			
+			<div id="textlogo">
+				<h1 class="site-name"><a href="/" title="Hello Code">Hello Code</a></h1>
+				<h2 class="blog-motto"></h2>
+			</div>
+			<div class="navbar"><a class="navbutton navmobile" href="#" title="菜单">
+			</a></div>
+			<nav class="animated">
+				<ul>
+					<ul>
+					 
+						<li><a href="/">首页</a></li>
+					
+						<li><a href="/archives">归档</a></li>
+					
+						<li><a href="/about">关于</a></li>
+					
+					<li>
+ 					
+					<form class="search" action="//google.com/search" method="get" accept-charset="utf-8">
+						<label>Search</label>
+						<input type="search" id="search" name="q" autocomplete="off" maxlength="20" placeholder="搜索" />
+						<input type="hidden" name="q" value="site:wanghuanming.com">
+					</form>
+					
+					</li>
+				</ul>
+			</nav>			
+</div>
+    </header>
+    <div id="container">
+      <div id="main" class="post" itemscope itemprop="blogPost">
+  
+	<article itemprop="articleBody"> 
+		<header class="article-info clearfix">
+  <h1 itemprop="name">
+    
+      <a href="/2015/06/implementation of logical operator in metaprogramming/" title="逻辑运算符元函数的实现" itemprop="url">逻辑运算符元函数的实现</a>
+  </h1>
+  <p class="article-author">By
+       
+		<a href="http://wanghuanming.com/about" title="王欢明" target="_blank" itemprop="author">王欢明</a>
+		
+  <p class="article-time">
+    <time datetime="2015-06-05T06:16:14.000Z" itemprop="datePublished"> 发表于 2015 Jun 5</time>
+    
+  </p>
+</header>
+	<div class="article-content">
+		
+		<div id="toc" class="toc-article">
+			<strong class="toc-title">文章目录</strong>
+		
+			
+		
+		</div>
+		
+		<p>这是《C++ Template Metaprogramming》4-1的题目，要求实现一个logical_or和logical<em>and元函数，功能和mpl::or</em>等价，并且具有短路求值的性质。</p>
+<p>也就是说，它需要保证以下测试能够通过：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span><br><span class="line"> * Has no member "type", so will crash when obtaining Boom::type</span><br><span class="line"> */</span></span><br><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">class</span> T&gt;</span><br><span class="line"><span class="keyword">struct</span> Boom &#123;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="comment">/* logical or */</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">static_assert</span>(logical_or&lt; true_,</span><br><span class="line">                          Boom&lt;<span class="keyword">int</span>&gt;</span><br><span class="line">                        &gt;::value, <span class="string">"short circuit or boom"</span>);</span><br><span class="line"></span><br><span class="line"><span class="keyword">static_assert</span>(<span class="built_in">std</span>::is_same&lt;</span><br><span class="line">                logical_or&lt; true_, false_&gt;::type,</span><br><span class="line">                true_&gt;::value, <span class="string">"true_ and false_"</span>);</span><br><span class="line"></span><br><span class="line"><span class="keyword">static_assert</span>(<span class="built_in">std</span>::is_same&lt;</span><br><span class="line">                logical_or&lt; false_, true_&gt;::type,</span><br><span class="line">                true_&gt;::value, <span class="string">"false_ and true_"</span>);</span><br><span class="line"></span><br><span class="line"><span class="keyword">static_assert</span>(<span class="built_in">std</span>::is_same&lt;</span><br><span class="line">                logical_or&lt; false_, false_&gt;::type,</span><br><span class="line">                false_&gt;::value, <span class="string">"false_ and false_"</span>);</span><br><span class="line"></span><br><span class="line"><span class="keyword">static_assert</span>(<span class="built_in">std</span>::is_same&lt;</span><br><span class="line">                logical_or&lt; false_, false_, false_, true_&gt;::type,</span><br><span class="line">                true_&gt;::value, <span class="string">"false_ ,false_, false_, true_"</span>);</span><br><span class="line"></span><br><span class="line"><span class="keyword">static_assert</span>(<span class="built_in">std</span>::is_same&lt;</span><br><span class="line">                logical_or&lt; false_, false_, false_, false_&gt;::type,</span><br><span class="line">                false_&gt;::value, <span class="string">"false_, false_, false_, false_"</span>);</span><br></pre></td></tr></table></figure>
+<p>期中比较重要的是第一条测试，它保证了短路求值，因为对第二个参数实例化的时候，logical_or会获取其type，而这并没有被Boom实现，所以编译不会通过。而在具有短路求值的情况下，第二个参数不会实例化，也就保证不会crash。</p>
+<p>比较naive的实现是这样的：<br><figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">class</span> T1 = false_, <span class="keyword">class</span> T2 = false_, <span class="keyword">class</span> T3 = false_&gt;</span><br><span class="line"><span class="keyword">struct</span> naive_or &#123;</span><br><span class="line">    <span class="keyword">typedef</span> <span class="keyword">typename</span> mpl::bool_&lt;T1::type::value || </span><br><span class="line">                                T2::type::value || </span><br><span class="line">                                T3::type::value&gt;::type type;</span><br><span class="line">    <span class="keyword">const</span> <span class="keyword">static</span> <span class="keyword">bool</span> value = mpl::bool_&lt;T1::type::value || </span><br><span class="line">                                         T2::type::value || </span><br><span class="line">                                         T3::type::value&gt;::value;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure></p>
+<p>提供默认模版参数，用原生的||运算符实现逻辑，因为||是具有短路求值的性质的。但是，如果跑一下那个测试的例子，很容易发现它其实不能保证短路求值。因为到计算type的时候其实编译器已经把T1、T2、T3都实例化去求type了，所以会导致crash。</p>
+<p>既然不能利用原生的||运算符，那我们剩下的就是用模版特化了。如果不需要计算type，我们很容易写出这样的特化版本：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">class</span> T1 = false_, <span class="keyword">class</span> T2 = false_, <span class="keyword">class</span> T3 = false_&gt;</span><br><span class="line"><span class="keyword">struct</span> logical_or &#123;&#125;;</span><br><span class="line"></span><br><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">class</span> T2, <span class="keyword">class</span> T3&gt;</span><br><span class="line"><span class="keyword">struct</span> logical_or&lt;true_, T2, T3&gt; &#123; </span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">class</span> T3&gt;</span><br><span class="line"><span class="keyword">struct</span> logical_or&lt;false_, true_, T3&gt; &#123; </span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line">.......</span><br></pre></td></tr></table></figure>
+<p>但这样的偏特化缺陷在于不能求类型参数的type，或许，我们需要给它写一个wrapper做转发？那么wrapper应该要这样实现：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">class</span> T1 = false_, <span class="keyword">class</span> T2 = false_, <span class="keyword">class</span> T3 = false_&gt;</span><br><span class="line"><span class="keyword">struct</span> logical_or_wrap : logical_or&lt;<span class="keyword">typename</span> T1::type,</span><br><span class="line">                                                            <span class="keyword">typename</span> T2::type,</span><br><span class="line">                                                            <span class="keyword">typename</span> T3::type</span><br><span class="line">                                                            &gt; &#123;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>很容易发现它的问题所在，这个wrapper还是去求type了，又会导致crash。</p>
+<p>到了这里，我们应该能想到，我们实现的logical<em>or需要具备这样的性质：先看第一个参数，如果为true</em>， 结束匹配；否则继续看后面的类型。这样的性质如何满足？</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">class</span> T1 = false_, <span class="keyword">class</span> T2 = false_, <span class="keyword">class</span> T3 = false_&gt;</span><br><span class="line"><span class="keyword">struct</span> logical_or2 : </span><br><span class="line">    mpl::eval_if&lt;T1,</span><br><span class="line">                          true_,</span><br><span class="line">                          logical_or2&lt;T2, T3&gt;&gt; &#123;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="keyword">template</span> &lt;&gt;</span><br><span class="line"><span class="keyword">struct</span> logical_or2&lt;&gt; : false_ &#123;&#125;;</span><br></pre></td></tr></table></figure>
+<p>递归正好具有这样的性质，如果T1为true<em>, 设置值为true</em>；否则递归下去；同时还需要一个终结条件，就是最后两行代码。虽然这样的写法十分简洁明了，并且能够应付大部分场景，但唯一的不足就是它的参数有限，最好是我们具有一个无限长的参数列表。于是我们还需要把它写的更Robust一点：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">class</span> ...Arg&gt; <span class="keyword">struct</span> logical_or: false_ &#123;&#125;;</span><br><span class="line"></span><br><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">class</span> Head, <span class="keyword">class</span> ...Tail&gt;</span><br><span class="line"><span class="keyword">struct</span> logical_or&lt;Head, Tail...&gt; :</span><br><span class="line">    mpl::eval_if&lt; Head, true_, logical_or&lt;Tail...&gt;&gt; &#123;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>写到这里，应该不能更完美了把！！！不过这里用到了eval_if，说不定我是利用了它的某些隐含的特性呢？为了证明我的清白，可以把这段代码写成self<em>contained。（除了true</em>，false_）</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">bool</span> Cond, <span class="keyword">class</span> Then, <span class="keyword">class</span> Else&gt;</span><br><span class="line"><span class="keyword">struct</span> if_impl &#123;</span><br><span class="line">    <span class="keyword">typedef</span> Then type;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="keyword">template</span> &lt;classThen, Class Else&gt;</span><br><span class="line"><span class="keyword">struct</span> if_impl&lt;<span class="literal">false</span>, Then, Else&gt; &#123;</span><br><span class="line">    <span class="keyword">typedef</span> Else type;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">class</span> Cond, <span class="keyword">class</span> Then, <span class="keyword">class</span> Else&gt;</span><br><span class="line"><span class="keyword">struct</span> if_: if_impl&lt;Cond::value, Then, Else&gt; &#123;&#125;;</span><br><span class="line"></span><br><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">class</span> Cond, <span class="keyword">class</span> Then, <span class="keyword">class</span> Else&gt;</span><br><span class="line"><span class="keyword">struct</span> eval_if: if_&lt;Cond, Then, Else&gt;::type &#123;&#125;;</span><br></pre></td></tr></table></figure>
+<p>好了，全部搞定。代码见<a href="https://github.com/HelloCodeMing/TMP/blob/master/chapter4/logical_or.hpp" target="_blank" rel="external">这里</a>。</p>
+  
+	</div>
+		<footer class="article-footer clearfix">
+<div class="article-catetags">
+
+<div class="article-categories">
+  <span></span>
+  <a class="article-category-link" href="/categories/Code/">Code</a>
+</div>
+
+
+  <div class="article-tags">
+  
+  <span></span> <a href="/tags/C/">C++</a><a href="/tags/MPL/">MPL</a><a href="/tags/模版元编程/">模版元编程</a>
+  </div>
+
+</div>
+
+
+
+	<div class="article-share" id="share">
+	
+	  <div data-url="http://wanghuanming.com/2015/06/implementation of logical operator in metaprogramming/" data-title="逻辑运算符元函数的实现 | Hello Code" data-tsina="null" class="share clearfix">
+	  </div>
+	
+	</div>
+
+
+</footer>
+
+   	       
+	</article>
+	
+<nav class="article-nav clearfix">
+ 
+ <div class="prev" >
+ <a href="/2015/07/placeholder lambda for C++/" title="C++占位符Lambda的实现">
+  <strong>上一篇：</strong><br/>
+  <span>
+  C++占位符Lambda的实现</span>
+</a>
+</div>
+
+
+<div class="next">
+<a href="/2015/05/mathematica background for dataflow analysis/"  title="数据流分析：数学原理">
+ <strong>下一篇：</strong><br/> 
+ <span>数据流分析：数学原理
+</span>
+</a>
+</div>
+
+</nav>
+
+	
+<section id="comments" class="comment">
+	<div class="ds-thread" data-thread-key="2015/06/implementation of logical operator in metaprogramming/" data-title="逻辑运算符元函数的实现" data-url="http://wanghuanming.com/2015/06/implementation of logical operator in metaprogramming/"></div>
+</section>
+
+
+</div>  
+      <div class="openaside"><a class="navbutton" href="#" title="显示侧边栏"></a></div>
+
+  <div id="toc" class="toc-aside">
+  <strong class="toc-title">文章目录</strong>
+ 
+ 
+ 
+  </div>
+
+<div id="asidepart">
+<div class="closeaside"><a class="closebutton" href="#" title="隐藏侧边栏"></a></div>
+<aside class="clearfix">
+
+  
+<div class="categorieslist">
+	<p class="asidetitle">分类</p>
+		<ul>
+		
+		  
+			<li><a href="/categories/Code/" title="Code">Code<sup>39</sup></a></li>
+		  
+		
+		  
+			<li><a href="/categories/Life-Work/" title="Life &amp; Work">Life &amp; Work<sup>10</sup></a></li>
+		  
+		
+		  
+			<li><a href="/categories/Reading/" title="Reading">Reading<sup>4</sup></a></li>
+		  
+		
+		  
+			<li><a href="/categories/Tech-Tool/" title="Tech &amp; Tool">Tech &amp; Tool<sup>24</sup></a></li>
+		  
+		
+		</ul>
+</div>
+
+
+  
+<div class="tagslist">
+	<p class="asidetitle">标签</p>
+		<ul class="clearfix">
+		
+			
+				<li><a href="/tags/C/" title="C++">C++<sup>9</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Scala/" title="Scala">Scala<sup>6</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/编译原理/" title="编译原理">编译原理<sup>4</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/LLVM/" title="LLVM">LLVM<sup>4</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/数据结构/" title="数据结构">数据结构<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Spark/" title="Spark">Spark<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/javascript/" title="javascript">javascript<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/OS/" title="OS">OS<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/ACM/" title="ACM">ACM<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/虚拟机/" title="虚拟机">虚拟机<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/线段树/" title="线段树">线段树<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/解释器/" title="解释器">解释器<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/C语言/" title="C语言">C语言<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/进程/" title="进程">进程<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Linux/" title="Linux">Linux<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Coursera/" title="Coursera">Coursera<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/ssh/" title="ssh">ssh<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/openwrt/" title="openwrt">openwrt<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/C/" title="C">C<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/函数式编程/" title="函数式编程">函数式编程<sup>2</sup></a></li>
+			
+		
+		</ul>
+</div>
+
+
+  <div class="rsspart">
+	<a href="/atom.xml" target="_blank" title="rss">RSS 订阅</a>
+</div>
+
+</aside>
+</div>
+    </div>
+    <footer><div id="footer" >
+	
+	<div class="line">
+		<span></span>
+		<div class="author"></div>
+	</div>
+	
+	
+	<div class="social-font" class="clearfix">
+		
+		<a href="http://weibo.com/5108629996" target="_blank" class="icon-weibo" title="微博"></a>
+		
+		
+		<a href="https://github.com/HelloCodeMing" target="_blank" class="icon-github" title="github"></a>
+		
+		
+		
+		
+		
+		
+		<a href="https://www.douban.com/people/94795087" target="_blank" class="icon-douban" title="豆瓣"></a>
+		
+		
+		<a href="https://www.zhihu.com/people/hellocode-67" target="_blank" class="icon-zhihu" title="知乎"></a>
+		
+		
+		
+		<a href="mailto:huanmingwong@163.com" target="_blank" class="icon-email" title="Email Me"></a>
+		
+	</div>
+			
+		
+
+		<p class="copyright">
+		Powered by <a href="http://hexo.io" target="_blank" title="hexo">hexo</a> and Theme by <a href="https://github.com/wuchong/jacman" target="_blank" title="Jacman">Jacman</a> © 2016 
+		
+		<a href="http://wanghuanming.com/about" target="_blank" title="王欢明">王欢明</a>
+		
+		
+		</p>
+</div>
+</footer>
+    <script src="/js/jquery-2.0.3.min.js"></script>
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  $('.navbar').click(function(){
+    $('header nav').toggleClass('shownav');
+  });
+  var myWidth = 0;
+  function getSize(){
+    if( typeof( window.innerWidth ) == 'number' ) {
+      myWidth = window.innerWidth;
+    } else if( document.documentElement && document.documentElement.clientWidth) {
+      myWidth = document.documentElement.clientWidth;
+    };
+  };
+  var m = $('#main'),
+      a = $('#asidepart'),
+      c = $('.closeaside'),
+      o = $('.openaside');
+  c.click(function(){
+    a.addClass('fadeOut').css('display', 'none');
+    o.css('display', 'block').addClass('fadeIn');
+    m.addClass('moveMain');
+  });
+  o.click(function(){
+    o.css('display', 'none').removeClass('beforeFadeIn');
+    a.css('display', 'block').removeClass('fadeOut').addClass('fadeIn');      
+    m.removeClass('moveMain');
+  });
+  $(window).scroll(function(){
+    o.css("top",Math.max(80,260-$(this).scrollTop()));
+  });
+  
+  $(window).resize(function(){
+    getSize(); 
+    if (myWidth >= 1024) {
+      $('header nav').removeClass('shownav');
+    }else{
+      m.removeClass('moveMain');
+      a.css('display', 'block').removeClass('fadeOut');
+      o.css('display', 'none');
+      
+      $('#toc.toc-aside').css('display', 'none');
+        
+    }
+  });
+});
+</script>
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  var ai = $('.article-content>iframe'),
+      ae = $('.article-content>embed'),
+      t  = $('#toc'),
+      ta = $('#toc.toc-aside'),
+      o  = $('.openaside'),
+      c  = $('.closeaside');
+  if(ai.length>0){
+    ai.wrap('<div class="video-container" />');
+  };
+  if(ae.length>0){
+   ae.wrap('<div class="video-container" />');
+  };
+  c.click(function(){
+    ta.css('display', 'block').addClass('fadeIn');
+  });
+  o.click(function(){
+    ta.css('display', 'none');
+  });
+  $(window).scroll(function(){
+    ta.css("top",Math.max(140,320-$(this).scrollTop()));
+  });
+});
+</script>
+
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  var $this = $('.share'),
+      url = $this.attr('data-url'),
+      encodedUrl = encodeURIComponent(url),
+      title = $this.attr('data-title'),
+      tsina = $this.attr('data-tsina'),
+      description = $this.attr('description');
+  var html = [
+  '<a href="#" class="overlay" id="qrcode"></a>',
+  '<div class="qrcode clearfix"><span>扫描二维码分享到微信朋友圈</span><a class="qrclose" href="#nothing"></a><strong>Loading...Please wait</strong><img id="qrcode-pic" data-src="http://s.jiathis.com/qrcode.php?url=' + encodedUrl + '"/></div>',
+  '<a href="https://www.facebook.com/sharer.php?u=' + encodedUrl + '" class="article-share-facebook" target="_blank" title="Facebook"></a>',
+  '<a href="https://twitter.com/intent/tweet?url=' + encodedUrl + '" class="article-share-twitter" target="_blank" title="Twitter"></a>',
+  '<a href="#qrcode" class="article-share-qrcode" title="微信"></a>',
+  '<a href="http://widget.renren.com/dialog/share?resourceUrl=' + encodedUrl + '&srcUrl=' + encodedUrl + '&title=' + title +'" class="article-share-renren" target="_blank" title="人人"></a>',
+  '<a href="http://service.weibo.com/share/share.php?title='+title+'&url='+encodedUrl +'&ralateUid='+ tsina +'&searchPic=true&style=number' +'" class="article-share-weibo" target="_blank" title="微博"></a>',
+  '<span title="Share to"></span>'
+  ].join('');
+  $this.append(html);
+  $('.article-share-qrcode').click(function(){
+    var imgSrc = $('#qrcode-pic').attr('data-src');
+    $('#qrcode-pic').attr('src', imgSrc);
+    $('#qrcode-pic').load(function(){
+        $('.qrcode strong').text(' ');
+    });
+  });
+});     
+</script>
+
+
+
+<script type="text/javascript">
+  var duoshuoQuery = {short_name:"wanghuanming"};
+  (function() {
+    var ds = document.createElement('script');
+    ds.type = 'text/javascript';ds.async = true;
+    ds.src = '//static.duoshuo.com/embed.js';
+    ds.charset = 'UTF-8';
+    (document.getElementsByTagName('head')[0] 
+    || document.getElementsByTagName('body')[0]).appendChild(ds);
+  })();
+</script> 
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+$(document).ready(function(){ 
+  $('.article-content').each(function(i){
+    $(this).find('img').each(function(){
+      if ($(this).parent().hasClass('fancybox')) return;
+      var alt = this.alt;
+      if (alt) $(this).after('<span class="caption">' + alt + '</span>');
+      $(this).wrap('<a href="' + this.src + '" title="' + alt + '" class="fancybox"></a>');
+    });
+    $(this).find('.fancybox').each(function(){
+      $(this).attr('rel', 'article' + i);
+    });
+  });
+  if($.fancybox){
+    $('.fancybox').fancybox();
+  }
+}); 
+</script>
+
+
+
+<!-- Analytics Begin -->
+
+
+
+
+
+<!-- Analytics End -->
+
+<!-- Totop Begin -->
+
+	<div id="totop">
+	<a title="返回顶部"><img src="/img/scrollup.png"/></a>
+	</div>
+	<script src="/js/totop.js"></script>
+
+<!-- Totop End -->
+
+<!-- MathJax Begin -->
+<!-- mathjax config similar to math.stackexchange -->
+
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    tex2jax: {
+      inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+      processEscapes: true
+    }
+  });
+</script>
+
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: {
+        skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+      }
+    });
+</script>
+
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Queue(function() {
+        var all = MathJax.Hub.getAllJax(), i;
+        for(i=0; i < all.length; i += 1) {
+            all[i].SourceElement().parentNode.className += ' has-jax';
+        }
+    });
+</script>
+
+<script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+</script>
+
+
+<!-- MathJax End -->
+
+<!-- Tiny_search Begin -->
+
+<!-- Tiny_search End -->
+
+  </body>
+</html>

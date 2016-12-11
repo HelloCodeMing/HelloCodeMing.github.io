@@ -1,0 +1,580 @@
+
+ <!DOCTYPE HTML>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  
+    <title>MIT6.824 labraft实现 | Hello Code</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1,user-scalable=no">
+    
+    <meta name="author" content="王欢明">
+    
+
+    
+    <meta name="description" content="MIT6.824 是MIT的 Distributed System 课程，从RPC开始讲起，到主从备份，容错，再到分布式事务，分布式一致性，介绍了分布式系统各方面的内容。这门课程还包含一些实验，lab1是MapReduce实验，实现一个简单MapReduce框架，最终要能够运行WordCount、InvertedIndex这样经典的MapReduce程序；lab2及之后的lab则围绕着分布式存储这">
+<meta property="og:type" content="article">
+<meta property="og:title" content="MIT6.824 labraft实现">
+<meta property="og:url" content="http://wanghuanming.com/2016/12/raft-implementation/index.html">
+<meta property="og:site_name" content="Hello Code">
+<meta property="og:description" content="MIT6.824 是MIT的 Distributed System 课程，从RPC开始讲起，到主从备份，容错，再到分布式事务，分布式一致性，介绍了分布式系统各方面的内容。这门课程还包含一些实验，lab1是MapReduce实验，实现一个简单MapReduce框架，最终要能够运行WordCount、InvertedIndex这样经典的MapReduce程序；lab2及之后的lab则围绕着分布式存储这">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="MIT6.824 labraft实现">
+<meta name="twitter:description" content="MIT6.824 是MIT的 Distributed System 课程，从RPC开始讲起，到主从备份，容错，再到分布式事务，分布式一致性，介绍了分布式系统各方面的内容。这门课程还包含一些实验，lab1是MapReduce实验，实现一个简单MapReduce框架，最终要能够运行WordCount、InvertedIndex这样经典的MapReduce程序；lab2及之后的lab则围绕着分布式存储这">
+
+    
+    <link rel="alternative" href="/atom.xml" title="Hello Code" type="application/atom+xml">
+    
+    
+    <link rel="icon" href="/img/panda-icon.ico">
+    
+    
+    <link rel="apple-touch-icon" href="/img/panda.png">
+    <link rel="apple-touch-icon-precomposed" href="/img/panda.png">
+    
+    <link rel="stylesheet" href="/css/style.css" type="text/css">
+</head>
+
+  <body>
+    <header>
+      <div>
+		
+			<div id="imglogo">
+				<a href="/"><img src="/img/panda.png" alt="Hello Code" title="Hello Code"/></a>
+			</div>
+			
+			<div id="textlogo">
+				<h1 class="site-name"><a href="/" title="Hello Code">Hello Code</a></h1>
+				<h2 class="blog-motto"></h2>
+			</div>
+			<div class="navbar"><a class="navbutton navmobile" href="#" title="菜单">
+			</a></div>
+			<nav class="animated">
+				<ul>
+					<ul>
+					 
+						<li><a href="/">首页</a></li>
+					
+						<li><a href="/archives">归档</a></li>
+					
+						<li><a href="/about">关于</a></li>
+					
+					<li>
+ 					
+					<form class="search" action="//google.com/search" method="get" accept-charset="utf-8">
+						<label>Search</label>
+						<input type="search" id="search" name="q" autocomplete="off" maxlength="20" placeholder="搜索" />
+						<input type="hidden" name="q" value="site:wanghuanming.com">
+					</form>
+					
+					</li>
+				</ul>
+			</nav>			
+</div>
+    </header>
+    <div id="container">
+      <div id="main" class="post" itemscope itemprop="blogPost">
+  
+	<article itemprop="articleBody"> 
+		<header class="article-info clearfix">
+  <h1 itemprop="name">
+    
+      <a href="/2016/12/raft-implementation/" title="MIT6.824 labraft实现" itemprop="url">MIT6.824 labraft实现</a>
+  </h1>
+  <p class="article-author">By
+       
+		<a href="http://wanghuanming.com/about" title="王欢明" target="_blank" itemprop="author">王欢明</a>
+		
+  <p class="article-time">
+    <time datetime="2016-12-08T13:36:13.000Z" itemprop="datePublished"> 发表于 2016 Dec 8</time>
+    
+  </p>
+</header>
+	<div class="article-content">
+		
+		<div id="toc" class="toc-article">
+			<strong class="toc-title">文章目录</strong>
+		
+			<ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#Raft"><span class="toc-number">1.</span> <span class="toc-text">Raft</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Raft的实现"><span class="toc-number">2.</span> <span class="toc-text">Raft的实现</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#State"><span class="toc-number">2.1.</span> <span class="toc-text">State</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#RPC"><span class="toc-number">2.2.</span> <span class="toc-text">RPC</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Server"><span class="toc-number">2.3.</span> <span class="toc-text">Server</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#All_Servers"><span class="toc-number">2.3.1.</span> <span class="toc-text">All Servers</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#Follower"><span class="toc-number">2.3.2.</span> <span class="toc-text">Follower</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#Candidate"><span class="toc-number">2.3.3.</span> <span class="toc-text">Candidate</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#Leader"><span class="toc-number">2.3.4.</span> <span class="toc-text">Leader</span></a></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Conclusion"><span class="toc-number">3.</span> <span class="toc-text">Conclusion</span></a></li></ol>
+		
+		</div>
+		
+		<p>MIT6.824 是MIT的 Distributed System 课程，从RPC开始讲起，到主从备份，容错，再到分布式事务，分布式一致性，介绍了分布式系统各方面的内容。这门课程还包含一些实验，lab1是MapReduce实验，实现一个简单MapReduce框架，最终要能够运行WordCount、InvertedIndex这样经典的MapReduce程序；lab2及之后的lab则围绕着分布式存储这一块，从Raft开始，实现一个具备选主和日志复制功能的Raft（不包含日志压缩和快照），接着再基于Raft实现一个多副本的KV存储，以及进一步实现分片功能。</p>
+<p>本文主要记录lab raft 的实现，以及对于Raft 的一些理解。课程实验本身提供了一些基础的代码框架，包括RPC的实现，以及单元测试代码，所以我们基本只要实现raft的核心部分代码就可以了，并且按照TDD的方式，可以从简至繁，逐步实现Raft的各个部分。</p>
+<p>由于笔者接触分布式系统的时间还比较短，因此此文可能存在一些毗漏，欢迎读者指出纠正。</p>
+<h2 id="Raft">Raft</h2><p>Raft 协议可以视为由选主和主从复制两部分组成的协议，协议开始选出一个strong leader，其他的成为follower，接下来所有命令则提交到leader，由leader复制给follower。</p>
+<p>Raft是基于Replicated State Machine 模型：对于多个状态机，如果初始状态一致，输入一致，那么最终状态就会一致。那么，对于数据库来说，到底复制什么呢？一种方式，是把数据库当作状态机，把对数据库的操作当作状态机的输入，也就是“The log hold the truth, database is just an optimization”，只要记录所有的操作日志，就能把数据库恢复到任何状态。对于这种方式，client 首先向 leader 提交一个 “put(“hello”, “world”)”这样的命令，Raft首先把这条命令复制到多个副本，等待majority接受之后，这条命令就可以commit了。commit之后的命令，就可以apply到状态机了，也就是说可以在单机的存储引擎中执行“put(“hello”, “world”)”这条命令了。也就是说，一个命令需要经过 submit, commit, apply 这三个过程才能真正写到数据库。</p>
+<p>那么除此之外有没有其他的方式呢，在我看来应该是有的。Raft的log可以当作数据库的REDO log，那么apply这个操作显然就应该交由数据库来处理，而不是raft来apply。再者，log本身是不是也可以作为数据呢，一定要apply到状态机吗？</p>
+<h2 id="Raft的实现">Raft的实现</h2><p>Raft能够流行开来，很重要的一个原因就是易于理解，容易实现。基本只要按照Figure2，就能实现一个具备基本功能的raft，不过显然对于工业级使用来说，这样的实现在性能上还是比较差的，同时也会有一些corner case 能够让raft挂掉。不过暂且不考虑这些，我们先来分析一下如何按照Figure2实现raft。</p>
+<h3 id="State">State</h3><p>首先是Raft需要维护的状态。需要持久化的状态有三个，currentTerm, votedFor, log[]。currentTerm表示当前的term，votedFor表示投以选票的peer，这两个状态之所以需要进行持久化，是为了保证在重启之后，不会发生重复投票的情况，即“在一个term只给一个candidate投票”，这点是leader election的基本保证，否则就会发生多个leader 的情况。而votedFor还有一点需要注意，它不等价于当前term的leader，不要因为发现了leader就修改votedFor。另一个需要持久化的状态就是log，这个无需赘述。</p>
+<p>接下来是所有server都需要维护的非持久化状态: commitIndex, lastApplied。这两个状态是为了实现日志复制。commitIndex指的是当前commit的日志，而lastApplied则是已经apply的日志。这也是前面所说的，submit -&gt; commit -&gt; apply。submitIndex 隐式包含在log[] 中，也就是最后一个log entry。</p>
+<p>最后是leader需要维护的状态: nextIndex[], matchIndex[]。matchIndex是成功复制到peer的日志index，这里的成功定义为：appendEntries RPC返回成功。也就是说不管这个log 有没有成功复制到其他的peer，或者有没有commit。按理说每次复制日志的时候，只要把matchIndex后面的日志复制过去就好了，为什么还需要nextIndex呢？主要是为了处理log mismatch 的情况，matchIndex之前的日志还是可能mismatch的，发生这种情况的话，要回退nextIndex，重新尝试。</p>
+<h3 id="RPC">RPC</h3><p>Raft主要有两个RPC：AppendEntries和RequestVote。至于InstallSnapshot则算是锦上添花。</p>
+<p>AppendEntries用作日志复制和心跳。参数包括term, leaderId, prevLogIndex, prevLogTerm, entries[], leaderCommit，返回值有term, success。term和leaderId是sender的term和id；prevLogIndex, prevLogTerm, entries[]则是日志，prev这个参数一来为了保证Log Matching Safety，二来也是为了保证AppendEntries的幂等。还有一个很重要的参数是leaderCommit，表示leader 的commitIndex，用来进行two phase commit中的commit阶段。</p>
+<p>对于AppendEntries的处理：</p>
+<ul>
+<li>如果term &lt; currentTerm ，返回false。（这个leader已经过期）</li>
+<li>如果prevLog不匹配，返回false。（Log Matching Property)</li>
+<li>把entries追加到日志的prevLogIndex后面，如果存在冲突，直接覆盖掉</li>
+<li>如果leaderCommit &gt; commitIndex，commitIndex = min(leaderCommit, indexOfLastLogEntry)。（commit log）</li>
+</ul>
+<p>代码如下:</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">func</span> (rf *Raft) AppendEntries(args AppendEntriesArgs, reply *AppendEntriesReply) &#123;</span><br><span class="line">	rf.ruleForAll(args.LeaderId, args.Term)</span><br><span class="line">	<span class="keyword">if</span> args.Term &gt;= rf.currentTerm &#123;</span><br><span class="line">		rf.heartBeatCh &lt;- args</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	rf.Lock()</span><br><span class="line">	<span class="keyword">defer</span> rf.Unlock()</span><br><span class="line">	term := rf.currentTerm</span><br><span class="line">	logOk := <span class="built_in">len</span>(rf.log) &gt; args.PrevLogIndex &amp;&amp; args.PrevLogTerm == rf.log[args.PrevLogIndex].Term</span><br><span class="line"></span><br><span class="line">	reply.Term = term</span><br><span class="line">	<span class="keyword">if</span> args.Term &lt; term || !logOk &#123;</span><br><span class="line">		reply.Success = <span class="constant">false</span></span><br><span class="line">		<span class="keyword">if</span> args.Term &lt; term &#123;</span><br><span class="line">			rf.logInfo(<span class="string">"Reject AppendEntries, for TermMismatch: %d &lt; %d"</span>, args.Term, term)</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">if</span> !logOk &#123;</span><br><span class="line">			rf.logInfo(<span class="string">"Reject AppendEntries, for LogMisMatch: (%d, %d) not exists"</span>, args.PrevLogIndex, args.PrevLogTerm)</span><br><span class="line">		&#125;</span><br><span class="line">	&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">		reply.Success = <span class="constant">true</span></span><br><span class="line">		<span class="keyword">if</span> <span class="built_in">len</span>(args.Entries) &gt; <span class="number">0</span> &#123;</span><br><span class="line">			rf.log = rf.log[:args.PrevLogIndex + <span class="number">1</span>]</span><br><span class="line">			rf.log = <span class="built_in">append</span>(rf.log, args.Entries...)</span><br><span class="line">			rf.persist()</span><br><span class="line">			rf.logInfo(<span class="string">"AppendEntries successfully: %v"</span>, args.Entries)</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">if</span> args.LeaderCommit &gt; rf.commitIndex &amp;&amp; <span class="built_in">len</span>(rf.log) - <span class="number">1</span> &gt; rf.commitIndex &#123;</span><br><span class="line">			rf.commitIndex = <span class="typename">int</span>(math.Min(<span class="typename">float64</span>(args.LeaderCommit), <span class="typename">float64</span>(<span class="built_in">len</span>(rf.log) - <span class="number">1</span>)))</span><br><span class="line">			rf.logInfo(<span class="string">"Follower update commitIndex: commitIndex: %d"</span>, rf.commitIndex)</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>另一个RPC是RequestVote，用于选主。参数包括term, candidateId, lastLogIndex, lastLogTerm, 返回值包括term, voteGranted。term和candidateId还是用于标识一个candidate，而lastLog是为了保证section5.4.1 说的Election restriction，新选出的leader需要包含所有已经提交的日志，那么只要它的日志和其他的一样新，那么它就一定满足这个条件。</p>
+<p>所以处理这个RPC时：</p>
+<ul>
+<li>如果term &lt; currentTerm，返回false</li>
+<li>如果votedFor为空，或者就是candidateId，并且lastLog和自己的一样新，就投以选票。</li>
+</ul>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">func</span> (rf *Raft) RequestVote(args RequestVoteArgs, reply *RequestVoteReply) &#123;</span><br><span class="line">	rf.ruleForAll(args.CandidateID, args.Term)</span><br><span class="line"></span><br><span class="line">	rf.Lock()</span><br><span class="line">	<span class="keyword">defer</span> rf.Unlock()</span><br><span class="line">	voteFor := rf.votedFor</span><br><span class="line">	voteForOk := voteFor == -<span class="number">1</span> || voteFor == args.CandidateID</span><br><span class="line">	lastEntry := rf.log[<span class="built_in">len</span>(rf.log) - <span class="number">1</span>]</span><br><span class="line">	logOk := args.LastLogTerm &gt; lastEntry.Term ||</span><br><span class="line">		(args.LastLogTerm == lastEntry.Term &amp;&amp; args.LastLogIndex &gt;= <span class="built_in">len</span>(rf.log) - <span class="number">1</span>)</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> args.Term &gt;= rf.currentTerm &amp;&amp; voteForOk &amp;&amp; logOk &#123;</span><br><span class="line">		rf.beFollower(args.CandidateID, args.Term)</span><br><span class="line">		reply.VoteGranted = <span class="constant">true</span></span><br><span class="line">		reply.Term = rf.currentTerm</span><br><span class="line">		<span class="keyword">go</span> <span class="keyword">func</span>() &#123;</span><br><span class="line">			rf.beFollowerCh &lt;- follower</span><br><span class="line">		&#125;()</span><br><span class="line">		rf.logInfo(<span class="string">"GrantVote to candidate&lt;%d,%d&gt;"</span>, args.CandidateID, args.Term)</span><br><span class="line">	&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">		reply.VoteGranted = <span class="constant">false</span></span><br><span class="line">		reply.Term = rf.currentTerm</span><br><span class="line">		<span class="keyword">if</span> args.Term &lt; rf.currentTerm &#123;</span><br><span class="line">			rf.logInfo(<span class="string">"Not grant vote to &lt;%d,%d&gt;, because term %d &lt; %d"</span>, args.Term, rf.currentTerm)</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">if</span> !voteForOk &#123;</span><br><span class="line">			rf.logInfo(<span class="string">"Not grant vote to &lt;%d,%d&gt;, because votedFor: %d"</span>, args.CandidateID, args.Term, voteFor)</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">if</span> !logOk &#123;</span><br><span class="line">			rf.logInfo(<span class="string">"Not grant vote to &lt;%d,%d&gt;, because logMismatch: %v"</span>, args.CandidateID, args.Term, rf.log)</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="Server">Server</h3><h4 id="All_Servers">All Servers</h4><p>对于所有server有一些通用的规则。如果commitIndex &gt; lastApplied，就把lastApplied后面的日志apply到SM。如果RPC中的term大于当前term，说明当前节点已经过期，需要更新currentTerm，并且直接变成follower。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">func</span> (rf *Raft) ruleForAll(candidate <span class="typename">int</span>, term <span class="typename">int</span>) &#123;</span><br><span class="line">	<span class="comment">// Apply command need to be serial!</span></span><br><span class="line">	rf.Lock()</span><br><span class="line">	old := rf.lastApplied</span><br><span class="line">	<span class="keyword">for</span> rf.commitIndex &gt; rf.lastApplied &#123;</span><br><span class="line">		rf.lastApplied++</span><br><span class="line">		msg := ApplyMsg&#123;Index: rf.lastApplied, Command: rf.log[rf.lastApplied].Command&#125;</span><br><span class="line">		rf.applyCh &lt;- msg</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">if</span> rf.lastApplied &gt; old &#123;</span><br><span class="line">		rf.logInfo(<span class="string">"Applyed commands until index=%d"</span>, rf.lastApplied)</span><br><span class="line">	&#125;</span><br><span class="line">	rf.Unlock()</span><br><span class="line"></span><br><span class="line">	<span class="comment">// exists a new term</span></span><br><span class="line">	rf.Lock()</span><br><span class="line">	<span class="keyword">if</span> term &gt; rf.currentTerm &#123;</span><br><span class="line">		rf.logInfo(<span class="string">"RuleForAll: find new term&lt;%d,%d&gt;, become follower"</span>, candidate, term)</span><br><span class="line">		rf.beFollower(-<span class="number">1</span>, term)</span><br><span class="line">		<span class="keyword">go</span> <span class="keyword">func</span>() &#123;</span><br><span class="line">			rf.beFollowerCh &lt;- follower</span><br><span class="line">		&#125;()</span><br><span class="line">	&#125;</span><br><span class="line">	rf.Unlock()</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="Follower">Follower</h4><p>Follower需要响应AppendEntries以及RequestVote RPC，并且维护一个 election timeout，如果没有收到心跳，需要进入candidate状态。相对来说比较简单。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">func</span> (rf *Raft) doFollower() &#123;</span><br><span class="line">	rf.logInfo(<span class="string">"Become follower"</span>)</span><br><span class="line"></span><br><span class="line">	<span class="keyword">for</span> &#123;</span><br><span class="line">		<span class="keyword">select</span> &#123;</span><br><span class="line">		<span class="keyword">case</span> &lt;-time.After(electionTO()):</span><br><span class="line">			rf.Lock()</span><br><span class="line">			rf.role = candidate</span><br><span class="line">			rf.votedFor = -<span class="number">1</span></span><br><span class="line">			rf.persist()</span><br><span class="line">			rf.Unlock()</span><br><span class="line">			rf.logInfo(<span class="string">"Follower lose heartbeat, become candidate"</span>)</span><br><span class="line">			<span class="keyword">return</span></span><br><span class="line">		<span class="keyword">case</span> &lt;-rf.heartBeatCh:</span><br><span class="line">		<span class="keyword">case</span> &lt;-rf.beFollowerCh:</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="Candidate">Candidate</h4><p>进入Candidate状态需要<strong>不断</strong>发起选举，当然，为了避免互相竞争的活锁情况，每次选举的时间也是有间隔的。</p>
+<p>对于一次选举，首先增加currentTerm, votedFor改成自己，通过RequestVote向其它peer发起投票。如果收到majority的投票，变成leader（不需要等待所有RPC返回）；如果收到新的Leader的AppendEntries，变成follower；如果超时，进入下一轮选举。第二条规则可能和Rule For All那边有一些重叠，我们需要谨慎处理。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">func</span> (rf *Raft) doCandidate() &#123;</span><br><span class="line">	rf.logInfo(<span class="string">"Start leader election"</span>)</span><br><span class="line">	<span class="keyword">defer</span> rf.logInfo(<span class="string">"Quit leader election"</span>)</span><br><span class="line"></span><br><span class="line">	<span class="keyword">for</span> &#123;</span><br><span class="line">		<span class="comment">// increase term</span></span><br><span class="line">		rf.Lock()</span><br><span class="line">		rf.votedFor = rf.me</span><br><span class="line">		rf.currentTerm++</span><br><span class="line">		rf.persist()</span><br><span class="line">		rf.Unlock()</span><br><span class="line"></span><br><span class="line">		<span class="comment">// request votes</span></span><br><span class="line">		votedCh := <span class="built_in">make</span>(<span class="keyword">chan</span> <span class="typename">bool</span>)</span><br><span class="line">		quitCh := <span class="built_in">make</span>(<span class="keyword">chan</span> <span class="typename">bool</span>)</span><br><span class="line">		<span class="keyword">go</span> rf.requestingVote(votedCh, quitCh)</span><br><span class="line"></span><br><span class="line">		<span class="comment">// 1. voted by majority: succeed then quit</span></span><br><span class="line">		<span class="comment">// 2. find a new leader: become a follower and quit.</span></span><br><span class="line">		<span class="comment">// 3. timeout, enter next election</span></span><br><span class="line">		start := time.Now()</span><br><span class="line">		election := electionTO()</span><br><span class="line">		<span class="keyword">select</span> &#123;</span><br><span class="line">		<span class="keyword">case</span> &lt;-time.After(election):</span><br><span class="line">			rf.logInfo(<span class="string">"LeaderElection timeout"</span>)</span><br><span class="line">		<span class="keyword">case</span> &lt;-rf.beFollowerCh:</span><br><span class="line">			rf.logInfo(<span class="string">"Convert to Follower from candidate"</span>)</span><br><span class="line">			<span class="keyword">return</span></span><br><span class="line">		<span class="keyword">case</span> ok := &lt;-votedCh:</span><br><span class="line">			<span class="keyword">if</span> ok &#123;</span><br><span class="line">				rf.Lock()</span><br><span class="line">				rf.role = leader</span><br><span class="line">				rf.Unlock()</span><br><span class="line">				rf.logInfo(<span class="string">"Leader election succeed"</span>)</span><br><span class="line">				<span class="keyword">return</span></span><br><span class="line">			&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">				rf.logInfo(<span class="string">"Leader election fail"</span>)</span><br><span class="line">			&#125;</span><br><span class="line">		<span class="keyword">case</span> args := &lt;-rf.heartBeatCh:</span><br><span class="line">			rf.logInfo(<span class="string">"LeaderElection fail, find new leader&lt;%d,%d&gt;"</span>, args.LeaderId, args.Term)</span><br><span class="line">			rf.beFollowerLocked(rf.votedFor, args.Term)</span><br><span class="line">			<span class="keyword">return</span></span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">		<span class="comment">// election fail, quit requestVote goroutine</span></span><br><span class="line">		<span class="built_in">close</span>(quitCh)</span><br><span class="line">		<span class="keyword">if</span> time.Since(start) &lt; election &#123;</span><br><span class="line">			time.Sleep(election - time.Since(start))</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="Leader">Leader</h4><p>Leader要做的事情会多一点，毕竟它是leader。</p>
+<p>首先，它需要用心跳维护自己的leader地位，有点lease的意思。开始当选leader时，就要发送一个心跳，结束其他candidate。之后如果需要维护一个定期的心跳。</p>
+<p>其次，它需要处理客户端的请求，如果收到客户端的command，leader需要将其append到自己的日志，得到command的index。至于何时返回给客户端，看起来则是可以选择的，如果append之后直接返回，那么可能发生日志没有成功提交的情况，如果apply 到SM之后再返回，那么可能永远不会返回，也许是需要一个timeout。</p>
+<p>除此之外，就是日志复制了。paper将客户端提交日志和日志复制两块分开了，我们在实现的时候也需要仔细考虑，何时进行日志复制，如果提交一条就复制，那么吞吐量可能跟不上，如果定期复制，延迟也许又会比较大。不过通用的规则时，lastLogIndx &gt;= nextIndex，就发送日志，如果返回成功，更新matchIndex nextIndex，如果失败，回退nextIndex，重试。</p>
+<p>日志复制之后，需要进行commit。commit要满足majority的原则，如果存在 N &gt; commitIndex, majority matchIndex[i] &gt; N，并且log[N].term == currentTerm，commitIndex = N。Raft仅仅commit当前term的日志，不过也间接commit了之前的日志。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">func</span> (rf *Raft) doLeader() &#123;</span><br><span class="line">	rf.logInfo(<span class="string">"Become leader"</span>)</span><br><span class="line">	<span class="keyword">defer</span> rf.logInfo(<span class="string">"Leader quit."</span>)</span><br><span class="line"></span><br><span class="line">	rf.Lock()</span><br><span class="line">	rf.nextIndex = <span class="built_in">make</span>([]<span class="typename">int</span>, <span class="built_in">len</span>(rf.peers))</span><br><span class="line">	<span class="keyword">for</span> i := <span class="keyword">range</span> rf.nextIndex &#123;</span><br><span class="line">		rf.nextIndex[i] = <span class="built_in">len</span>(rf.log)</span><br><span class="line">	&#125;</span><br><span class="line">	rf.matchIndex = <span class="built_in">make</span>([]<span class="typename">int</span>, <span class="built_in">len</span>(rf.peers))</span><br><span class="line">	rf.commitCh = <span class="built_in">make</span>(<span class="keyword">chan</span> <span class="typename">bool</span>)</span><br><span class="line">	rf.submitCh = <span class="built_in">make</span>(<span class="keyword">chan</span> <span class="typename">bool</span>)</span><br><span class="line">	rf.Unlock()</span><br><span class="line">	quitCh := <span class="built_in">make</span>(<span class="keyword">chan</span> <span class="typename">bool</span>)</span><br><span class="line">	done := <span class="built_in">new</span>(sync.WaitGroup)</span><br><span class="line"></span><br><span class="line">	<span class="keyword">for</span> i := <span class="keyword">range</span> rf.peers &#123;</span><br><span class="line">		<span class="keyword">if</span> i != rf.me &#123;</span><br><span class="line">			<span class="keyword">go</span> rf.replicator(i, quitCh, done)</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">go</span> rf.committer(quitCh, done)</span><br><span class="line"></span><br><span class="line">	<span class="comment">// todo: need a elegant way to trigger leader to quit</span></span><br><span class="line">	&lt;-rf.beFollowerCh</span><br><span class="line">	<span class="built_in">close</span>(quitCh)</span><br><span class="line">	done.Wait()</span><br><span class="line">	rf.logInfo(<span class="string">"Leader quit, close committer, replicators. And cleanup submit channel"</span>)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="Conclusion">Conclusion</h2><p>Raft说来简单，但深究其实也挺复杂。如果我们仅仅实现一个简单的Raft，那么很简单，如果要追求性能，可能会变得较为复杂，在这种情况下，用哪种cosensus protocol可能就不是那么重要了，不论用哪个，最后的复杂度可能都落在了处理各种corner case和性能提升。Raft在一些corner case 的情况下可能也会出现一些奇怪的情况，例如，如果一个follower和leader 失联，他会不断选举，增大term，并且通过RequestVote告知给其他的peer，进而导致所有节点都变成follower，并且这个选举过程可能一直不会成功。对于这个case，如果follower在进行选举之前，先询问一下其他的server，是否认为leader已经挂了，如果majority认为leader挂了，再进行选举，看起来是能比避免这种情况。</p>
+<p>所以，Raft并不是银弹，也不存在银弹。</p>
+  
+	</div>
+		<footer class="article-footer clearfix">
+<div class="article-catetags">
+
+<div class="article-categories">
+  <span></span>
+  <a class="article-category-link" href="/categories/Code/">Code</a>
+</div>
+
+
+  <div class="article-tags">
+  
+  <span></span> <a href="/tags/MIT6-824/">MIT6.824</a><a href="/tags/Paxos/">Paxos</a><a href="/tags/Raft/">Raft</a><a href="/tags/分布式一致性/">分布式一致性</a><a href="/tags/分布式系统/">分布式系统</a>
+  </div>
+
+</div>
+
+
+
+	<div class="article-share" id="share">
+	
+	  <div data-url="http://wanghuanming.com/2016/12/raft-implementation/" data-title="MIT6.824 labraft实现 | Hello Code" data-tsina="null" class="share clearfix">
+	  </div>
+	
+	</div>
+
+
+</footer>
+
+   	       
+	</article>
+	
+<nav class="article-nav clearfix">
+ 
+
+<div class="next">
+<a href="/2016/09/Kudu-note/"  title="Kudu调研笔记">
+ <strong>下一篇：</strong><br/> 
+ <span>Kudu调研笔记
+</span>
+</a>
+</div>
+
+</nav>
+
+	
+<section id="comments" class="comment">
+	<div class="ds-thread" data-thread-key="2016/12/raft-implementation/" data-title="MIT6.824 labraft实现" data-url="http://wanghuanming.com/2016/12/raft-implementation/"></div>
+</section>
+
+
+</div>  
+      <div class="openaside"><a class="navbutton" href="#" title="显示侧边栏"></a></div>
+
+  <div id="toc" class="toc-aside">
+  <strong class="toc-title">文章目录</strong>
+ 
+ <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#Raft"><span class="toc-number">1.</span> <span class="toc-text">Raft</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Raft的实现"><span class="toc-number">2.</span> <span class="toc-text">Raft的实现</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#State"><span class="toc-number">2.1.</span> <span class="toc-text">State</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#RPC"><span class="toc-number">2.2.</span> <span class="toc-text">RPC</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Server"><span class="toc-number">2.3.</span> <span class="toc-text">Server</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#All_Servers"><span class="toc-number">2.3.1.</span> <span class="toc-text">All Servers</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#Follower"><span class="toc-number">2.3.2.</span> <span class="toc-text">Follower</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#Candidate"><span class="toc-number">2.3.3.</span> <span class="toc-text">Candidate</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#Leader"><span class="toc-number">2.3.4.</span> <span class="toc-text">Leader</span></a></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Conclusion"><span class="toc-number">3.</span> <span class="toc-text">Conclusion</span></a></li></ol>
+ 
+  </div>
+
+<div id="asidepart">
+<div class="closeaside"><a class="closebutton" href="#" title="隐藏侧边栏"></a></div>
+<aside class="clearfix">
+
+  
+<div class="categorieslist">
+	<p class="asidetitle">分类</p>
+		<ul>
+		
+		  
+			<li><a href="/categories/Code/" title="Code">Code<sup>39</sup></a></li>
+		  
+		
+		  
+			<li><a href="/categories/Life-Work/" title="Life &amp; Work">Life &amp; Work<sup>10</sup></a></li>
+		  
+		
+		  
+			<li><a href="/categories/Reading/" title="Reading">Reading<sup>4</sup></a></li>
+		  
+		
+		  
+			<li><a href="/categories/Tech-Tool/" title="Tech &amp; Tool">Tech &amp; Tool<sup>24</sup></a></li>
+		  
+		
+		</ul>
+</div>
+
+
+  
+<div class="tagslist">
+	<p class="asidetitle">标签</p>
+		<ul class="clearfix">
+		
+			
+				<li><a href="/tags/C/" title="C++">C++<sup>9</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Scala/" title="Scala">Scala<sup>6</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/编译原理/" title="编译原理">编译原理<sup>4</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/LLVM/" title="LLVM">LLVM<sup>4</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/数据结构/" title="数据结构">数据结构<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Spark/" title="Spark">Spark<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/javascript/" title="javascript">javascript<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/OS/" title="OS">OS<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/ACM/" title="ACM">ACM<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/虚拟机/" title="虚拟机">虚拟机<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/线段树/" title="线段树">线段树<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/解释器/" title="解释器">解释器<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/C语言/" title="C语言">C语言<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/进程/" title="进程">进程<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Linux/" title="Linux">Linux<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Coursera/" title="Coursera">Coursera<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/ssh/" title="ssh">ssh<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/openwrt/" title="openwrt">openwrt<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/C/" title="C">C<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/函数式编程/" title="函数式编程">函数式编程<sup>2</sup></a></li>
+			
+		
+		</ul>
+</div>
+
+
+  <div class="rsspart">
+	<a href="/atom.xml" target="_blank" title="rss">RSS 订阅</a>
+</div>
+
+</aside>
+</div>
+    </div>
+    <footer><div id="footer" >
+	
+	<div class="line">
+		<span></span>
+		<div class="author"></div>
+	</div>
+	
+	
+	<div class="social-font" class="clearfix">
+		
+		<a href="http://weibo.com/5108629996" target="_blank" class="icon-weibo" title="微博"></a>
+		
+		
+		<a href="https://github.com/HelloCodeMing" target="_blank" class="icon-github" title="github"></a>
+		
+		
+		
+		
+		
+		
+		<a href="https://www.douban.com/people/94795087" target="_blank" class="icon-douban" title="豆瓣"></a>
+		
+		
+		<a href="https://www.zhihu.com/people/hellocode-67" target="_blank" class="icon-zhihu" title="知乎"></a>
+		
+		
+		
+		<a href="mailto:huanmingwong@163.com" target="_blank" class="icon-email" title="Email Me"></a>
+		
+	</div>
+			
+		
+
+		<p class="copyright">
+		Powered by <a href="http://hexo.io" target="_blank" title="hexo">hexo</a> and Theme by <a href="https://github.com/wuchong/jacman" target="_blank" title="Jacman">Jacman</a> © 2016 
+		
+		<a href="http://wanghuanming.com/about" target="_blank" title="王欢明">王欢明</a>
+		
+		
+		</p>
+</div>
+</footer>
+    <script src="/js/jquery-2.0.3.min.js"></script>
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  $('.navbar').click(function(){
+    $('header nav').toggleClass('shownav');
+  });
+  var myWidth = 0;
+  function getSize(){
+    if( typeof( window.innerWidth ) == 'number' ) {
+      myWidth = window.innerWidth;
+    } else if( document.documentElement && document.documentElement.clientWidth) {
+      myWidth = document.documentElement.clientWidth;
+    };
+  };
+  var m = $('#main'),
+      a = $('#asidepart'),
+      c = $('.closeaside'),
+      o = $('.openaside');
+  c.click(function(){
+    a.addClass('fadeOut').css('display', 'none');
+    o.css('display', 'block').addClass('fadeIn');
+    m.addClass('moveMain');
+  });
+  o.click(function(){
+    o.css('display', 'none').removeClass('beforeFadeIn');
+    a.css('display', 'block').removeClass('fadeOut').addClass('fadeIn');      
+    m.removeClass('moveMain');
+  });
+  $(window).scroll(function(){
+    o.css("top",Math.max(80,260-$(this).scrollTop()));
+  });
+  
+  $(window).resize(function(){
+    getSize(); 
+    if (myWidth >= 1024) {
+      $('header nav').removeClass('shownav');
+    }else{
+      m.removeClass('moveMain');
+      a.css('display', 'block').removeClass('fadeOut');
+      o.css('display', 'none');
+      
+      $('#toc.toc-aside').css('display', 'none');
+        
+    }
+  });
+});
+</script>
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  var ai = $('.article-content>iframe'),
+      ae = $('.article-content>embed'),
+      t  = $('#toc'),
+      ta = $('#toc.toc-aside'),
+      o  = $('.openaside'),
+      c  = $('.closeaside');
+  if(ai.length>0){
+    ai.wrap('<div class="video-container" />');
+  };
+  if(ae.length>0){
+   ae.wrap('<div class="video-container" />');
+  };
+  c.click(function(){
+    ta.css('display', 'block').addClass('fadeIn');
+  });
+  o.click(function(){
+    ta.css('display', 'none');
+  });
+  $(window).scroll(function(){
+    ta.css("top",Math.max(140,320-$(this).scrollTop()));
+  });
+});
+</script>
+
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  var $this = $('.share'),
+      url = $this.attr('data-url'),
+      encodedUrl = encodeURIComponent(url),
+      title = $this.attr('data-title'),
+      tsina = $this.attr('data-tsina'),
+      description = $this.attr('description');
+  var html = [
+  '<a href="#" class="overlay" id="qrcode"></a>',
+  '<div class="qrcode clearfix"><span>扫描二维码分享到微信朋友圈</span><a class="qrclose" href="#nothing"></a><strong>Loading...Please wait</strong><img id="qrcode-pic" data-src="http://s.jiathis.com/qrcode.php?url=' + encodedUrl + '"/></div>',
+  '<a href="https://www.facebook.com/sharer.php?u=' + encodedUrl + '" class="article-share-facebook" target="_blank" title="Facebook"></a>',
+  '<a href="https://twitter.com/intent/tweet?url=' + encodedUrl + '" class="article-share-twitter" target="_blank" title="Twitter"></a>',
+  '<a href="#qrcode" class="article-share-qrcode" title="微信"></a>',
+  '<a href="http://widget.renren.com/dialog/share?resourceUrl=' + encodedUrl + '&srcUrl=' + encodedUrl + '&title=' + title +'" class="article-share-renren" target="_blank" title="人人"></a>',
+  '<a href="http://service.weibo.com/share/share.php?title='+title+'&url='+encodedUrl +'&ralateUid='+ tsina +'&searchPic=true&style=number' +'" class="article-share-weibo" target="_blank" title="微博"></a>',
+  '<span title="Share to"></span>'
+  ].join('');
+  $this.append(html);
+  $('.article-share-qrcode').click(function(){
+    var imgSrc = $('#qrcode-pic').attr('data-src');
+    $('#qrcode-pic').attr('src', imgSrc);
+    $('#qrcode-pic').load(function(){
+        $('.qrcode strong').text(' ');
+    });
+  });
+});     
+</script>
+
+
+
+<script type="text/javascript">
+  var duoshuoQuery = {short_name:"wanghuanming"};
+  (function() {
+    var ds = document.createElement('script');
+    ds.type = 'text/javascript';ds.async = true;
+    ds.src = '//static.duoshuo.com/embed.js';
+    ds.charset = 'UTF-8';
+    (document.getElementsByTagName('head')[0] 
+    || document.getElementsByTagName('body')[0]).appendChild(ds);
+  })();
+</script> 
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+$(document).ready(function(){ 
+  $('.article-content').each(function(i){
+    $(this).find('img').each(function(){
+      if ($(this).parent().hasClass('fancybox')) return;
+      var alt = this.alt;
+      if (alt) $(this).after('<span class="caption">' + alt + '</span>');
+      $(this).wrap('<a href="' + this.src + '" title="' + alt + '" class="fancybox"></a>');
+    });
+    $(this).find('.fancybox').each(function(){
+      $(this).attr('rel', 'article' + i);
+    });
+  });
+  if($.fancybox){
+    $('.fancybox').fancybox();
+  }
+}); 
+</script>
+
+
+
+<!-- Analytics Begin -->
+
+
+
+
+
+<!-- Analytics End -->
+
+<!-- Totop Begin -->
+
+	<div id="totop">
+	<a title="返回顶部"><img src="/img/scrollup.png"/></a>
+	</div>
+	<script src="/js/totop.js"></script>
+
+<!-- Totop End -->
+
+<!-- MathJax Begin -->
+<!-- mathjax config similar to math.stackexchange -->
+
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    tex2jax: {
+      inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+      processEscapes: true
+    }
+  });
+</script>
+
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: {
+        skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+      }
+    });
+</script>
+
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Queue(function() {
+        var all = MathJax.Hub.getAllJax(), i;
+        for(i=0; i < all.length; i += 1) {
+            all[i].SourceElement().parentNode.className += ' has-jax';
+        }
+    });
+</script>
+
+<script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+</script>
+
+
+<!-- MathJax End -->
+
+<!-- Tiny_search Begin -->
+
+<!-- Tiny_search End -->
+
+  </body>
+</html>

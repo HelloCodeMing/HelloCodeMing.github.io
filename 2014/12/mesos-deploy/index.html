@@ -1,0 +1,589 @@
+
+ <!DOCTYPE HTML>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  
+    <title>Mesos 0.21.0部署实战 | Hello Code</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1,user-scalable=no">
+    
+    <meta name="author" content="王欢明">
+    
+
+    
+    <meta name="description" content="Mesos是一个资源管理平台，架构和YARN相似，但据说稳定性和性能要好一点，遂决定尝试部署Mesos。期间遇到了不少问题，也学到了不少东西，此文意在总结自己的教训，分享自己的经验。
+编译&amp;amp;安装编译安装问题不大，但还是简单地说一下。
+我使用的是0.21.0的最新版，参照官网的get started，先用迅雷下载了源码，再把一堆的依赖装好。Mesos是用C++写的，所以还是老一套的“conf">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Mesos 0.21.0部署实战">
+<meta property="og:url" content="http://wanghuanming.com/2014/12/mesos-deploy/index.html">
+<meta property="og:site_name" content="Hello Code">
+<meta property="og:description" content="Mesos是一个资源管理平台，架构和YARN相似，但据说稳定性和性能要好一点，遂决定尝试部署Mesos。期间遇到了不少问题，也学到了不少东西，此文意在总结自己的教训，分享自己的经验。
+编译&amp;amp;安装编译安装问题不大，但还是简单地说一下。
+我使用的是0.21.0的最新版，参照官网的get started，先用迅雷下载了源码，再把一堆的依赖装好。Mesos是用C++写的，所以还是老一套的“conf">
+<meta property="og:image" content="http://huanming-blog.qiniudn.com/mesos_logo.png">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Mesos 0.21.0部署实战">
+<meta name="twitter:description" content="Mesos是一个资源管理平台，架构和YARN相似，但据说稳定性和性能要好一点，遂决定尝试部署Mesos。期间遇到了不少问题，也学到了不少东西，此文意在总结自己的教训，分享自己的经验。
+编译&amp;amp;安装编译安装问题不大，但还是简单地说一下。
+我使用的是0.21.0的最新版，参照官网的get started，先用迅雷下载了源码，再把一堆的依赖装好。Mesos是用C++写的，所以还是老一套的“conf">
+
+    
+    <link rel="alternative" href="/atom.xml" title="Hello Code" type="application/atom+xml">
+    
+    
+    <link rel="icon" href="/img/panda-icon.ico">
+    
+    
+    <link rel="apple-touch-icon" href="/img/panda.png">
+    <link rel="apple-touch-icon-precomposed" href="/img/panda.png">
+    
+    <link rel="stylesheet" href="/css/style.css" type="text/css">
+</head>
+
+  <body>
+    <header>
+      <div>
+		
+			<div id="imglogo">
+				<a href="/"><img src="/img/panda.png" alt="Hello Code" title="Hello Code"/></a>
+			</div>
+			
+			<div id="textlogo">
+				<h1 class="site-name"><a href="/" title="Hello Code">Hello Code</a></h1>
+				<h2 class="blog-motto"></h2>
+			</div>
+			<div class="navbar"><a class="navbutton navmobile" href="#" title="菜单">
+			</a></div>
+			<nav class="animated">
+				<ul>
+					<ul>
+					 
+						<li><a href="/">首页</a></li>
+					
+						<li><a href="/archives">归档</a></li>
+					
+						<li><a href="/about">关于</a></li>
+					
+					<li>
+ 					
+					<form class="search" action="//google.com/search" method="get" accept-charset="utf-8">
+						<label>Search</label>
+						<input type="search" id="search" name="q" autocomplete="off" maxlength="20" placeholder="搜索" />
+						<input type="hidden" name="q" value="site:wanghuanming.com">
+					</form>
+					
+					</li>
+				</ul>
+			</nav>			
+</div>
+    </header>
+    <div id="container">
+      <div id="main" class="post" itemscope itemprop="blogPost">
+  
+	<article itemprop="articleBody"> 
+		<header class="article-info clearfix">
+  <h1 itemprop="name">
+    
+      <a href="/2014/12/mesos-deploy/" title="Mesos 0.21.0部署实战" itemprop="url">Mesos 0.21.0部署实战</a>
+  </h1>
+  <p class="article-author">By
+       
+		<a href="http://wanghuanming.com/about" title="王欢明" target="_blank" itemprop="author">王欢明</a>
+		
+  <p class="article-time">
+    <time datetime="2014-12-09T10:54:20.000Z" itemprop="datePublished"> 发表于 2014 Dec 9</time>
+    
+  </p>
+</header>
+	<div class="article-content">
+		
+		<div id="toc" class="toc-article">
+			<strong class="toc-title">文章目录</strong>
+		
+			<ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#编译&安装"><span class="toc-number">1.</span> <span class="toc-text">编译&安装</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#配置"><span class="toc-number">2.</span> <span class="toc-text">配置</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Spark"><span class="toc-number">3.</span> <span class="toc-text">Spark</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Mesos脚本"><span class="toc-number">4.</span> <span class="toc-text">Mesos脚本</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#问题"><span class="toc-number">5.</span> <span class="toc-text">问题</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#参考资料"><span class="toc-number">6.</span> <span class="toc-text">参考资料</span></a></li></ol>
+		
+		</div>
+		
+		<p><img src="http://huanming-blog.qiniudn.com/mesos_logo.png" alt=" "></p>
+<p>Mesos是一个资源管理平台，架构和YARN相似，但据说稳定性和性能要好一点，遂决定尝试部署Mesos。期间遇到了不少问题，也学到了不少东西，此文意在总结自己的教训，分享自己的经验。</p>
+<h2 id="编译&amp;安装">编译&amp;安装</h2><p>编译安装问题不大，但还是简单地说一下。</p>
+<p>我使用的是0.21.0的最新版，参照<a href="http://mesos.apache.org/gettingstarted/" target="_blank" rel="external">官网的get started</a>，先用迅雷下载了源码，再把一堆的依赖装好。Mesos是用C++写的，所以还是老一套的“configure &amp;&amp; make &amp;&amp; make install”。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">../configure --with-python-headers=/usr/include/python2.<span class="number">6</span> --with-java-home=<span class="variable">$JAVA_HOME</span> --with-java-headers=<span class="variable">$JAVA_HOME</span>/include --with-webui --with-included-zookeeper --prefix=/usr/<span class="built_in">local</span>/mesos</span><br><span class="line">make</span><br><span class="line">make install</span><br></pre></td></tr></table></figure>
+<p>注意要设置好环境变量，prefix是安装路径，更改到/usr/local/mesos。不出意外的话会出现依赖问题，像libtool，svn，python2.6，gcc，g++这些工具是必须的，其他还有一些，反正在configure的时候会报错，根据错误酌情安装其他的依赖，基本可以搞定。</p>
+<p>如果是ubuntu用户，可以先安装以下的依赖：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># Ensure apt-get is up to date.</span></span><br><span class="line">$ sudo apt-get update</span><br><span class="line"></span><br><span class="line"><span class="comment"># Install build tools.</span></span><br><span class="line">$ sudo apt-get install build-essential</span><br><span class="line"></span><br><span class="line"><span class="comment"># Install OpenJDK java.</span></span><br><span class="line">$ sudo apt-get install openjdk-<span class="number">6</span>-jdk</span><br><span class="line"></span><br><span class="line"><span class="comment"># Install devel python.</span></span><br><span class="line">$ sudo apt-get install python-dev python-boto</span><br><span class="line"></span><br><span class="line"><span class="comment"># Install devel libcurl</span></span><br><span class="line">$ sudo apt-get install libcurl4-nss-dev</span><br><span class="line"></span><br><span class="line"><span class="comment"># Install devel libsasl (***Only required for Mesos 0.14.0 or newer***).</span></span><br><span class="line">$ sudo apt-get install libsasl2-dev</span><br><span class="line"></span><br><span class="line"><span class="comment"># Install Maven (***Only required for Mesos 0.18.1 or newer***).</span></span><br><span class="line">$ sudo apt-get install maven</span><br><span class="line"></span><br><span class="line"><span class="comment"># Install devel libapr1 (***Only required for Mesos 0.21.0 or newer***)</span></span><br><span class="line">$ sudo apt-get install libapr1-dev</span><br><span class="line"></span><br><span class="line"><span class="comment"># Install devel libsvn (***Only required for Mesos 0.21.0 or newer***)</span></span><br><span class="line">$ sudo apt-get install libsvn-dev</span><br></pre></td></tr></table></figure>
+<p>我是centOS7，所以需要安装这些库：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ sudo yum install -y python-devel java-<span class="number">1.7</span>.<span class="number">0</span>-openjdk-devel zlib-devel libcurl-devel openssl-devel cyrus-sasl-devel cyrus-sasl-md5 apr-devel subversion-devel</span><br></pre></td></tr></table></figure>
+<p>make会比较耗时，因为默认是用g++编译。本想替换成clang，但还是出项了错误，不完全兼容，所以还是等吧。</p>
+<p>在make install的过程中，会去code.google.com下载一个python的工具！如果你的机器已经安装了那是最好不过，否则会比较麻烦。因为我部署的机器是不能访问google的，所以我改了host。在/etc/hosts中添加以下两行（暂时可用）：</p>
+<figure class="highlight vim"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">173.194</span>.<span class="number">120.88</span>    code.google.<span class="keyword">com</span></span><br><span class="line"><span class="number">216.239</span>.<span class="number">32.39</span>    code.google.<span class="keyword">com</span></span><br></pre></td></tr></table></figure>
+<p>那么它应该就能够安装完成了。</p>
+<h2 id="配置">配置</h2><p>安装完成之后，需要配置一下环境变量，在~/.bashrc中添加：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">export</span> MESOS_HOME=/usr/<span class="built_in">local</span>/mesos</span><br></pre></td></tr></table></figure></p>
+<p>然后试着启动：<br><figure class="highlight groovy"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">cd <span class="regexp">/usr/</span>local/mesos</span><br><span class="line">sbin<span class="regexp">/mesos-master --log_dir=/</span>usr<span class="regexp">/local/</span>mesos<span class="regexp">/logs --work_dir=/</span>usr<span class="regexp">/local/</span>mesos/work &amp;</span><br><span class="line">sbin<span class="regexp">/mesos-slave    --log_dir=/</span>usr<span class="regexp">/local/</span>mesos<span class="regexp">/logs --work_dir=/</span>usr<span class="regexp">/local/</span>mesos/work --master <span class="number">127.0</span><span class="number">.0</span><span class="number">.1</span>:<span class="number">5050</span> &amp;</span><br></pre></td></tr></table></figure></p>
+<p>如果没有报错的话，会在数秒之类启动，速度比YARN快了不少，毕竟是C++写的嘛。之后可以在192.168.1.17:5050上看到一个Web UI。</p>
+<p>当然，以上只是初步的配置，要进行完整的配置还需要一点步骤。</p>
+<h2 id="Spark">Spark</h2><p>要让Spark运行在Mesos上，还需要配置spark-env.sh，<br><figure class="highlight groovy"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">export MESOS_NATIVE_LIBRARY=<span class="regexp">/usr/</span>local<span class="regexp">/mesos/</span>lib/libmesos.so</span><br><span class="line"><span class="comment">// 把spark的包传到HDFS上，并设置环境变量</span></span><br><span class="line">export SPARK_EXECUTOR_URI=<span class="string">hdfs:</span><span class="comment">//spark-1.1.1-bin-hadoop2.4.tgz</span></span><br></pre></td></tr></table></figure></p>
+<p>在spark-defaults.conf中添加一下内容：<br><figure class="highlight stylus"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">spark<span class="class">.executor</span><span class="class">.uri</span>     hdfs:<span class="comment">//spark-1.1.1-bin-hadoop2.4.tgz</span></span><br><span class="line">spark<span class="class">.master</span>    mesos:<span class="comment">//192.168.1.17:5050</span></span><br></pre></td></tr></table></figure></p>
+<p>接着在etc/mesos中添加masters和slaves文件，写上相应的master和slave。</p>
+<p>试着启动spark，<br><figure class="highlight livecodeserver"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">spark-<span class="built_in">shell</span></span><br></pre></td></tr></table></figure></p>
+<p>如果能启动，说明，spark能够运行在Mesos上面了。</p>
+<h2 id="Mesos脚本">Mesos脚本</h2><p>在0.21.0中，脚本相较于前面的版本应该是修改了，网上的一些教程并不适用与此版本，需要注意。</p>
+<figure class="highlight crmsh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">sbin &gt; ls</span><br><span class="line">mesos-daemon.sh*  mesos-<span class="literal">slave</span>*             mesos-<span class="literal">start</span>-masters.sh*  mesos-<span class="literal">stop</span>-cluster.sh*  mesos-<span class="literal">stop</span>-slaves.sh*</span><br><span class="line">mesos-<span class="literal">master</span>*     mesos-<span class="literal">start</span>-cluster.sh*  mesos-<span class="literal">start</span>-slaves.sh*   mesos-<span class="literal">stop</span>-masters.sh*</span><br><span class="line"></span><br><span class="line">// mesos-<span class="literal">start</span>-cluster.sh 启动集群，会调用以下的两个脚本</span><br><span class="line">// mesos-<span class="literal">start</span>-masters.sh    启动<span class="literal">master</span>，会ssh远程调用mesos-daemon</span><br><span class="line">// mesos-<span class="literal">start</span>-slaves.sh    启动<span class="literal">slave</span>，会ssh远程调用mesos-daemon</span><br><span class="line"></span><br><span class="line">//mesos-daemon.sh    设置环境变量，根据参数调用mesos-<span class="literal">master</span>或者mesos-<span class="literal">slave</span></span><br><span class="line"></span><br><span class="line">// mesos-<span class="keyword">master</span>    <span class="title">二进制文件</span><br><span class="line">// mesos-slave</span></span><br></pre></td></tr></table></figure>
+<p>由以上的层次结构，如果要启动集群，使用mesos-start-cluster.sh脚本就可以了。进行局部测试，可以使用其他的脚本。</p>
+<p>脚本用ssh远程执行命令，并且把输入输出都定向到了黑洞（/dev/null），所以即使出错我们也看不见，这可能成为一个隐患。</p>
+<h2 id="问题">问题</h2><p>在我的机器上，花了很多时间都无法启动集群，也修改了配置，但始终不奏效。最后只能采取暴力的做法去掉脚本中的重定向，让所有错误都暴露在终端。</p>
+<p>脚本中有一条ulimit命令，修改文件描述符的数量限制，它需要root权限才能运行，其他一些操作也可能需要root权限，所以我们最好还是用root权限开运行脚本。</p>
+<p>本来脚本有考虑到这一点，加上“-s”参数就能用sudo来运行，但是会得到一个错误，“you must have a tty”之类的，因为sudo默认不允许远程执行命令。修改/etc/sudoers可以修复这个问题，但还要输密码，很是费劲。</p>
+<p>所以我最终索性设置了免密码远程登陆root用户，做法就是把自己的公钥添加到/root/.ssh目录下，省事一点的方法可以直接：<br><figure class="highlight stylus"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo cp -r ~/<span class="class">.ssh</span> /root/</span><br></pre></td></tr></table></figure></p>
+<p>接着把masters和slaves里面的机器全部改成root@hadoop1这样的形式，这样子就能用脚本启动集群了。</p>
+<h2 id="参考资料">参考资料</h2><ul>
+<li><a href="http://www.cnblogs.com/jasonkoo/articles/2834727.html" target="_blank" rel="external">mesos安装总结</a></li>
+<li><a href="http://jm-blog.aliapp.com/?p=1823" target="_blank" rel="external">Spark随谈（二）—— 安装攻略</a></li>
+<li><a href="https://spark.apache.org/docs/latest/running-on-mesos.html" target="_blank" rel="external">Running Spark on Mesos</a></li>
+</ul>
+  
+	</div>
+		<footer class="article-footer clearfix">
+<div class="article-catetags">
+
+<div class="article-categories">
+  <span></span>
+  <a class="article-category-link" href="/categories/Tech-Tool/">Tech & Tool</a>
+</div>
+
+
+  <div class="article-tags">
+  
+  <span></span> <a href="/tags/Mesos/">Mesos</a><a href="/tags/Spark/">Spark</a>
+  </div>
+
+</div>
+
+
+
+	<div class="article-share" id="share">
+	
+	  <div data-url="http://wanghuanming.com/2014/12/mesos-deploy/" data-title="Mesos 0.21.0部署实战 | Hello Code" data-tsina="null" class="share clearfix">
+	  </div>
+	
+	</div>
+
+
+</footer>
+
+   	       
+	</article>
+	
+<nav class="article-nav clearfix">
+ 
+ <div class="prev" >
+ <a href="/2014/12/blog-seo/" title="个人博客SEO实践">
+  <strong>上一篇：</strong><br/>
+  <span>
+  个人博客SEO实践</span>
+</a>
+</div>
+
+
+<div class="next">
+<a href="/2014/12/Scala-highorder-function/"  title="Scala容器中的高阶函数">
+ <strong>下一篇：</strong><br/> 
+ <span>Scala容器中的高阶函数
+</span>
+</a>
+</div>
+
+</nav>
+
+	
+<section id="comments" class="comment">
+	<div class="ds-thread" data-thread-key="2014/12/mesos-deploy/" data-title="Mesos 0.21.0部署实战" data-url="http://wanghuanming.com/2014/12/mesos-deploy/"></div>
+</section>
+
+
+</div>  
+      <div class="openaside"><a class="navbutton" href="#" title="显示侧边栏"></a></div>
+
+  <div id="toc" class="toc-aside">
+  <strong class="toc-title">文章目录</strong>
+ 
+ <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#编译&安装"><span class="toc-number">1.</span> <span class="toc-text">编译&安装</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#配置"><span class="toc-number">2.</span> <span class="toc-text">配置</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Spark"><span class="toc-number">3.</span> <span class="toc-text">Spark</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Mesos脚本"><span class="toc-number">4.</span> <span class="toc-text">Mesos脚本</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#问题"><span class="toc-number">5.</span> <span class="toc-text">问题</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#参考资料"><span class="toc-number">6.</span> <span class="toc-text">参考资料</span></a></li></ol>
+ 
+  </div>
+
+<div id="asidepart">
+<div class="closeaside"><a class="closebutton" href="#" title="隐藏侧边栏"></a></div>
+<aside class="clearfix">
+
+  
+<div class="categorieslist">
+	<p class="asidetitle">分类</p>
+		<ul>
+		
+		  
+			<li><a href="/categories/Code/" title="Code">Code<sup>39</sup></a></li>
+		  
+		
+		  
+			<li><a href="/categories/Life-Work/" title="Life &amp; Work">Life &amp; Work<sup>10</sup></a></li>
+		  
+		
+		  
+			<li><a href="/categories/Reading/" title="Reading">Reading<sup>4</sup></a></li>
+		  
+		
+		  
+			<li><a href="/categories/Tech-Tool/" title="Tech &amp; Tool">Tech &amp; Tool<sup>24</sup></a></li>
+		  
+		
+		</ul>
+</div>
+
+
+  
+<div class="tagslist">
+	<p class="asidetitle">标签</p>
+		<ul class="clearfix">
+		
+			
+				<li><a href="/tags/C/" title="C++">C++<sup>9</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Scala/" title="Scala">Scala<sup>6</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/编译原理/" title="编译原理">编译原理<sup>4</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/LLVM/" title="LLVM">LLVM<sup>4</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/数据结构/" title="数据结构">数据结构<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Spark/" title="Spark">Spark<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/javascript/" title="javascript">javascript<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/OS/" title="OS">OS<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/ACM/" title="ACM">ACM<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/虚拟机/" title="虚拟机">虚拟机<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/线段树/" title="线段树">线段树<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/解释器/" title="解释器">解释器<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/C语言/" title="C语言">C语言<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/进程/" title="进程">进程<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Linux/" title="Linux">Linux<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Coursera/" title="Coursera">Coursera<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/ssh/" title="ssh">ssh<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/openwrt/" title="openwrt">openwrt<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/C/" title="C">C<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/函数式编程/" title="函数式编程">函数式编程<sup>2</sup></a></li>
+			
+		
+		</ul>
+</div>
+
+
+  <div class="rsspart">
+	<a href="/atom.xml" target="_blank" title="rss">RSS 订阅</a>
+</div>
+
+</aside>
+</div>
+    </div>
+    <footer><div id="footer" >
+	
+	<div class="line">
+		<span></span>
+		<div class="author"></div>
+	</div>
+	
+	
+	<div class="social-font" class="clearfix">
+		
+		<a href="http://weibo.com/5108629996" target="_blank" class="icon-weibo" title="微博"></a>
+		
+		
+		<a href="https://github.com/HelloCodeMing" target="_blank" class="icon-github" title="github"></a>
+		
+		
+		
+		
+		
+		
+		<a href="https://www.douban.com/people/94795087" target="_blank" class="icon-douban" title="豆瓣"></a>
+		
+		
+		<a href="https://www.zhihu.com/people/hellocode-67" target="_blank" class="icon-zhihu" title="知乎"></a>
+		
+		
+		
+		<a href="mailto:huanmingwong@163.com" target="_blank" class="icon-email" title="Email Me"></a>
+		
+	</div>
+			
+		
+
+		<p class="copyright">
+		Powered by <a href="http://hexo.io" target="_blank" title="hexo">hexo</a> and Theme by <a href="https://github.com/wuchong/jacman" target="_blank" title="Jacman">Jacman</a> © 2016 
+		
+		<a href="http://wanghuanming.com/about" target="_blank" title="王欢明">王欢明</a>
+		
+		
+		</p>
+</div>
+</footer>
+    <script src="/js/jquery-2.0.3.min.js"></script>
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  $('.navbar').click(function(){
+    $('header nav').toggleClass('shownav');
+  });
+  var myWidth = 0;
+  function getSize(){
+    if( typeof( window.innerWidth ) == 'number' ) {
+      myWidth = window.innerWidth;
+    } else if( document.documentElement && document.documentElement.clientWidth) {
+      myWidth = document.documentElement.clientWidth;
+    };
+  };
+  var m = $('#main'),
+      a = $('#asidepart'),
+      c = $('.closeaside'),
+      o = $('.openaside');
+  c.click(function(){
+    a.addClass('fadeOut').css('display', 'none');
+    o.css('display', 'block').addClass('fadeIn');
+    m.addClass('moveMain');
+  });
+  o.click(function(){
+    o.css('display', 'none').removeClass('beforeFadeIn');
+    a.css('display', 'block').removeClass('fadeOut').addClass('fadeIn');      
+    m.removeClass('moveMain');
+  });
+  $(window).scroll(function(){
+    o.css("top",Math.max(80,260-$(this).scrollTop()));
+  });
+  
+  $(window).resize(function(){
+    getSize(); 
+    if (myWidth >= 1024) {
+      $('header nav').removeClass('shownav');
+    }else{
+      m.removeClass('moveMain');
+      a.css('display', 'block').removeClass('fadeOut');
+      o.css('display', 'none');
+      
+      $('#toc.toc-aside').css('display', 'none');
+        
+    }
+  });
+});
+</script>
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  var ai = $('.article-content>iframe'),
+      ae = $('.article-content>embed'),
+      t  = $('#toc'),
+      ta = $('#toc.toc-aside'),
+      o  = $('.openaside'),
+      c  = $('.closeaside');
+  if(ai.length>0){
+    ai.wrap('<div class="video-container" />');
+  };
+  if(ae.length>0){
+   ae.wrap('<div class="video-container" />');
+  };
+  c.click(function(){
+    ta.css('display', 'block').addClass('fadeIn');
+  });
+  o.click(function(){
+    ta.css('display', 'none');
+  });
+  $(window).scroll(function(){
+    ta.css("top",Math.max(140,320-$(this).scrollTop()));
+  });
+});
+</script>
+
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  var $this = $('.share'),
+      url = $this.attr('data-url'),
+      encodedUrl = encodeURIComponent(url),
+      title = $this.attr('data-title'),
+      tsina = $this.attr('data-tsina'),
+      description = $this.attr('description');
+  var html = [
+  '<a href="#" class="overlay" id="qrcode"></a>',
+  '<div class="qrcode clearfix"><span>扫描二维码分享到微信朋友圈</span><a class="qrclose" href="#nothing"></a><strong>Loading...Please wait</strong><img id="qrcode-pic" data-src="http://s.jiathis.com/qrcode.php?url=' + encodedUrl + '"/></div>',
+  '<a href="https://www.facebook.com/sharer.php?u=' + encodedUrl + '" class="article-share-facebook" target="_blank" title="Facebook"></a>',
+  '<a href="https://twitter.com/intent/tweet?url=' + encodedUrl + '" class="article-share-twitter" target="_blank" title="Twitter"></a>',
+  '<a href="#qrcode" class="article-share-qrcode" title="微信"></a>',
+  '<a href="http://widget.renren.com/dialog/share?resourceUrl=' + encodedUrl + '&srcUrl=' + encodedUrl + '&title=' + title +'" class="article-share-renren" target="_blank" title="人人"></a>',
+  '<a href="http://service.weibo.com/share/share.php?title='+title+'&url='+encodedUrl +'&ralateUid='+ tsina +'&searchPic=true&style=number' +'" class="article-share-weibo" target="_blank" title="微博"></a>',
+  '<span title="Share to"></span>'
+  ].join('');
+  $this.append(html);
+  $('.article-share-qrcode').click(function(){
+    var imgSrc = $('#qrcode-pic').attr('data-src');
+    $('#qrcode-pic').attr('src', imgSrc);
+    $('#qrcode-pic').load(function(){
+        $('.qrcode strong').text(' ');
+    });
+  });
+});     
+</script>
+
+
+
+<script type="text/javascript">
+  var duoshuoQuery = {short_name:"wanghuanming"};
+  (function() {
+    var ds = document.createElement('script');
+    ds.type = 'text/javascript';ds.async = true;
+    ds.src = '//static.duoshuo.com/embed.js';
+    ds.charset = 'UTF-8';
+    (document.getElementsByTagName('head')[0] 
+    || document.getElementsByTagName('body')[0]).appendChild(ds);
+  })();
+</script> 
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+$(document).ready(function(){ 
+  $('.article-content').each(function(i){
+    $(this).find('img').each(function(){
+      if ($(this).parent().hasClass('fancybox')) return;
+      var alt = this.alt;
+      if (alt) $(this).after('<span class="caption">' + alt + '</span>');
+      $(this).wrap('<a href="' + this.src + '" title="' + alt + '" class="fancybox"></a>');
+    });
+    $(this).find('.fancybox').each(function(){
+      $(this).attr('rel', 'article' + i);
+    });
+  });
+  if($.fancybox){
+    $('.fancybox').fancybox();
+  }
+}); 
+</script>
+
+
+
+<!-- Analytics Begin -->
+
+
+
+
+
+<!-- Analytics End -->
+
+<!-- Totop Begin -->
+
+	<div id="totop">
+	<a title="返回顶部"><img src="/img/scrollup.png"/></a>
+	</div>
+	<script src="/js/totop.js"></script>
+
+<!-- Totop End -->
+
+<!-- MathJax Begin -->
+<!-- mathjax config similar to math.stackexchange -->
+
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    tex2jax: {
+      inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+      processEscapes: true
+    }
+  });
+</script>
+
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: {
+        skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+      }
+    });
+</script>
+
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Queue(function() {
+        var all = MathJax.Hub.getAllJax(), i;
+        for(i=0; i < all.length; i += 1) {
+            all[i].SourceElement().parentNode.className += ' has-jax';
+        }
+    });
+</script>
+
+<script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+</script>
+
+
+<!-- MathJax End -->
+
+<!-- Tiny_search Begin -->
+
+<!-- Tiny_search End -->
+
+  </body>
+</html>

@@ -1,0 +1,578 @@
+
+ <!DOCTYPE HTML>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  
+    <title>从LLVM IR看C++对象模型(二) | Hello Code</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1,user-scalable=no">
+    
+    <meta name="author" content="王欢明">
+    
+
+    
+    <meta name="description" content="前面的文章简单介绍了在LLVM IR的世界里C++对象模型是什么样子，本文继续介绍在多继承情况下的对象模型。
+
+多继承无虚函数首先看看没有虚函数的情况下多继承的情况，示例代码如下：123456789101112131415161718192021222324252627282930class Genius &amp;#123;public:    void Think() &amp;#123; puts(&quot;thi">
+<meta property="og:type" content="article">
+<meta property="og:title" content="从LLVM IR看C++对象模型(二)">
+<meta property="og:url" content="http://wanghuanming.com/2015/11/从LLVM-IR看C-对象模型-二/index.html">
+<meta property="og:site_name" content="Hello Code">
+<meta property="og:description" content="前面的文章简单介绍了在LLVM IR的世界里C++对象模型是什么样子，本文继续介绍在多继承情况下的对象模型。
+
+多继承无虚函数首先看看没有虚函数的情况下多继承的情况，示例代码如下：123456789101112131415161718192021222324252627282930class Genius &amp;#123;public:    void Think() &amp;#123; puts(&quot;thi">
+<meta property="og:image" content="http://7ktrkd.com1.z0.glb.clouddn.com/LLVM%20IR.png">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="从LLVM IR看C++对象模型(二)">
+<meta name="twitter:description" content="前面的文章简单介绍了在LLVM IR的世界里C++对象模型是什么样子，本文继续介绍在多继承情况下的对象模型。
+
+多继承无虚函数首先看看没有虚函数的情况下多继承的情况，示例代码如下：123456789101112131415161718192021222324252627282930class Genius &amp;#123;public:    void Think() &amp;#123; puts(&quot;thi">
+
+    
+    <link rel="alternative" href="/atom.xml" title="Hello Code" type="application/atom+xml">
+    
+    
+    <link rel="icon" href="/img/panda-icon.ico">
+    
+    
+    <link rel="apple-touch-icon" href="/img/panda.png">
+    <link rel="apple-touch-icon-precomposed" href="/img/panda.png">
+    
+    <link rel="stylesheet" href="/css/style.css" type="text/css">
+</head>
+
+  <body>
+    <header>
+      <div>
+		
+			<div id="imglogo">
+				<a href="/"><img src="/img/panda.png" alt="Hello Code" title="Hello Code"/></a>
+			</div>
+			
+			<div id="textlogo">
+				<h1 class="site-name"><a href="/" title="Hello Code">Hello Code</a></h1>
+				<h2 class="blog-motto"></h2>
+			</div>
+			<div class="navbar"><a class="navbutton navmobile" href="#" title="菜单">
+			</a></div>
+			<nav class="animated">
+				<ul>
+					<ul>
+					 
+						<li><a href="/">首页</a></li>
+					
+						<li><a href="/archives">归档</a></li>
+					
+						<li><a href="/about">关于</a></li>
+					
+					<li>
+ 					
+					<form class="search" action="//google.com/search" method="get" accept-charset="utf-8">
+						<label>Search</label>
+						<input type="search" id="search" name="q" autocomplete="off" maxlength="20" placeholder="搜索" />
+						<input type="hidden" name="q" value="site:wanghuanming.com">
+					</form>
+					
+					</li>
+				</ul>
+			</nav>			
+</div>
+    </header>
+    <div id="container">
+      <div id="main" class="post" itemscope itemprop="blogPost">
+  
+	<article itemprop="articleBody"> 
+		<header class="article-info clearfix">
+  <h1 itemprop="name">
+    
+      <a href="/2015/11/从LLVM-IR看C-对象模型-二/" title="从LLVM IR看C++对象模型(二)" itemprop="url">从LLVM IR看C++对象模型(二)</a>
+  </h1>
+  <p class="article-author">By
+       
+		<a href="http://wanghuanming.com/about" title="王欢明" target="_blank" itemprop="author">王欢明</a>
+		
+  <p class="article-time">
+    <time datetime="2015-11-12T10:49:59.000Z" itemprop="datePublished"> 发表于 2015 Nov 12</time>
+    
+  </p>
+</header>
+	<div class="article-content">
+		
+		<div id="toc" class="toc-article">
+			<strong class="toc-title">文章目录</strong>
+		
+			<ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#多继承"><span class="toc-number">1.</span> <span class="toc-text">多继承</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#无虚函数"><span class="toc-number">1.1.</span> <span class="toc-text">无虚函数</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#有虚函数"><span class="toc-number">1.2.</span> <span class="toc-text">有虚函数</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#对数据成员的寻址"><span class="toc-number">1.3.</span> <span class="toc-text">对数据成员的寻址</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#小结"><span class="toc-number">2.</span> <span class="toc-text">小结</span></a></li></ol>
+		
+		</div>
+		
+		<p><img src="http://7ktrkd.com1.z0.glb.clouddn.com/LLVM%20IR.png" alt="LLVM IR"></p>
+<blockquote>
+<p>前面的文章简单介绍了在LLVM IR的世界里C++对象模型是什么样子，本文继续介绍在多继承情况下的对象模型。</p>
+</blockquote>
+<h2 id="多继承">多继承</h2><h3 id="无虚函数">无虚函数</h3><p>首先看看没有虚函数的情况下多继承的情况，示例代码如下：<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> Genius &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">Think</span><span class="params">()</span> </span>&#123; <span class="built_in">puts</span>(<span class="string">"thinking"</span>); &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> iq_;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> Dog &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">Run</span><span class="params">()</span> </span>&#123; <span class="built_in">puts</span>(<span class="string">"running"</span>); &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">double</span> speed_;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> Scooby : <span class="keyword">public</span> Genius, <span class="keyword">public</span> Dog &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">Doo</span><span class="params">()</span> </span>&#123; <span class="built_in">puts</span>(<span class="string">"dooing"</span>); &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">short</span> tail_;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    Genius *g = <span class="keyword">new</span> Scooby();</span><br><span class="line">    Dog *d = <span class="keyword">reinterpret_cast</span>&lt;Dog*&gt;(g);</span><br><span class="line">    Scooby *s = <span class="keyword">static_cast</span>&lt;Scooby*&gt;(g);</span><br><span class="line">    g-&gt;Think();</span><br><span class="line">    d-&gt;Run();</span><br><span class="line">    s-&gt;Doo();</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>Scooby 继承Genius和Dog，并含有自己的数据成员。编译一下得到IR：<br><figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">%<span class="class"><span class="keyword">class</span>.<span class="title">Genius</span> =</span> <span class="class"><span class="keyword">type</span> &#123;</span> i32 &#125;</span><br><span class="line">%<span class="class"><span class="keyword">class</span>.<span class="title">Dog</span> =</span> <span class="class"><span class="keyword">type</span> &#123;</span> double &#125;</span><br><span class="line">%<span class="class"><span class="keyword">class</span>.<span class="title">Scooby</span> =</span> <span class="class"><span class="keyword">type</span> <span class="title">&lt;</span>&#123;</span> %<span class="class"><span class="keyword">class</span>.<span class="title">Genius</span>, [</span><span class="number">4</span> x i8], %<span class="class"><span class="keyword">class</span>.<span class="title">Dog</span>, <span class="title">i16</span>, [</span><span class="number">6</span> x i8] &#125;&gt;</span><br></pre></td></tr></table></figure></p>
+<p>内存布局很简单，在Scooby对象中直接包含了Genius和Dog对象，并按照声明顺序排列，当然，在最后为了字节对齐，还加上了一段padding。</p>
+<p>而成员函数也只是稀松平常，直接由对象指针调用：<br><figure class="highlight mel"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">call void <span class="variable">@_ZN6Genius5ThinkEv</span>(<span class="variable">%class</span>.Genius* <span class="variable">%10</span>)</span><br><span class="line">  <span class="variable">%11</span> = load <span class="variable">%class</span>.Dog<span class="variable">*,</span> <span class="variable">%class</span>.Dog<span class="variable">**</span> <span class="variable">%d</span>, <span class="keyword">align</span> <span class="number">8</span></span><br><span class="line">  call void <span class="variable">@_ZN3Dog3RunEv</span>(<span class="variable">%class</span>.Dog* <span class="variable">%11</span>)</span><br><span class="line">  <span class="variable">%12</span> = load <span class="variable">%class</span>.Scooby<span class="variable">*,</span> <span class="variable">%class</span>.Scooby<span class="variable">**</span> <span class="variable">%s</span>, <span class="keyword">align</span> <span class="number">8</span></span><br><span class="line">  call void <span class="variable">@_ZN6Scooby3DooEv</span>(<span class="variable">%class</span>.Scooby* <span class="variable">%12</span>)</span><br></pre></td></tr></table></figure></p>
+<p>在没有虚函数的情况下，没有什么奇怪的事情发生。</p>
+<h3 id="有虚函数">有虚函数</h3><p>示例代码如下：<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> Genius &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="keyword">virtual</span> <span class="keyword">void</span> <span class="title">Think</span><span class="params">()</span> </span>&#123; <span class="built_in">puts</span>(<span class="string">"thinking"</span>); &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">long</span> <span class="keyword">long</span> iq_;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> Dog &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="keyword">virtual</span> <span class="keyword">void</span> <span class="title">Run</span><span class="params">()</span> </span>&#123; <span class="built_in">puts</span>(<span class="string">"running"</span>); &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">double</span> speed_;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> Scooby : <span class="keyword">public</span> Genius, <span class="keyword">public</span> Dog &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="keyword">virtual</span> <span class="keyword">void</span> <span class="title">Think</span><span class="params">()</span> </span>&#123; <span class="built_in">puts</span>(<span class="string">"scooby is thinking"</span>); &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">virtual</span> <span class="keyword">void</span> <span class="title">Run</span><span class="params">()</span> </span>&#123; <span class="built_in">puts</span>(<span class="string">"scooby is running"</span>); &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">short</span> tail_;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    Genius *g = <span class="keyword">new</span> Scooby();</span><br><span class="line">    Dog *d = <span class="keyword">static_cast</span>&lt;Scooby*&gt;(g);</span><br><span class="line">    g-&gt;Think();</span><br><span class="line">    d-&gt;Run();</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>在多继承的情况下，对象还是需要和类信息绑定。Genius类有一个虚函数，Dog类也有一个虚函数，因此它们都会有一个虚函数表，而Scooby继承了它们，则需要有两个虚函数表，因此对象中也需要有两个虚表指针指向两个虚函数表。</p>
+<figure class="highlight haskell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">%<span class="keyword">class</span>.<span class="type">Genius</span> = <span class="typedef"><span class="keyword">type</span> <span class="container">&#123; <span class="title">i32</span> (...)**, <span class="title">i64</span> &#125;</span></span></span><br><span class="line">%<span class="keyword">class</span>.<span class="type">Dog</span> = <span class="typedef"><span class="keyword">type</span> <span class="container">&#123; <span class="title">i32</span> (...)**, <span class="title">double</span> &#125;</span></span></span><br><span class="line">%<span class="keyword">class</span>.<span class="type">Scooby</span> = <span class="typedef"><span class="keyword">type</span> &lt;<span class="container">&#123; %<span class="title">class</span>.<span class="type">Genius</span>, %<span class="title">class</span>.<span class="type">Dog</span>, <span class="title">i16</span>, [6 <span class="title">x</span> <span class="title">i8</span>] &#125;</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<p>内存布局没什么特别，还是Genius和Dog两个对象，下面来看看虚函数表的初始化：<br><figure class="highlight less"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable">@_ZTV6Scooby</span> = linkonce_odr unnamed_addr constant [<span class="number">7</span> x i8*] [i8* null, i8* null, i8* bitcast (void (%class.Scooby*)* <span class="variable">@_ZN6Scooby5ThinkEv</span> to i8*), i8* bitcast (void (%class.Scooby*)* <span class="variable">@_ZN6Scooby3RunEv</span> to i8*), i8* inttoptr (i64 -<span class="number">16</span> to i8*), i8* null, i8* bitcast (void (%class.Scooby*)* <span class="variable">@_ZThn16_N6Scooby3RunEv</span> to i8*)], comdat, align <span class="number">8</span></span><br><span class="line"><span class="variable">@_ZTV6Genius</span> = linkonce_odr unnamed_addr constant [<span class="number">3</span> x i8*] [i8* null, i8* null, i8* bitcast (void (%class.Genius*)* <span class="variable">@_ZN6Genius5ThinkEv</span> to i8*)], comdat, align <span class="number">8</span></span><br><span class="line"><span class="variable">@_ZTV3Dog</span> = linkonce_odr unnamed_addr constant [<span class="number">3</span> x i8*] [i8* null, i8* null, i8* bitcast (void (%class.Dog*)* <span class="variable">@_ZN3Dog3RunEv</span> to i8*)], comdat, align <span class="number">8</span></span><br></pre></td></tr></table></figure></p>
+<p>比较意外的是，Scooby并没有采用两个虚函数表，事实上它把两个虚函数表拼在了一起，Genuis的部分在前面，Dog的部分在后面。这里还用了两个Run函数，之后再去考证。</p>
+<p>看看Scooby的构造函数中对虚表指针的初始化：<br><figure class="highlight mel"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">define linkonce_odr void <span class="variable">@_ZN6ScoobyC2Ev</span>(<span class="variable">%class</span>.Scooby* <span class="variable">%this</span>) unnamed_addr #<span class="number">3</span> comdat <span class="keyword">align</span> <span class="number">2</span> &#123;</span><br><span class="line">  <span class="variable">%1</span> = alloca <span class="variable">%class</span>.Scooby<span class="variable">*,</span> <span class="keyword">align</span> <span class="number">8</span></span><br><span class="line">  store <span class="variable">%class</span>.Scooby* <span class="variable">%this</span>, <span class="variable">%class</span>.Scooby<span class="variable">**</span> <span class="variable">%1</span>, <span class="keyword">align</span> <span class="number">8</span></span><br><span class="line">  <span class="variable">%2</span> = load <span class="variable">%class</span>.Scooby<span class="variable">*,</span> <span class="variable">%class</span>.Scooby<span class="variable">**</span> <span class="variable">%1</span></span><br><span class="line">  <span class="variable">%3</span> = bitcast <span class="variable">%class</span>.Scooby* <span class="variable">%2</span> to <span class="variable">%class</span>.Genius*</span><br><span class="line">  call void <span class="variable">@_ZN6GeniusC2Ev</span>(<span class="variable">%class</span>.Genius* <span class="variable">%3</span>) #<span class="number">2</span></span><br><span class="line"></span><br><span class="line">  <span class="variable">%4</span> = bitcast <span class="variable">%class</span>.Scooby* <span class="variable">%2</span> to i8*</span><br><span class="line">  <span class="variable">%5</span> = getelementptr inbounds i8, i8* <span class="variable">%4</span>, i64 <span class="number">16</span></span><br><span class="line">  <span class="variable">%6</span> = bitcast i8* <span class="variable">%5</span> to <span class="variable">%class</span>.Dog*</span><br><span class="line">  call void <span class="variable">@_ZN3DogC2Ev</span>(<span class="variable">%class</span>.Dog* <span class="variable">%6</span>) #<span class="number">2</span></span><br><span class="line"></span><br><span class="line">  <span class="variable">%7</span> = bitcast <span class="variable">%class</span>.Scooby* <span class="variable">%2</span> to i32 (...)<span class="variable">**</span>*</span><br><span class="line">  store i32 (...)<span class="variable">**</span> bitcast (i8<span class="variable">**</span> getelementptr inbounds ([<span class="number">7</span> x i8<span class="variable">*]</span>, [<span class="number">7</span> x i8<span class="variable">*]</span>* <span class="variable">@_ZTV6Scooby</span>, i64 <span class="number">0</span>, i64 <span class="number">2</span>) to i32 (...)<span class="variable">**</span>), i32 (...)<span class="variable">**</span>* <span class="variable">%7</span></span><br><span class="line"></span><br><span class="line">  <span class="variable">%8</span> = bitcast <span class="variable">%class</span>.Scooby* <span class="variable">%2</span> to i8*</span><br><span class="line">  <span class="variable">%9</span> = getelementptr inbounds i8, i8* <span class="variable">%8</span>, i64 <span class="number">16</span></span><br><span class="line">  <span class="variable">%10</span> = bitcast i8* <span class="variable">%9</span> to i32 (...)<span class="variable">**</span>*</span><br><span class="line">  store i32 (...)<span class="variable">**</span> bitcast (i8<span class="variable">**</span> getelementptr inbounds ([<span class="number">7</span> x i8<span class="variable">*]</span>, [<span class="number">7</span> x i8<span class="variable">*]</span>* <span class="variable">@_ZTV6Scooby</span>, i64 <span class="number">0</span>, i64 <span class="number">6</span>) to i32 (...)<span class="variable">**</span>), i32 (...)<span class="variable">**</span>* <span class="variable">%10</span></span><br><span class="line">  ret void</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>Scooby的子对象Genius和Dog的虚表指针分别指向了Scooby虚函数表的第二项和第六项，即Think函数和Run函数。它们的相对索引和Genius虚函数表相同。</p>
+<p>接着来看看对Scooby函数的调用：<br><figure class="highlight gherkin"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">%15 = load %class.Genius<span class="keyword">*</span>, %class.Genius<span class="keyword">*</span><span class="keyword">*</span> %g, align 8</span><br><span class="line">  %16 = bitcast %class.Genius<span class="keyword">*</span> %15 to void (%class.Genius<span class="keyword">*</span>)<span class="keyword">*</span><span class="keyword">*</span><span class="keyword">*</span></span><br><span class="line">  %17 = load void (%class.Genius<span class="keyword">*</span>)<span class="keyword">*</span><span class="keyword">*</span>, void (%class.Genius<span class="keyword">*</span>)<span class="keyword">*</span><span class="keyword">*</span><span class="keyword">*</span> %16</span><br><span class="line">  %18 = getelementptr inbounds void (%class.Genius<span class="keyword">*</span>)<span class="keyword">*</span>, void (%class.Genius<span class="keyword">*</span>)<span class="keyword">*</span><span class="keyword">*</span> %17, i64 0</span><br><span class="line">  %19 = load void (%class.Genius<span class="keyword">*</span>)<span class="keyword">*</span>, void (%class.Genius<span class="keyword">*</span>)<span class="keyword">*</span><span class="keyword">*</span> %18</span><br><span class="line">  call void %19(%class.Genius<span class="keyword">*</span> %15)</span><br></pre></td></tr></table></figure></p>
+<p>对Scooby::Think函数的调用很简单，基于虚表指针寻址，找到Genuis虚函数表的第0项，就是Scooby::Think函数了。</p>
+<p>而对Scooby::Run函数的寻址则要复杂一点：<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">  %<span class="number">6</span> = load %<span class="keyword">class</span>.Genius*, %<span class="keyword">class</span>.Genius** %g, align <span class="number">8</span></span><br><span class="line">  %<span class="number">7</span> = bitcast %<span class="keyword">class</span>.Genius* %<span class="number">6</span> to %<span class="keyword">class</span>.Scooby*</span><br><span class="line">  %<span class="number">8</span> = icmp eq %<span class="keyword">class</span>.Scooby* %<span class="number">7</span>, null</span><br><span class="line">  br i1 %<span class="number">8</span>, label %<span class="number">13</span>, label %<span class="number">9</span></span><br><span class="line"></span><br><span class="line">; &lt;label&gt;:<span class="number">9</span>                                       ; preds = %<span class="number">0</span></span><br><span class="line">  %<span class="number">10</span> = bitcast %<span class="keyword">class</span>.Scooby* %<span class="number">7</span> to i8*</span><br><span class="line">  %<span class="number">11</span> = getelementptr inbounds i8, i8* %<span class="number">10</span>, i64 <span class="number">16</span></span><br><span class="line">  %<span class="number">12</span> = bitcast i8* %<span class="number">11</span> to %<span class="keyword">class</span>.Dog*</span><br><span class="line">  br label %<span class="number">13</span></span><br><span class="line"></span><br><span class="line">; &lt;label&gt;:<span class="number">13</span>                                      ; preds = %<span class="number">9</span>, %<span class="number">0</span></span><br><span class="line">  %<span class="number">14</span> = phi %<span class="keyword">class</span>.Dog* [ %<span class="number">12</span>, %<span class="number">9</span> ], [ null, %<span class="number">0</span> ]</span><br><span class="line">  store %<span class="keyword">class</span>.Dog* %<span class="number">14</span>, %<span class="keyword">class</span>.Dog** %d, align <span class="number">8</span></span><br></pre></td></tr></table></figure></p>
+<p>首先需要调整this指针，让它指向Scooby的Dog子对象，然后查找Scooby::Run函数：<br><figure class="highlight gherkin"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">%20 = load %class.Dog<span class="keyword">*</span>, %class.Dog<span class="keyword">*</span><span class="keyword">*</span> %d, align 8</span><br><span class="line">  %21 = bitcast %class.Dog<span class="keyword">*</span> %20 to void (%class.Dog<span class="keyword">*</span>)<span class="keyword">*</span><span class="keyword">*</span><span class="keyword">*</span></span><br><span class="line">  %22 = load void (%class.Dog<span class="keyword">*</span>)<span class="keyword">*</span><span class="keyword">*</span>, void (%class.Dog<span class="keyword">*</span>)<span class="keyword">*</span><span class="keyword">*</span><span class="keyword">*</span> %21</span><br><span class="line">  %23 = getelementptr inbounds void (%class.Dog<span class="keyword">*</span>)<span class="keyword">*</span>, void (%class.Dog<span class="keyword">*</span>)<span class="keyword">*</span><span class="keyword">*</span> %22, i64 0</span><br><span class="line">  %24 = load void (%class.Dog<span class="keyword">*</span>)<span class="keyword">*</span>, void (%class.Dog<span class="keyword">*</span>)<span class="keyword">*</span><span class="keyword">*</span> %23</span><br><span class="line">  call void %24(%class.Dog<span class="keyword">*</span> %20)</span><br></pre></td></tr></table></figure></p>
+<p>寻址方式不变，不过这时候找到的其实是<code>@_ZThn16_N6Scooby3RunEv</code>，这是它的定义：<br><figure class="highlight mel"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">define linkonce_odr void <span class="variable">@_ZN6Scooby3RunEv</span>(<span class="variable">%class</span>.Scooby* <span class="variable">%this</span>) unnamed_addr #<span class="number">0</span> comdat <span class="keyword">align</span> <span class="number">2</span> &#123;</span><br><span class="line">  <span class="variable">%1</span> = alloca <span class="variable">%class</span>.Scooby<span class="variable">*,</span> <span class="keyword">align</span> <span class="number">8</span></span><br><span class="line">  store <span class="variable">%class</span>.Scooby* <span class="variable">%this</span>, <span class="variable">%class</span>.Scooby<span class="variable">**</span> <span class="variable">%1</span>, <span class="keyword">align</span> <span class="number">8</span></span><br><span class="line">  <span class="variable">%2</span> = load <span class="variable">%class</span>.Scooby<span class="variable">*,</span> <span class="variable">%class</span>.Scooby<span class="variable">**</span> <span class="variable">%1</span></span><br><span class="line">  <span class="variable">%3</span> = call i32 <span class="variable">@puts</span>(i8* getelementptr inbounds ([<span class="number">18</span> x i8], [<span class="number">18</span> x i8]* <span class="variable">@.</span>str<span class="number">.3</span>, i32 <span class="number">0</span>, i32 <span class="number">0</span>))</span><br><span class="line">  ret void</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">; Function Attrs: nounwind uwtable</span><br><span class="line">define linkonce_odr void <span class="variable">@_ZThn16_N6Scooby3RunEv</span>(<span class="variable">%class</span>.Scooby* <span class="variable">%this</span>) unnamed_addr #<span class="number">0</span> comdat <span class="keyword">align</span> <span class="number">2</span> &#123;</span><br><span class="line">  <span class="variable">%1</span> = alloca <span class="variable">%class</span>.Scooby<span class="variable">*,</span> <span class="keyword">align</span> <span class="number">8</span></span><br><span class="line">  store <span class="variable">%class</span>.Scooby* <span class="variable">%this</span>, <span class="variable">%class</span>.Scooby<span class="variable">**</span> <span class="variable">%1</span>, <span class="keyword">align</span> <span class="number">8</span></span><br><span class="line">  <span class="variable">%2</span> = load <span class="variable">%class</span>.Scooby<span class="variable">*,</span> <span class="variable">%class</span>.Scooby<span class="variable">**</span> <span class="variable">%1</span></span><br><span class="line">  <span class="variable">%3</span> = bitcast <span class="variable">%class</span>.Scooby* <span class="variable">%2</span> to i8*</span><br><span class="line">  <span class="variable">%4</span> = getelementptr inbounds i8, i8* <span class="variable">%3</span>, i64 -<span class="number">16</span></span><br><span class="line">  <span class="variable">%5</span> = bitcast i8* <span class="variable">%4</span> to <span class="variable">%class</span>.Scooby*</span><br><span class="line">  call void <span class="variable">@_ZN6Scooby3RunEv</span>(<span class="variable">%class</span>.Scooby* <span class="variable">%5</span>)</span><br><span class="line">  ret void</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p><code>@_ZThn16_N6Scooby3RunEv</code>函数的功能是，把this指针移回Scooby对象的基址，然后调用真实的Scooby::Run函数。这里饶了一大圈，还是回到了Scooby对象基址，何苦呢？因为在对Scooby::Run函数寻址的时候，需要Dog子对象的虚表指针，所以要先把Scooby对象指针调整到Dog子对象，之后调用Scooby::Run，在这个函数里面，整个Scooby对象的数据成员都是可见的，所以必须把this指针指向Scooby对象的基址。</p>
+<h3 id="对数据成员的寻址">对数据成员的寻址</h3><p>我们可以顺便看一下Clang是如何对数据成员进行寻址的，在Scooby::Run函数中加入以下几行代码：<br><figure class="highlight perl"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">printf</span>(<span class="string">"<span class="variable">%d</span>\n"</span>, iq<span class="number">_</span>);</span><br><span class="line"><span class="keyword">printf</span>(<span class="string">"<span class="variable">%d</span>\n"</span>, speed<span class="number">_</span>);</span><br><span class="line"><span class="keyword">printf</span>(<span class="string">"<span class="variable">%d</span>\n"</span>, tail<span class="number">_</span>);</span><br></pre></td></tr></table></figure></p>
+<p>编译得到：<br><figure class="highlight mel"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line">define linkonce_odr void <span class="variable">@_ZN6Scooby3RunEv</span>(<span class="variable">%class</span>.Scooby* <span class="variable">%this</span>) unnamed_addr #<span class="number">0</span> comdat <span class="keyword">align</span> <span class="number">2</span> &#123;</span><br><span class="line">  <span class="variable">%1</span> = alloca <span class="variable">%class</span>.Scooby<span class="variable">*,</span> <span class="keyword">align</span> <span class="number">8</span></span><br><span class="line">  store <span class="variable">%class</span>.Scooby* <span class="variable">%this</span>, <span class="variable">%class</span>.Scooby<span class="variable">**</span> <span class="variable">%1</span>, <span class="keyword">align</span> <span class="number">8</span></span><br><span class="line">  <span class="variable">%2</span> = load <span class="variable">%class</span>.Scooby<span class="variable">*,</span> <span class="variable">%class</span>.Scooby<span class="variable">**</span> <span class="variable">%1</span></span><br><span class="line"></span><br><span class="line">; Genius::iq_</span><br><span class="line">  <span class="variable">%3</span> = call i32 <span class="variable">@puts</span>(i8* getelementptr inbounds ([<span class="number">18</span> x i8], [<span class="number">18</span> x i8]* <span class="variable">@.</span>str<span class="number">.3</span>, i32 <span class="number">0</span>, i32 <span class="number">0</span>))</span><br><span class="line">  <span class="variable">%4</span> = bitcast <span class="variable">%class</span>.Scooby* <span class="variable">%2</span> to <span class="variable">%class</span>.Genius*</span><br><span class="line">  <span class="variable">%5</span> = getelementptr inbounds <span class="variable">%class</span>.Genius, <span class="variable">%class</span>.Genius* <span class="variable">%4</span>, i32 <span class="number">0</span>, i32 <span class="number">1</span></span><br><span class="line">  <span class="variable">%6</span> = load i64, i64* <span class="variable">%5</span>, <span class="keyword">align</span> <span class="number">8</span></span><br><span class="line">  <span class="variable">%7</span> = call i32 (i8<span class="variable">*,</span> ...) <span class="variable">@printf</span>(i8* getelementptr inbounds ([<span class="number">4</span> x i8], [<span class="number">4</span> x i8]* <span class="variable">@.</span>str<span class="number">.4</span>, i32 <span class="number">0</span>, i32 <span class="number">0</span>), i64 <span class="variable">%6</span>)</span><br><span class="line">  </span><br><span class="line">; Dog::speed_</span><br><span class="line">  <span class="variable">%8</span> = bitcast <span class="variable">%class</span>.Scooby* <span class="variable">%2</span> to i8*</span><br><span class="line">  <span class="variable">%9</span> = getelementptr inbounds i8, i8* <span class="variable">%8</span>, i64 <span class="number">16</span></span><br><span class="line">  <span class="variable">%10</span> = bitcast i8* <span class="variable">%9</span> to <span class="variable">%class</span>.Dog*</span><br><span class="line">  <span class="variable">%11</span> = getelementptr inbounds <span class="variable">%class</span>.Dog, <span class="variable">%class</span>.Dog* <span class="variable">%10</span>, i32 <span class="number">0</span>, i32 <span class="number">1</span></span><br><span class="line">  <span class="variable">%12</span> = load double, double* <span class="variable">%11</span>, <span class="keyword">align</span> <span class="number">8</span></span><br><span class="line">  <span class="variable">%13</span> = call i32 (i8<span class="variable">*,</span> ...) <span class="variable">@printf</span>(i8* getelementptr inbounds ([<span class="number">4</span> x i8], [<span class="number">4</span> x i8]* <span class="variable">@.</span>str<span class="number">.4</span>, i32 <span class="number">0</span>, i32 <span class="number">0</span>), double <span class="variable">%12</span>)</span><br><span class="line">  </span><br><span class="line">; Scooby::tail_</span><br><span class="line">  <span class="variable">%14</span> = getelementptr inbounds <span class="variable">%class</span>.Scooby, <span class="variable">%class</span>.Scooby* <span class="variable">%2</span>, i32 <span class="number">0</span>, i32 <span class="number">2</span></span><br><span class="line">  <span class="variable">%15</span> = load i16, i16* <span class="variable">%14</span>, <span class="keyword">align</span> <span class="number">2</span></span><br><span class="line">  <span class="variable">%16</span> = sext i16 <span class="variable">%15</span> to i32</span><br><span class="line">  <span class="variable">%17</span> = call i32 (i8<span class="variable">*,</span> ...) <span class="variable">@printf</span>(i8* getelementptr inbounds ([<span class="number">4</span> x i8], [<span class="number">4</span> x i8]* <span class="variable">@.</span>str<span class="number">.4</span>, i32 <span class="number">0</span>, i32 <span class="number">0</span>), i32 <span class="variable">%16</span>)</span><br><span class="line">  ret void</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>逻辑还是比较清晰的：查找Genius::iq<em>，地址不变，把this指针转为Genius*类型；查找Dog::speed</em>对象，首先把this指针指向Dog子对象，然后指针转为Dog*类型；查找Scooby::tail_，直接查找成员变量就好了。</p>
+<h2 id="小结">小结</h2><p>多继承场景下的对象模型相对复杂，不过捋清楚之后还是比较清晰的。比较麻烦的是，每家编译器对多继承的实现都不太一样，Clang的实现已经和《深度探索C++对象模型》里的实现有了一些出入，所以就不能照本宣科了。j</p>
+  
+	</div>
+		<footer class="article-footer clearfix">
+<div class="article-catetags">
+
+<div class="article-categories">
+  <span></span>
+  <a class="article-category-link" href="/categories/Code/">Code</a>
+</div>
+
+
+  <div class="article-tags">
+  
+  <span></span> <a href="/tags/C/">C++</a><a href="/tags/LLVM/">LLVM</a><a href="/tags/LLVM-IR/">LLVM IR</a><a href="/tags/对象模型/">对象模型</a>
+  </div>
+
+</div>
+
+
+
+	<div class="article-share" id="share">
+	
+	  <div data-url="http://wanghuanming.com/2015/11/从LLVM-IR看C-对象模型-二/" data-title="从LLVM IR看C++对象模型(二) | Hello Code" data-tsina="null" class="share clearfix">
+	  </div>
+	
+	</div>
+
+
+</footer>
+
+   	       
+	</article>
+	
+<nav class="article-nav clearfix">
+ 
+ <div class="prev" >
+ <a href="/2015/12/OS-Kernel的简单实现/" title="OS Kernel的简单实现">
+  <strong>上一篇：</strong><br/>
+  <span>
+  OS Kernel的简单实现</span>
+</a>
+</div>
+
+
+<div class="next">
+<a href="/2015/11/从LLVM-IR看C-对象模型/"  title="从LLVM IR看C++对象模型">
+ <strong>下一篇：</strong><br/> 
+ <span>从LLVM IR看C++对象模型
+</span>
+</a>
+</div>
+
+</nav>
+
+	
+<section id="comments" class="comment">
+	<div class="ds-thread" data-thread-key="2015/11/从LLVM-IR看C-对象模型-二/" data-title="从LLVM IR看C++对象模型(二)" data-url="http://wanghuanming.com/2015/11/从LLVM-IR看C-对象模型-二/"></div>
+</section>
+
+
+</div>  
+      <div class="openaside"><a class="navbutton" href="#" title="显示侧边栏"></a></div>
+
+  <div id="toc" class="toc-aside">
+  <strong class="toc-title">文章目录</strong>
+ 
+ <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#多继承"><span class="toc-number">1.</span> <span class="toc-text">多继承</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#无虚函数"><span class="toc-number">1.1.</span> <span class="toc-text">无虚函数</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#有虚函数"><span class="toc-number">1.2.</span> <span class="toc-text">有虚函数</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#对数据成员的寻址"><span class="toc-number">1.3.</span> <span class="toc-text">对数据成员的寻址</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#小结"><span class="toc-number">2.</span> <span class="toc-text">小结</span></a></li></ol>
+ 
+  </div>
+
+<div id="asidepart">
+<div class="closeaside"><a class="closebutton" href="#" title="隐藏侧边栏"></a></div>
+<aside class="clearfix">
+
+  
+<div class="categorieslist">
+	<p class="asidetitle">分类</p>
+		<ul>
+		
+		  
+			<li><a href="/categories/Code/" title="Code">Code<sup>39</sup></a></li>
+		  
+		
+		  
+			<li><a href="/categories/Life-Work/" title="Life &amp; Work">Life &amp; Work<sup>10</sup></a></li>
+		  
+		
+		  
+			<li><a href="/categories/Reading/" title="Reading">Reading<sup>4</sup></a></li>
+		  
+		
+		  
+			<li><a href="/categories/Tech-Tool/" title="Tech &amp; Tool">Tech &amp; Tool<sup>24</sup></a></li>
+		  
+		
+		</ul>
+</div>
+
+
+  
+<div class="tagslist">
+	<p class="asidetitle">标签</p>
+		<ul class="clearfix">
+		
+			
+				<li><a href="/tags/C/" title="C++">C++<sup>9</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Scala/" title="Scala">Scala<sup>6</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/编译原理/" title="编译原理">编译原理<sup>4</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/LLVM/" title="LLVM">LLVM<sup>4</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/数据结构/" title="数据结构">数据结构<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Spark/" title="Spark">Spark<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/javascript/" title="javascript">javascript<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/OS/" title="OS">OS<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/ACM/" title="ACM">ACM<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/虚拟机/" title="虚拟机">虚拟机<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/线段树/" title="线段树">线段树<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/解释器/" title="解释器">解释器<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/C语言/" title="C语言">C语言<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/进程/" title="进程">进程<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Linux/" title="Linux">Linux<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Coursera/" title="Coursera">Coursera<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/ssh/" title="ssh">ssh<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/openwrt/" title="openwrt">openwrt<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/C/" title="C">C<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/函数式编程/" title="函数式编程">函数式编程<sup>2</sup></a></li>
+			
+		
+		</ul>
+</div>
+
+
+  <div class="rsspart">
+	<a href="/atom.xml" target="_blank" title="rss">RSS 订阅</a>
+</div>
+
+</aside>
+</div>
+    </div>
+    <footer><div id="footer" >
+	
+	<div class="line">
+		<span></span>
+		<div class="author"></div>
+	</div>
+	
+	
+	<div class="social-font" class="clearfix">
+		
+		<a href="http://weibo.com/5108629996" target="_blank" class="icon-weibo" title="微博"></a>
+		
+		
+		<a href="https://github.com/HelloCodeMing" target="_blank" class="icon-github" title="github"></a>
+		
+		
+		
+		
+		
+		
+		<a href="https://www.douban.com/people/94795087" target="_blank" class="icon-douban" title="豆瓣"></a>
+		
+		
+		<a href="https://www.zhihu.com/people/hellocode-67" target="_blank" class="icon-zhihu" title="知乎"></a>
+		
+		
+		
+		<a href="mailto:huanmingwong@163.com" target="_blank" class="icon-email" title="Email Me"></a>
+		
+	</div>
+			
+		
+
+		<p class="copyright">
+		Powered by <a href="http://hexo.io" target="_blank" title="hexo">hexo</a> and Theme by <a href="https://github.com/wuchong/jacman" target="_blank" title="Jacman">Jacman</a> © 2016 
+		
+		<a href="http://wanghuanming.com/about" target="_blank" title="王欢明">王欢明</a>
+		
+		
+		</p>
+</div>
+</footer>
+    <script src="/js/jquery-2.0.3.min.js"></script>
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  $('.navbar').click(function(){
+    $('header nav').toggleClass('shownav');
+  });
+  var myWidth = 0;
+  function getSize(){
+    if( typeof( window.innerWidth ) == 'number' ) {
+      myWidth = window.innerWidth;
+    } else if( document.documentElement && document.documentElement.clientWidth) {
+      myWidth = document.documentElement.clientWidth;
+    };
+  };
+  var m = $('#main'),
+      a = $('#asidepart'),
+      c = $('.closeaside'),
+      o = $('.openaside');
+  c.click(function(){
+    a.addClass('fadeOut').css('display', 'none');
+    o.css('display', 'block').addClass('fadeIn');
+    m.addClass('moveMain');
+  });
+  o.click(function(){
+    o.css('display', 'none').removeClass('beforeFadeIn');
+    a.css('display', 'block').removeClass('fadeOut').addClass('fadeIn');      
+    m.removeClass('moveMain');
+  });
+  $(window).scroll(function(){
+    o.css("top",Math.max(80,260-$(this).scrollTop()));
+  });
+  
+  $(window).resize(function(){
+    getSize(); 
+    if (myWidth >= 1024) {
+      $('header nav').removeClass('shownav');
+    }else{
+      m.removeClass('moveMain');
+      a.css('display', 'block').removeClass('fadeOut');
+      o.css('display', 'none');
+      
+      $('#toc.toc-aside').css('display', 'none');
+        
+    }
+  });
+});
+</script>
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  var ai = $('.article-content>iframe'),
+      ae = $('.article-content>embed'),
+      t  = $('#toc'),
+      ta = $('#toc.toc-aside'),
+      o  = $('.openaside'),
+      c  = $('.closeaside');
+  if(ai.length>0){
+    ai.wrap('<div class="video-container" />');
+  };
+  if(ae.length>0){
+   ae.wrap('<div class="video-container" />');
+  };
+  c.click(function(){
+    ta.css('display', 'block').addClass('fadeIn');
+  });
+  o.click(function(){
+    ta.css('display', 'none');
+  });
+  $(window).scroll(function(){
+    ta.css("top",Math.max(140,320-$(this).scrollTop()));
+  });
+});
+</script>
+
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  var $this = $('.share'),
+      url = $this.attr('data-url'),
+      encodedUrl = encodeURIComponent(url),
+      title = $this.attr('data-title'),
+      tsina = $this.attr('data-tsina'),
+      description = $this.attr('description');
+  var html = [
+  '<a href="#" class="overlay" id="qrcode"></a>',
+  '<div class="qrcode clearfix"><span>扫描二维码分享到微信朋友圈</span><a class="qrclose" href="#nothing"></a><strong>Loading...Please wait</strong><img id="qrcode-pic" data-src="http://s.jiathis.com/qrcode.php?url=' + encodedUrl + '"/></div>',
+  '<a href="https://www.facebook.com/sharer.php?u=' + encodedUrl + '" class="article-share-facebook" target="_blank" title="Facebook"></a>',
+  '<a href="https://twitter.com/intent/tweet?url=' + encodedUrl + '" class="article-share-twitter" target="_blank" title="Twitter"></a>',
+  '<a href="#qrcode" class="article-share-qrcode" title="微信"></a>',
+  '<a href="http://widget.renren.com/dialog/share?resourceUrl=' + encodedUrl + '&srcUrl=' + encodedUrl + '&title=' + title +'" class="article-share-renren" target="_blank" title="人人"></a>',
+  '<a href="http://service.weibo.com/share/share.php?title='+title+'&url='+encodedUrl +'&ralateUid='+ tsina +'&searchPic=true&style=number' +'" class="article-share-weibo" target="_blank" title="微博"></a>',
+  '<span title="Share to"></span>'
+  ].join('');
+  $this.append(html);
+  $('.article-share-qrcode').click(function(){
+    var imgSrc = $('#qrcode-pic').attr('data-src');
+    $('#qrcode-pic').attr('src', imgSrc);
+    $('#qrcode-pic').load(function(){
+        $('.qrcode strong').text(' ');
+    });
+  });
+});     
+</script>
+
+
+
+<script type="text/javascript">
+  var duoshuoQuery = {short_name:"wanghuanming"};
+  (function() {
+    var ds = document.createElement('script');
+    ds.type = 'text/javascript';ds.async = true;
+    ds.src = '//static.duoshuo.com/embed.js';
+    ds.charset = 'UTF-8';
+    (document.getElementsByTagName('head')[0] 
+    || document.getElementsByTagName('body')[0]).appendChild(ds);
+  })();
+</script> 
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+$(document).ready(function(){ 
+  $('.article-content').each(function(i){
+    $(this).find('img').each(function(){
+      if ($(this).parent().hasClass('fancybox')) return;
+      var alt = this.alt;
+      if (alt) $(this).after('<span class="caption">' + alt + '</span>');
+      $(this).wrap('<a href="' + this.src + '" title="' + alt + '" class="fancybox"></a>');
+    });
+    $(this).find('.fancybox').each(function(){
+      $(this).attr('rel', 'article' + i);
+    });
+  });
+  if($.fancybox){
+    $('.fancybox').fancybox();
+  }
+}); 
+</script>
+
+
+
+<!-- Analytics Begin -->
+
+
+
+
+
+<!-- Analytics End -->
+
+<!-- Totop Begin -->
+
+	<div id="totop">
+	<a title="返回顶部"><img src="/img/scrollup.png"/></a>
+	</div>
+	<script src="/js/totop.js"></script>
+
+<!-- Totop End -->
+
+<!-- MathJax Begin -->
+<!-- mathjax config similar to math.stackexchange -->
+
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    tex2jax: {
+      inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+      processEscapes: true
+    }
+  });
+</script>
+
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: {
+        skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+      }
+    });
+</script>
+
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Queue(function() {
+        var all = MathJax.Hub.getAllJax(), i;
+        for(i=0; i < all.length; i += 1) {
+            all[i].SourceElement().parentNode.className += ' has-jax';
+        }
+    });
+</script>
+
+<script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+</script>
+
+
+<!-- MathJax End -->
+
+<!-- Tiny_search Begin -->
+
+<!-- Tiny_search End -->
+
+  </body>
+</html>

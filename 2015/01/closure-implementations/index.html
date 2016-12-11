@@ -1,0 +1,584 @@
+
+ <!DOCTYPE HTML>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  
+    <title>浅谈闭包的实现 | Hello Code</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1,user-scalable=no">
+    
+    <meta name="author" content="王欢明">
+    
+
+    
+    <meta name="description" content="概述编程语言中的闭包，指的是在词法上下文中引用了自由变量的函数，另一种说法是，函数以及其引用环境组合而成的实体。其表现形式就是嵌套定义的函数可以引用函数作用域之外的变量，那么，内部的函数便可以得到一个闭包。
+跟闭包经常一并而论的概念是匿名函数，亦称lambda表达式。匿名函数确实就是一种lambda表达式的应用，而闭包，则是实现lambda的一种技术。
+函数为何需要闭包，首先来看看传统的函数模型，">
+<meta property="og:type" content="article">
+<meta property="og:title" content="浅谈闭包的实现">
+<meta property="og:url" content="http://wanghuanming.com/2015/01/closure-implementations/index.html">
+<meta property="og:site_name" content="Hello Code">
+<meta property="og:description" content="概述编程语言中的闭包，指的是在词法上下文中引用了自由变量的函数，另一种说法是，函数以及其引用环境组合而成的实体。其表现形式就是嵌套定义的函数可以引用函数作用域之外的变量，那么，内部的函数便可以得到一个闭包。
+跟闭包经常一并而论的概念是匿名函数，亦称lambda表达式。匿名函数确实就是一种lambda表达式的应用，而闭包，则是实现lambda的一种技术。
+函数为何需要闭包，首先来看看传统的函数模型，">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="浅谈闭包的实现">
+<meta name="twitter:description" content="概述编程语言中的闭包，指的是在词法上下文中引用了自由变量的函数，另一种说法是，函数以及其引用环境组合而成的实体。其表现形式就是嵌套定义的函数可以引用函数作用域之外的变量，那么，内部的函数便可以得到一个闭包。
+跟闭包经常一并而论的概念是匿名函数，亦称lambda表达式。匿名函数确实就是一种lambda表达式的应用，而闭包，则是实现lambda的一种技术。
+函数为何需要闭包，首先来看看传统的函数模型，">
+
+    
+    <link rel="alternative" href="/atom.xml" title="Hello Code" type="application/atom+xml">
+    
+    
+    <link rel="icon" href="/img/panda-icon.ico">
+    
+    
+    <link rel="apple-touch-icon" href="/img/panda.png">
+    <link rel="apple-touch-icon-precomposed" href="/img/panda.png">
+    
+    <link rel="stylesheet" href="/css/style.css" type="text/css">
+</head>
+
+  <body>
+    <header>
+      <div>
+		
+			<div id="imglogo">
+				<a href="/"><img src="/img/panda.png" alt="Hello Code" title="Hello Code"/></a>
+			</div>
+			
+			<div id="textlogo">
+				<h1 class="site-name"><a href="/" title="Hello Code">Hello Code</a></h1>
+				<h2 class="blog-motto"></h2>
+			</div>
+			<div class="navbar"><a class="navbutton navmobile" href="#" title="菜单">
+			</a></div>
+			<nav class="animated">
+				<ul>
+					<ul>
+					 
+						<li><a href="/">首页</a></li>
+					
+						<li><a href="/archives">归档</a></li>
+					
+						<li><a href="/about">关于</a></li>
+					
+					<li>
+ 					
+					<form class="search" action="//google.com/search" method="get" accept-charset="utf-8">
+						<label>Search</label>
+						<input type="search" id="search" name="q" autocomplete="off" maxlength="20" placeholder="搜索" />
+						<input type="hidden" name="q" value="site:wanghuanming.com">
+					</form>
+					
+					</li>
+				</ul>
+			</nav>			
+</div>
+    </header>
+    <div id="container">
+      <div id="main" class="post" itemscope itemprop="blogPost">
+  
+	<article itemprop="articleBody"> 
+		<header class="article-info clearfix">
+  <h1 itemprop="name">
+    
+      <a href="/2015/01/closure-implementations/" title="浅谈闭包的实现" itemprop="url">浅谈闭包的实现</a>
+  </h1>
+  <p class="article-author">By
+       
+		<a href="http://wanghuanming.com/about" title="王欢明" target="_blank" itemprop="author">王欢明</a>
+		
+  <p class="article-time">
+    <time datetime="2015-01-10T03:42:52.000Z" itemprop="datePublished"> 发表于 2015 Jan 10</time>
+    
+  </p>
+</header>
+	<div class="article-content">
+		
+		<div id="toc" class="toc-article">
+			<strong class="toc-title">文章目录</strong>
+		
+			<ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#概述"><span class="toc-number">1.</span> <span class="toc-text">概述</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#函数"><span class="toc-number">2.</span> <span class="toc-text">函数</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#闭包"><span class="toc-number">3.</span> <span class="toc-text">闭包</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Lua"><span class="toc-number">4.</span> <span class="toc-text">Lua</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Scala"><span class="toc-number">5.</span> <span class="toc-text">Scala</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#GCC"><span class="toc-number">6.</span> <span class="toc-text">GCC</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#总结"><span class="toc-number">7.</span> <span class="toc-text">总结</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#参考资料"><span class="toc-number">8.</span> <span class="toc-text">参考资料</span></a></li></ol>
+		
+		</div>
+		
+		<h2 id="概述">概述</h2><p>编程语言中的闭包，指的是在词法上下文中引用了自由变量的函数，另一种说法是，函数以及其引用环境组合而成的实体。其表现形式就是嵌套定义的函数可以引用函数作用域之外的变量，那么，内部的函数便可以得到一个闭包。</p>
+<p>跟闭包经常一并而论的概念是匿名函数，亦称lambda表达式。匿名函数确实就是一种lambda表达式的应用，而闭包，则是实现lambda的一种技术。</p>
+<h2 id="函数">函数</h2><p>为何需要闭包，首先来看看传统的函数模型，以C语言为例。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">test</span><span class="params">(<span class="keyword">int</span> num)</span></span><br><span class="line"></span>&#123;</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">"%d\n"</span>, num);</span><br><span class="line">&#125;</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span></span><br><span class="line"></span>&#123;</span><br><span class="line">    <span class="keyword">int</span> temp = <span class="number">1314</span>;</span><br><span class="line">    test(num);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>对于test函数，它只能引用它自己的参数，以及全局变量，但不能引用它的调用者-main函数的变量，同时，由于ANSI C并不支持闭包，函数也是不允许嵌套定义的，否则就会引起语法上的误导。（有一些C语言的实现支持闭包这一特性）</p>
+<p>假使我们修改了ANSI C的规定（其实GCC是允许函数嵌套定义的），允许函数的嵌套定义：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span>* <span class="title">caller</span><span class="params">()</span></span><br><span class="line"></span>&#123;</span><br><span class="line">    <span class="keyword">int</span> temp = <span class="number">1314</span>;</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">callee</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">"%d\n"</span>, temp);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> test;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在允许函数嵌套定义的前提下，这一程序能够运行吗？还是不能的，因为虽然caller返回了内部函数的指针，但在返回的时候，它的运行栈已经退出了，其中定义的局部变量是无法被callee引用的。（后面会再谈这段代码）</p>
+<p>那么，很显然，闭包要解决的问题就是让局部变量持久化。</p>
+<h2 id="闭包">闭包</h2><p>既然在C语言的函数调用模型中，所有局部变量都保存在栈中（或寄存器），在栈帧退出时这些局部变量即消失，那么很容易想到的就是把它放到堆中存储，并且将这些对象与函数进行绑定，以免造成混淆。</p>
+<p>还有几个问题需要考虑，首先是作用域，嵌套定义的函数应该能够应用上级作用域的所有变量，函数自身作用域之外的变量我们称之为upvalue。第二个问题是多层嵌套，这会形成一个链式的作用域，可以使用一个链表实现。</p>
+<h2 id="Lua">Lua</h2><p>Lua是一门简单并且优美的脚本语言，和javascript的语法很像，并且它的性能很高，或者说它的虚拟机实现性能很高。也因此有人创造了luvit=Lua + libuv + JIT，据说有数倍于node.js的效率，并且它把核心库实现了和node.js一样的接口。</p>
+<p>Lua函数调用模型还是基于栈的，并且它用一种简单而优雅的方式实现了闭包：从function关键字开始闭包的生成，到end则是闭包的关闭；期间引用的upvalue，是指向变量实体的指针。在闭包创建期间，upvalue指向栈上的变量实体，而闭包关闭时，upvalue会执行unlink操作，得到在堆中保存的变量实体。</p>
+<p>upvalue的结构如下<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="keyword">struct</span> UpVal &#123;</span><br><span class="line">  CommonHeader;</span><br><span class="line">  TValue *v;  <span class="comment">/* points to stack or to its own value */</span></span><br><span class="line">  <span class="keyword">union</span> &#123;</span><br><span class="line">    TValue value;  <span class="comment">/* the value (when closed) */</span></span><br><span class="line">    <span class="keyword">struct</span> &#123;  <span class="comment">/* double linked list (when open) */</span></span><br><span class="line">      <span class="keyword">struct</span> UpVal *prev;</span><br><span class="line">      <span class="keyword">struct</span> UpVal *next;</span><br><span class="line">    &#125; l;</span><br><span class="line">  &#125; u;</span><br><span class="line">&#125; UpVal;</span><br></pre></td></tr></table></figure></p>
+<h2 id="Scala">Scala</h2><p>Scala运行在jvm上，所以它的实现手法还是要依赖于jvm，也因此有不少人说它并不是一门函数式的编程语言。但依我之见，显然不能因为它跟java同处一个平台而否定他的函数式，<br>毕竟，所有的代码还都是以二进制的形式运行在CPU或GPU上，在这个层面哪里来的函数式、面向对象呢。</p>
+<p>java到了java8才有了lambda的支持，但早在此之前，Scala便已经有了lambda，它是如何做到的呢？在java中没有对匿名函数的支持，但是有一个很相似的东西叫做匿名类，它能够引用词法作用域之外的变量，Scala的匿名函数便是用它来实现的。</p>
+<p>我们写下如下的代码，并且反编译一下。</p>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">object</span> <span class="title">Main</span> &#123;</span></span><br><span class="line">  <span class="function"><span class="keyword">def</span> <span class="title">main</span>(</span>args: <span class="type">Array</span>[<span class="type">String</span>]) &#123;</span><br><span class="line">     <span class="type">List</span>(<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>).map(_ * <span class="number">2</span>).foreach(println)</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">scala ➜ ls</span><br><span class="line">main$$anonfun$main$<span class="number">1.</span><span class="class"><span class="keyword">class</span>  <span class="title">main</span>.<span class="title">class</span></span><br><span class="line"></span>main$$anonfun$main$<span class="number">2.</span><span class="class"><span class="keyword">class</span>  <span class="title">main$</span>.<span class="title">class</span></span><br><span class="line"></span>scala ➜ scalap main\$\$anonfun\$main\$<span class="number">1</span></span><br><span class="line"><span class="keyword">package</span> main.scala;</span><br><span class="line"><span class="keyword">final</span> <span class="class"><span class="keyword">class</span> <span class="title">main$$anonfun$main$1</span> <span class="keyword"><span class="keyword">extends</span></span> <span class="title">scala</span>.<span class="title">runtime</span>.<span class="title">AbstractFunction1$mcII$sp</span> <span class="keyword"><span class="keyword">with</span></span> <span class="title">scala</span>.<span class="title">Serializable</span> &#123;</span></span><br><span class="line">  <span class="function"><span class="keyword">def</span> <span class="title">this</span>(</span>): scala.<span class="type">Unit</span>;</span><br><span class="line">  <span class="function"><span class="keyword">def</span> <span class="title">apply</span>(</span>scala.<span class="type">Any</span>): scala.<span class="type">Any</span>;</span><br><span class="line">  <span class="function"><span class="keyword">def</span> <span class="title">apply$mcII$sp</span>(</span>scala.<span class="type">Int</span>): scala.<span class="type">Int</span>;</span><br><span class="line">  <span class="function"><span class="keyword">def</span> <span class="title">apply</span>(</span>scala.<span class="type">Int</span>): scala.<span class="type">Int</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>很容易看到，map中使用的匿名函数被编译成了单独的一个类，“main$$anonfun$main$1.class”，名字当然也是做了mangle防止命名冲突，参数和返回值的类型和我们预期的也是一致的。</p>
+<p>当使用匿名函数的时候，会创建一个内部类，实现Function1借口，并实现apply$mc<em>$</em>方法，调用匿名函数时，即调用了匿名类的apply*方法。</p>
+<p>至于jvm是如何实现匿名内部类的，暂时还没有了解。</p>
+<h2 id="GCC">GCC</h2><p>之前说到C语言不支持闭包，但后来发现GCC貌似是支持这个技术的。例如，以下的代码是可以运行的：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="preprocessor">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="function"><span class="keyword">void</span>* <span class="title">caller</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> cnt = <span class="number">0</span>;</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">callee</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        cnt++;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">"%d\n"</span>, cnt);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> callee;</span><br><span class="line">&#125;</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span></span><br><span class="line"></span>&#123;</span><br><span class="line">    <span class="keyword">void</span>(*callee)(<span class="keyword">void</span>)  = caller();</span><br><span class="line">    callee();</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>我误以为GCC也让C语言支持了闭包，但却发现增加一次callee的调用却是不可行的，看来它未曾真的实现闭包，只是看起来相似。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="preprocessor">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="function"><span class="keyword">void</span>* <span class="title">caller</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> cnt = <span class="number">0</span>;</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">callee</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        cnt++;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">"%d\n"</span>, cnt);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> callee;</span><br><span class="line">&#125;</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span></span><br><span class="line"></span>&#123;</span><br><span class="line">    <span class="keyword">void</span>(*callee)(<span class="keyword">void</span>)  = caller();</span><br><span class="line">    callee();</span><br><span class="line">    callee();</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 会得到Address boundary error。</span></span><br></pre></td></tr></table></figure>
+<h2 id="总结">总结</h2><p>所谓对象，即把操作绑定到数据，而闭包，则是把数据绑定到对象，它们以两种不同的方式实现了数据和操作的绑定：面向对象把对象指针传给函数，而闭包则把函数和上下文打包。看起来背道而驰，却又具有一定的相似度。它们分别是面向对象编程和函数式编程的基础，重要性也不言而喻。</p>
+<h2 id="参考资料">参考资料</h2><ul>
+<li>Lua源码赏析-云风</li>
+<li><a href="http://blog.aliyun.com/845" target="_blank" rel="external">Lua数据结构 — 闭包（四）</a></li>
+<li><a href="http://zh.wikipedia.org/wiki/%E9%97%AD%E5%8C%85_(%E8%AE%A1%E7%AE%97%E6%9C%BA%E7%A7%91%E5%AD%A6" target="_blank" rel="external">闭包-wikipedia</a></li>
+<li><a href="http://blog.csdn.net/zhangjg_blog/article/details/22903473" target="_blank" rel="external">学习Scala：函数字面量是如何实现的</a></li>
+</ul>
+  
+	</div>
+		<footer class="article-footer clearfix">
+<div class="article-catetags">
+
+<div class="article-categories">
+  <span></span>
+  <a class="article-category-link" href="/categories/Code/">Code</a>
+</div>
+
+
+  <div class="article-tags">
+  
+  <span></span> <a href="/tags/Scala/">Scala</a><a href="/tags/函数式编程/">函数式编程</a><a href="/tags/闭包/">闭包</a>
+  </div>
+
+</div>
+
+
+
+	<div class="article-share" id="share">
+	
+	  <div data-url="http://wanghuanming.com/2015/01/closure-implementations/" data-title="浅谈闭包的实现 | Hello Code" data-tsina="null" class="share clearfix">
+	  </div>
+	
+	</div>
+
+
+</footer>
+
+   	       
+	</article>
+	
+<nav class="article-nav clearfix">
+ 
+ <div class="prev" >
+ <a href="/2015/01/operator-overload-implicit/" title="运算符重载与隐式转换">
+  <strong>上一篇：</strong><br/>
+  <span>
+  运算符重载与隐式转换</span>
+</a>
+</div>
+
+
+<div class="next">
+<a href="/2015/01/Scala-function/"  title="Scala中定义函数的几种方式">
+ <strong>下一篇：</strong><br/> 
+ <span>Scala中定义函数的几种方式
+</span>
+</a>
+</div>
+
+</nav>
+
+	
+<section id="comments" class="comment">
+	<div class="ds-thread" data-thread-key="2015/01/closure-implementations/" data-title="浅谈闭包的实现" data-url="http://wanghuanming.com/2015/01/closure-implementations/"></div>
+</section>
+
+
+</div>  
+      <div class="openaside"><a class="navbutton" href="#" title="显示侧边栏"></a></div>
+
+  <div id="toc" class="toc-aside">
+  <strong class="toc-title">文章目录</strong>
+ 
+ <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#概述"><span class="toc-number">1.</span> <span class="toc-text">概述</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#函数"><span class="toc-number">2.</span> <span class="toc-text">函数</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#闭包"><span class="toc-number">3.</span> <span class="toc-text">闭包</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Lua"><span class="toc-number">4.</span> <span class="toc-text">Lua</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Scala"><span class="toc-number">5.</span> <span class="toc-text">Scala</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#GCC"><span class="toc-number">6.</span> <span class="toc-text">GCC</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#总结"><span class="toc-number">7.</span> <span class="toc-text">总结</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#参考资料"><span class="toc-number">8.</span> <span class="toc-text">参考资料</span></a></li></ol>
+ 
+  </div>
+
+<div id="asidepart">
+<div class="closeaside"><a class="closebutton" href="#" title="隐藏侧边栏"></a></div>
+<aside class="clearfix">
+
+  
+<div class="categorieslist">
+	<p class="asidetitle">分类</p>
+		<ul>
+		
+		  
+			<li><a href="/categories/Code/" title="Code">Code<sup>39</sup></a></li>
+		  
+		
+		  
+			<li><a href="/categories/Life-Work/" title="Life &amp; Work">Life &amp; Work<sup>10</sup></a></li>
+		  
+		
+		  
+			<li><a href="/categories/Reading/" title="Reading">Reading<sup>4</sup></a></li>
+		  
+		
+		  
+			<li><a href="/categories/Tech-Tool/" title="Tech &amp; Tool">Tech &amp; Tool<sup>24</sup></a></li>
+		  
+		
+		</ul>
+</div>
+
+
+  
+<div class="tagslist">
+	<p class="asidetitle">标签</p>
+		<ul class="clearfix">
+		
+			
+				<li><a href="/tags/C/" title="C++">C++<sup>9</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Scala/" title="Scala">Scala<sup>6</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/编译原理/" title="编译原理">编译原理<sup>4</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/LLVM/" title="LLVM">LLVM<sup>4</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/数据结构/" title="数据结构">数据结构<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Spark/" title="Spark">Spark<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/javascript/" title="javascript">javascript<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/OS/" title="OS">OS<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/ACM/" title="ACM">ACM<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/虚拟机/" title="虚拟机">虚拟机<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/线段树/" title="线段树">线段树<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/解释器/" title="解释器">解释器<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/C语言/" title="C语言">C语言<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/进程/" title="进程">进程<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Linux/" title="Linux">Linux<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Coursera/" title="Coursera">Coursera<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/ssh/" title="ssh">ssh<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/openwrt/" title="openwrt">openwrt<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/C/" title="C">C<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/函数式编程/" title="函数式编程">函数式编程<sup>2</sup></a></li>
+			
+		
+		</ul>
+</div>
+
+
+  <div class="rsspart">
+	<a href="/atom.xml" target="_blank" title="rss">RSS 订阅</a>
+</div>
+
+</aside>
+</div>
+    </div>
+    <footer><div id="footer" >
+	
+	<div class="line">
+		<span></span>
+		<div class="author"></div>
+	</div>
+	
+	
+	<div class="social-font" class="clearfix">
+		
+		<a href="http://weibo.com/5108629996" target="_blank" class="icon-weibo" title="微博"></a>
+		
+		
+		<a href="https://github.com/HelloCodeMing" target="_blank" class="icon-github" title="github"></a>
+		
+		
+		
+		
+		
+		
+		<a href="https://www.douban.com/people/94795087" target="_blank" class="icon-douban" title="豆瓣"></a>
+		
+		
+		<a href="https://www.zhihu.com/people/hellocode-67" target="_blank" class="icon-zhihu" title="知乎"></a>
+		
+		
+		
+		<a href="mailto:huanmingwong@163.com" target="_blank" class="icon-email" title="Email Me"></a>
+		
+	</div>
+			
+		
+
+		<p class="copyright">
+		Powered by <a href="http://hexo.io" target="_blank" title="hexo">hexo</a> and Theme by <a href="https://github.com/wuchong/jacman" target="_blank" title="Jacman">Jacman</a> © 2016 
+		
+		<a href="http://wanghuanming.com/about" target="_blank" title="王欢明">王欢明</a>
+		
+		
+		</p>
+</div>
+</footer>
+    <script src="/js/jquery-2.0.3.min.js"></script>
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  $('.navbar').click(function(){
+    $('header nav').toggleClass('shownav');
+  });
+  var myWidth = 0;
+  function getSize(){
+    if( typeof( window.innerWidth ) == 'number' ) {
+      myWidth = window.innerWidth;
+    } else if( document.documentElement && document.documentElement.clientWidth) {
+      myWidth = document.documentElement.clientWidth;
+    };
+  };
+  var m = $('#main'),
+      a = $('#asidepart'),
+      c = $('.closeaside'),
+      o = $('.openaside');
+  c.click(function(){
+    a.addClass('fadeOut').css('display', 'none');
+    o.css('display', 'block').addClass('fadeIn');
+    m.addClass('moveMain');
+  });
+  o.click(function(){
+    o.css('display', 'none').removeClass('beforeFadeIn');
+    a.css('display', 'block').removeClass('fadeOut').addClass('fadeIn');      
+    m.removeClass('moveMain');
+  });
+  $(window).scroll(function(){
+    o.css("top",Math.max(80,260-$(this).scrollTop()));
+  });
+  
+  $(window).resize(function(){
+    getSize(); 
+    if (myWidth >= 1024) {
+      $('header nav').removeClass('shownav');
+    }else{
+      m.removeClass('moveMain');
+      a.css('display', 'block').removeClass('fadeOut');
+      o.css('display', 'none');
+      
+      $('#toc.toc-aside').css('display', 'none');
+        
+    }
+  });
+});
+</script>
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  var ai = $('.article-content>iframe'),
+      ae = $('.article-content>embed'),
+      t  = $('#toc'),
+      ta = $('#toc.toc-aside'),
+      o  = $('.openaside'),
+      c  = $('.closeaside');
+  if(ai.length>0){
+    ai.wrap('<div class="video-container" />');
+  };
+  if(ae.length>0){
+   ae.wrap('<div class="video-container" />');
+  };
+  c.click(function(){
+    ta.css('display', 'block').addClass('fadeIn');
+  });
+  o.click(function(){
+    ta.css('display', 'none');
+  });
+  $(window).scroll(function(){
+    ta.css("top",Math.max(140,320-$(this).scrollTop()));
+  });
+});
+</script>
+
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  var $this = $('.share'),
+      url = $this.attr('data-url'),
+      encodedUrl = encodeURIComponent(url),
+      title = $this.attr('data-title'),
+      tsina = $this.attr('data-tsina'),
+      description = $this.attr('description');
+  var html = [
+  '<a href="#" class="overlay" id="qrcode"></a>',
+  '<div class="qrcode clearfix"><span>扫描二维码分享到微信朋友圈</span><a class="qrclose" href="#nothing"></a><strong>Loading...Please wait</strong><img id="qrcode-pic" data-src="http://s.jiathis.com/qrcode.php?url=' + encodedUrl + '"/></div>',
+  '<a href="https://www.facebook.com/sharer.php?u=' + encodedUrl + '" class="article-share-facebook" target="_blank" title="Facebook"></a>',
+  '<a href="https://twitter.com/intent/tweet?url=' + encodedUrl + '" class="article-share-twitter" target="_blank" title="Twitter"></a>',
+  '<a href="#qrcode" class="article-share-qrcode" title="微信"></a>',
+  '<a href="http://widget.renren.com/dialog/share?resourceUrl=' + encodedUrl + '&srcUrl=' + encodedUrl + '&title=' + title +'" class="article-share-renren" target="_blank" title="人人"></a>',
+  '<a href="http://service.weibo.com/share/share.php?title='+title+'&url='+encodedUrl +'&ralateUid='+ tsina +'&searchPic=true&style=number' +'" class="article-share-weibo" target="_blank" title="微博"></a>',
+  '<span title="Share to"></span>'
+  ].join('');
+  $this.append(html);
+  $('.article-share-qrcode').click(function(){
+    var imgSrc = $('#qrcode-pic').attr('data-src');
+    $('#qrcode-pic').attr('src', imgSrc);
+    $('#qrcode-pic').load(function(){
+        $('.qrcode strong').text(' ');
+    });
+  });
+});     
+</script>
+
+
+
+<script type="text/javascript">
+  var duoshuoQuery = {short_name:"wanghuanming"};
+  (function() {
+    var ds = document.createElement('script');
+    ds.type = 'text/javascript';ds.async = true;
+    ds.src = '//static.duoshuo.com/embed.js';
+    ds.charset = 'UTF-8';
+    (document.getElementsByTagName('head')[0] 
+    || document.getElementsByTagName('body')[0]).appendChild(ds);
+  })();
+</script> 
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+$(document).ready(function(){ 
+  $('.article-content').each(function(i){
+    $(this).find('img').each(function(){
+      if ($(this).parent().hasClass('fancybox')) return;
+      var alt = this.alt;
+      if (alt) $(this).after('<span class="caption">' + alt + '</span>');
+      $(this).wrap('<a href="' + this.src + '" title="' + alt + '" class="fancybox"></a>');
+    });
+    $(this).find('.fancybox').each(function(){
+      $(this).attr('rel', 'article' + i);
+    });
+  });
+  if($.fancybox){
+    $('.fancybox').fancybox();
+  }
+}); 
+</script>
+
+
+
+<!-- Analytics Begin -->
+
+
+
+
+
+<!-- Analytics End -->
+
+<!-- Totop Begin -->
+
+	<div id="totop">
+	<a title="返回顶部"><img src="/img/scrollup.png"/></a>
+	</div>
+	<script src="/js/totop.js"></script>
+
+<!-- Totop End -->
+
+<!-- MathJax Begin -->
+<!-- mathjax config similar to math.stackexchange -->
+
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    tex2jax: {
+      inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+      processEscapes: true
+    }
+  });
+</script>
+
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: {
+        skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+      }
+    });
+</script>
+
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Queue(function() {
+        var all = MathJax.Hub.getAllJax(), i;
+        for(i=0; i < all.length; i += 1) {
+            all[i].SourceElement().parentNode.className += ' has-jax';
+        }
+    });
+</script>
+
+<script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+</script>
+
+
+<!-- MathJax End -->
+
+<!-- Tiny_search Begin -->
+
+<!-- Tiny_search End -->
+
+  </body>
+</html>

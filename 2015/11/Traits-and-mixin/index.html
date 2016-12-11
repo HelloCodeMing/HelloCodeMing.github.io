@@ -1,0 +1,579 @@
+
+ <!DOCTYPE HTML>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  
+    <title>Traits and mixin | Hello Code</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1,user-scalable=no">
+    
+    <meta name="author" content="王欢明">
+    
+
+    
+    <meta name="description" content="本文翻译自《Traits：Composable Units of Behaviour》by Nathanael Schärli, Stéphane Ducasse, Oscar Nierstrasz, and Andrew P. Black
+这是我在学习Scala trait时看到的一篇paper，从理论上讲解了trait和mixin，也分析了多继承的一些问题，很有学习的价值
+
+摘要尽管在面向对象">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Traits and mixin">
+<meta property="og:url" content="http://wanghuanming.com/2015/11/Traits-and-mixin/index.html">
+<meta property="og:site_name" content="Hello Code">
+<meta property="og:description" content="本文翻译自《Traits：Composable Units of Behaviour》by Nathanael Schärli, Stéphane Ducasse, Oscar Nierstrasz, and Andrew P. Black
+这是我在学习Scala trait时看到的一篇paper，从理论上讲解了trait和mixin，也分析了多继承的一些问题，很有学习的价值
+
+摘要尽管在面向对象">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Traits and mixin">
+<meta name="twitter:description" content="本文翻译自《Traits：Composable Units of Behaviour》by Nathanael Schärli, Stéphane Ducasse, Oscar Nierstrasz, and Andrew P. Black
+这是我在学习Scala trait时看到的一篇paper，从理论上讲解了trait和mixin，也分析了多继承的一些问题，很有学习的价值
+
+摘要尽管在面向对象">
+
+    
+    <link rel="alternative" href="/atom.xml" title="Hello Code" type="application/atom+xml">
+    
+    
+    <link rel="icon" href="/img/panda-icon.ico">
+    
+    
+    <link rel="apple-touch-icon" href="/img/panda.png">
+    <link rel="apple-touch-icon-precomposed" href="/img/panda.png">
+    
+    <link rel="stylesheet" href="/css/style.css" type="text/css">
+</head>
+
+  <body>
+    <header>
+      <div>
+		
+			<div id="imglogo">
+				<a href="/"><img src="/img/panda.png" alt="Hello Code" title="Hello Code"/></a>
+			</div>
+			
+			<div id="textlogo">
+				<h1 class="site-name"><a href="/" title="Hello Code">Hello Code</a></h1>
+				<h2 class="blog-motto"></h2>
+			</div>
+			<div class="navbar"><a class="navbutton navmobile" href="#" title="菜单">
+			</a></div>
+			<nav class="animated">
+				<ul>
+					<ul>
+					 
+						<li><a href="/">首页</a></li>
+					
+						<li><a href="/archives">归档</a></li>
+					
+						<li><a href="/about">关于</a></li>
+					
+					<li>
+ 					
+					<form class="search" action="//google.com/search" method="get" accept-charset="utf-8">
+						<label>Search</label>
+						<input type="search" id="search" name="q" autocomplete="off" maxlength="20" placeholder="搜索" />
+						<input type="hidden" name="q" value="site:wanghuanming.com">
+					</form>
+					
+					</li>
+				</ul>
+			</nav>			
+</div>
+    </header>
+    <div id="container">
+      <div id="main" class="post" itemscope itemprop="blogPost">
+  
+	<article itemprop="articleBody"> 
+		<header class="article-info clearfix">
+  <h1 itemprop="name">
+    
+      <a href="/2015/11/Traits-and-mixin/" title="Traits and mixin" itemprop="url">Traits and mixin</a>
+  </h1>
+  <p class="article-author">By
+       
+		<a href="http://wanghuanming.com/about" title="王欢明" target="_blank" itemprop="author">王欢明</a>
+		
+  <p class="article-time">
+    <time datetime="2015-11-10T02:20:55.000Z" itemprop="datePublished"> 发表于 2015 Nov 10</time>
+    
+  </p>
+</header>
+	<div class="article-content">
+		
+		<div id="toc" class="toc-article">
+			<strong class="toc-title">文章目录</strong>
+		
+			<ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#摘要"><span class="toc-number">1.</span> <span class="toc-text">摘要</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#介绍"><span class="toc-number">2.</span> <span class="toc-text">介绍</span></a></li></ol>
+		
+		</div>
+		
+		<blockquote>
+<p>本文翻译自《Traits：Composable Units of Behaviour》by Nathanael Schärli, Stéphane Ducasse, Oscar Nierstrasz, and Andrew P. Black</p>
+<p>这是我在学习Scala trait时看到的一篇paper，从理论上讲解了trait和mixin，也分析了多继承的一些问题，很有学习的价值</p>
+</blockquote>
+<h2 id="摘要">摘要</h2><p>尽管在面向对象编程语言的世界里，继承在构件重用机制里起了中流砥柱的作用，但它的一些变种，例如单继承、多继承、混入继承（mixin），却一直有着理论和实现上的种种问题。在这篇paper的第一部分，我们举例来说明这些问题。接着我们提出trait，一种简单的用于构建面向对象语言的组合模型（compositional model）。一个trait，其实就是一组方法的集合，它们是构建一个类的基本单元，也是代码重用的基本单元。在trait模型中，类由一组traits组成，以及包含一些胶水代码用于组合这些traits并记录状态。我们展示trait如何克服多继承、混入继承带来的问题，以及如何高效地实现trait，同时也总结了如何用trait来重构一个类层次（class hierarchy）。</p>
+<h2 id="介绍">介绍</h2><p>尽管单继承被广泛认为是面向对象的必要元素，程序员却渐渐意识到单继承在很多时候不能够有效地从一个复杂的类结构中提取出共用特性（变量和方法）。所以，语言的设计者们提出了多种多继承的机制，以及混入继承的机制，使得一个类能够从一系列的特征构建起来。</p>
+<p>但将近二十年过去了，并没有什么多继承或混入继承获得广泛认可。在总结Alan Snyder于OOPSLA 87的会议上对于继承模式的贡献时，Steve Cook写到:</p>
+<p>“多继承确实有价值，但没有好的实现方式。”</p>
+<p>所以，总的趋势离多继承越来越远：最近的一些编程语言例如Java和C#的设计者认为，多继承带来的复杂性远比它的实际价值要大。而多继承确实也存在一些实现上的问题，我们也确信，它同样存在理论上的问题。在对这个问题进行研究之后，我们提出了trait的设计。</p>
+<p>尽管多继承使得能够重用任何类，但类并不是合适的重用单元。这是因为类其实扮演了两个相互矛盾的角色，类既扮演了对象产生者的角色（类可以实例化成一个对象），因此它必须是完整的；但作为一个重用单元，一个类应当尽可能小。这些属性常常会引起冲突。此外，作为一个对象生产者，每个类需要在类层次结构有一个独一无二的位置，然而作为重用单元，类应该能够在任意位置。</p>
+<p>Moon’Flavors（应该是一个冰淇淋）在早期提出这个问题：口味通常是一种很小的属性，并且也不需要是完整的，它可以混入到整个层次的任意位置。其他一些复杂的混入随后由Bracha、Cook、Mens、van Limberghen、Flatt、Krishnamurthi、Felleisen、Ancona、Lagorio、Zucca提出。这些方式允许程序员创建重用组件，但这些组件不需要被实例化。但是，据我们了解，这种方式会影响程序的可读性。</p>
+<p>混入使用了单继承的符号，来把它扩展到多个基类。但是，尽管这个继承操作符适合从已有的类继承，它却不适合把多个重用组件组合到一起。特别是，使用继承来实现混入，使得混入必须被线性地组合起来，这严重地限制了使用胶水代码的能力，因为我们需要这些胶水代码来把混入合并到一起。</p>
+<p>因此，我们提出了一种叫做traits的轻量级代码重用单元的概念。traits的设计从重用性和可读性的矛盾开始。总的来说，我们相信如果一个程序能够用多种形式来解读，它的可读性会更高。尽管一个类能够通过组合小的traits来构建，但我们其实可以用多种眼光来看待这个类。它可以被看作是一个扁平化的方法集合，或者是一个由traits组成的合成物。扁平化的视图有助于理解；而合成试图则有助于重用。到目前位置还没有什么冲突，这两种概念能够和平共处，不过有一个限制条件，这种组合必须只能作为一种架构工具，不会改变类的涵义。</p>
+<p>traits刚好满足了这个条件。它为类提供了结构化、模块化、重用性，并且如果用类的眼光来看待，这些traits又可以被忽略掉。trait在重用性和可读性之间取得了一个完美平衡，同时也实现了更好的概念建模。并且，由于traits仅仅关心行为的重用性，并不关心状态的重用，这就避免了在多继承和混入中遇到的实现问题。</p>
+<p>traits具有以下特性：</p>
+<ul>
+<li>一个trait提供了一系列的方法，并且包含实现（译者注：Java8之前的的interface不能包含实现）</li>
+<li>一个trait需要一些方法作为参数，来获得提供的其他方法</li>
+<li>traits不声明任何状态，其提供的方法也不会直接访问状态变量</li>
+<li>类和traits能够由其他的traits合成，但合成顺序是不相干的。有冲突的方法必须要显式决议。</li>
+<li>trait组合不影响一个类的涵义：这些从trait获得的方法，即便是直接定义在class中，也不会改变类的涵义</li>
+<li>类似的，一个trait组合也不会影响trait的语义：一个组合trait，等价于把这些trait的方法直接写在这个组合trait里面</li>
+</ul>
+<p>一个类能够继承一个基类，然后添加一系列的traits，以及必要的状态变量和方法。这些添加的方式其实就是指定了traits如何连接到一起，如何解决它们之间的冲突。这种方式使得一个类能够由一系列的特性——traits，然后用一些胶水代码把这些特性组合到一起。由于一个方法的语义跟它定义在trait里或是定义在使用这个trait的类里无关，所以把一个组合的trait在任意层次扁平化都是没有问题的。</p>
+<p>本文的贡献主要包括提出多继承和混入的问题，以及提出了traits这一组合模型来解决这些问题。我们遵循以下顺序：第二节描述了多继承和混入的问题，第三节提出traits以及一些样例。在第四节讨论了最重要的设计决策，并以此来解决第二节提出的问题。第五节提出了traits的实现。第六节总结了traits的现实应用：对Smalltalk-80集合框架的重构。第七节讨论相关工作。第八节对本文做了总结，并指出未来的工作。</p>
+  
+	</div>
+		<footer class="article-footer clearfix">
+<div class="article-catetags">
+
+<div class="article-categories">
+  <span></span>
+  <a class="article-category-link" href="/categories/Reading/">Reading</a>
+</div>
+
+
+  <div class="article-tags">
+  
+  <span></span> <a href="/tags/OOP/">OOP</a><a href="/tags/Programming/">Programming</a><a href="/tags/Traits/">Traits</a><a href="/tags/mixin/">mixin</a>
+  </div>
+
+</div>
+
+
+
+	<div class="article-share" id="share">
+	
+	  <div data-url="http://wanghuanming.com/2015/11/Traits-and-mixin/" data-title="Traits and mixin | Hello Code" data-tsina="null" class="share clearfix">
+	  </div>
+	
+	</div>
+
+
+</footer>
+
+   	       
+	</article>
+	
+<nav class="article-nav clearfix">
+ 
+ <div class="prev" >
+ <a href="/2015/11/从LLVM-IR看C-对象模型/" title="从LLVM IR看C++对象模型">
+  <strong>上一篇：</strong><br/>
+  <span>
+  从LLVM IR看C++对象模型</span>
+</a>
+</div>
+
+
+<div class="next">
+<a href="/2015/08/implementation of future/promise/"  title="future/promise的简单实现">
+ <strong>下一篇：</strong><br/> 
+ <span>future/promise的简单实现
+</span>
+</a>
+</div>
+
+</nav>
+
+	
+<section id="comments" class="comment">
+	<div class="ds-thread" data-thread-key="2015/11/Traits-and-mixin/" data-title="Traits and mixin" data-url="http://wanghuanming.com/2015/11/Traits-and-mixin/"></div>
+</section>
+
+
+</div>  
+      <div class="openaside"><a class="navbutton" href="#" title="显示侧边栏"></a></div>
+
+  <div id="toc" class="toc-aside">
+  <strong class="toc-title">文章目录</strong>
+ 
+ <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#摘要"><span class="toc-number">1.</span> <span class="toc-text">摘要</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#介绍"><span class="toc-number">2.</span> <span class="toc-text">介绍</span></a></li></ol>
+ 
+  </div>
+
+<div id="asidepart">
+<div class="closeaside"><a class="closebutton" href="#" title="隐藏侧边栏"></a></div>
+<aside class="clearfix">
+
+  
+<div class="categorieslist">
+	<p class="asidetitle">分类</p>
+		<ul>
+		
+		  
+			<li><a href="/categories/Code/" title="Code">Code<sup>39</sup></a></li>
+		  
+		
+		  
+			<li><a href="/categories/Life-Work/" title="Life &amp; Work">Life &amp; Work<sup>10</sup></a></li>
+		  
+		
+		  
+			<li><a href="/categories/Reading/" title="Reading">Reading<sup>4</sup></a></li>
+		  
+		
+		  
+			<li><a href="/categories/Tech-Tool/" title="Tech &amp; Tool">Tech &amp; Tool<sup>24</sup></a></li>
+		  
+		
+		</ul>
+</div>
+
+
+  
+<div class="tagslist">
+	<p class="asidetitle">标签</p>
+		<ul class="clearfix">
+		
+			
+				<li><a href="/tags/C/" title="C++">C++<sup>9</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Scala/" title="Scala">Scala<sup>6</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/编译原理/" title="编译原理">编译原理<sup>4</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/LLVM/" title="LLVM">LLVM<sup>4</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/数据结构/" title="数据结构">数据结构<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Spark/" title="Spark">Spark<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/javascript/" title="javascript">javascript<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/OS/" title="OS">OS<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/ACM/" title="ACM">ACM<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/虚拟机/" title="虚拟机">虚拟机<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/线段树/" title="线段树">线段树<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/解释器/" title="解释器">解释器<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/C语言/" title="C语言">C语言<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/进程/" title="进程">进程<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Linux/" title="Linux">Linux<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Coursera/" title="Coursera">Coursera<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/ssh/" title="ssh">ssh<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/openwrt/" title="openwrt">openwrt<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/C/" title="C">C<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/函数式编程/" title="函数式编程">函数式编程<sup>2</sup></a></li>
+			
+		
+		</ul>
+</div>
+
+
+  <div class="rsspart">
+	<a href="/atom.xml" target="_blank" title="rss">RSS 订阅</a>
+</div>
+
+</aside>
+</div>
+    </div>
+    <footer><div id="footer" >
+	
+	<div class="line">
+		<span></span>
+		<div class="author"></div>
+	</div>
+	
+	
+	<div class="social-font" class="clearfix">
+		
+		<a href="http://weibo.com/5108629996" target="_blank" class="icon-weibo" title="微博"></a>
+		
+		
+		<a href="https://github.com/HelloCodeMing" target="_blank" class="icon-github" title="github"></a>
+		
+		
+		
+		
+		
+		
+		<a href="https://www.douban.com/people/94795087" target="_blank" class="icon-douban" title="豆瓣"></a>
+		
+		
+		<a href="https://www.zhihu.com/people/hellocode-67" target="_blank" class="icon-zhihu" title="知乎"></a>
+		
+		
+		
+		<a href="mailto:huanmingwong@163.com" target="_blank" class="icon-email" title="Email Me"></a>
+		
+	</div>
+			
+		
+
+		<p class="copyright">
+		Powered by <a href="http://hexo.io" target="_blank" title="hexo">hexo</a> and Theme by <a href="https://github.com/wuchong/jacman" target="_blank" title="Jacman">Jacman</a> © 2016 
+		
+		<a href="http://wanghuanming.com/about" target="_blank" title="王欢明">王欢明</a>
+		
+		
+		</p>
+</div>
+</footer>
+    <script src="/js/jquery-2.0.3.min.js"></script>
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  $('.navbar').click(function(){
+    $('header nav').toggleClass('shownav');
+  });
+  var myWidth = 0;
+  function getSize(){
+    if( typeof( window.innerWidth ) == 'number' ) {
+      myWidth = window.innerWidth;
+    } else if( document.documentElement && document.documentElement.clientWidth) {
+      myWidth = document.documentElement.clientWidth;
+    };
+  };
+  var m = $('#main'),
+      a = $('#asidepart'),
+      c = $('.closeaside'),
+      o = $('.openaside');
+  c.click(function(){
+    a.addClass('fadeOut').css('display', 'none');
+    o.css('display', 'block').addClass('fadeIn');
+    m.addClass('moveMain');
+  });
+  o.click(function(){
+    o.css('display', 'none').removeClass('beforeFadeIn');
+    a.css('display', 'block').removeClass('fadeOut').addClass('fadeIn');      
+    m.removeClass('moveMain');
+  });
+  $(window).scroll(function(){
+    o.css("top",Math.max(80,260-$(this).scrollTop()));
+  });
+  
+  $(window).resize(function(){
+    getSize(); 
+    if (myWidth >= 1024) {
+      $('header nav').removeClass('shownav');
+    }else{
+      m.removeClass('moveMain');
+      a.css('display', 'block').removeClass('fadeOut');
+      o.css('display', 'none');
+      
+      $('#toc.toc-aside').css('display', 'none');
+        
+    }
+  });
+});
+</script>
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  var ai = $('.article-content>iframe'),
+      ae = $('.article-content>embed'),
+      t  = $('#toc'),
+      ta = $('#toc.toc-aside'),
+      o  = $('.openaside'),
+      c  = $('.closeaside');
+  if(ai.length>0){
+    ai.wrap('<div class="video-container" />');
+  };
+  if(ae.length>0){
+   ae.wrap('<div class="video-container" />');
+  };
+  c.click(function(){
+    ta.css('display', 'block').addClass('fadeIn');
+  });
+  o.click(function(){
+    ta.css('display', 'none');
+  });
+  $(window).scroll(function(){
+    ta.css("top",Math.max(140,320-$(this).scrollTop()));
+  });
+});
+</script>
+
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  var $this = $('.share'),
+      url = $this.attr('data-url'),
+      encodedUrl = encodeURIComponent(url),
+      title = $this.attr('data-title'),
+      tsina = $this.attr('data-tsina'),
+      description = $this.attr('description');
+  var html = [
+  '<a href="#" class="overlay" id="qrcode"></a>',
+  '<div class="qrcode clearfix"><span>扫描二维码分享到微信朋友圈</span><a class="qrclose" href="#nothing"></a><strong>Loading...Please wait</strong><img id="qrcode-pic" data-src="http://s.jiathis.com/qrcode.php?url=' + encodedUrl + '"/></div>',
+  '<a href="https://www.facebook.com/sharer.php?u=' + encodedUrl + '" class="article-share-facebook" target="_blank" title="Facebook"></a>',
+  '<a href="https://twitter.com/intent/tweet?url=' + encodedUrl + '" class="article-share-twitter" target="_blank" title="Twitter"></a>',
+  '<a href="#qrcode" class="article-share-qrcode" title="微信"></a>',
+  '<a href="http://widget.renren.com/dialog/share?resourceUrl=' + encodedUrl + '&srcUrl=' + encodedUrl + '&title=' + title +'" class="article-share-renren" target="_blank" title="人人"></a>',
+  '<a href="http://service.weibo.com/share/share.php?title='+title+'&url='+encodedUrl +'&ralateUid='+ tsina +'&searchPic=true&style=number' +'" class="article-share-weibo" target="_blank" title="微博"></a>',
+  '<span title="Share to"></span>'
+  ].join('');
+  $this.append(html);
+  $('.article-share-qrcode').click(function(){
+    var imgSrc = $('#qrcode-pic').attr('data-src');
+    $('#qrcode-pic').attr('src', imgSrc);
+    $('#qrcode-pic').load(function(){
+        $('.qrcode strong').text(' ');
+    });
+  });
+});     
+</script>
+
+
+
+<script type="text/javascript">
+  var duoshuoQuery = {short_name:"wanghuanming"};
+  (function() {
+    var ds = document.createElement('script');
+    ds.type = 'text/javascript';ds.async = true;
+    ds.src = '//static.duoshuo.com/embed.js';
+    ds.charset = 'UTF-8';
+    (document.getElementsByTagName('head')[0] 
+    || document.getElementsByTagName('body')[0]).appendChild(ds);
+  })();
+</script> 
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+$(document).ready(function(){ 
+  $('.article-content').each(function(i){
+    $(this).find('img').each(function(){
+      if ($(this).parent().hasClass('fancybox')) return;
+      var alt = this.alt;
+      if (alt) $(this).after('<span class="caption">' + alt + '</span>');
+      $(this).wrap('<a href="' + this.src + '" title="' + alt + '" class="fancybox"></a>');
+    });
+    $(this).find('.fancybox').each(function(){
+      $(this).attr('rel', 'article' + i);
+    });
+  });
+  if($.fancybox){
+    $('.fancybox').fancybox();
+  }
+}); 
+</script>
+
+
+
+<!-- Analytics Begin -->
+
+
+
+
+
+<!-- Analytics End -->
+
+<!-- Totop Begin -->
+
+	<div id="totop">
+	<a title="返回顶部"><img src="/img/scrollup.png"/></a>
+	</div>
+	<script src="/js/totop.js"></script>
+
+<!-- Totop End -->
+
+<!-- MathJax Begin -->
+<!-- mathjax config similar to math.stackexchange -->
+
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    tex2jax: {
+      inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+      processEscapes: true
+    }
+  });
+</script>
+
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: {
+        skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+      }
+    });
+</script>
+
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Queue(function() {
+        var all = MathJax.Hub.getAllJax(), i;
+        for(i=0; i < all.length; i += 1) {
+            all[i].SourceElement().parentNode.className += ' has-jax';
+        }
+    });
+</script>
+
+<script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+</script>
+
+
+<!-- MathJax End -->
+
+<!-- Tiny_search Begin -->
+
+<!-- Tiny_search End -->
+
+  </body>
+</html>

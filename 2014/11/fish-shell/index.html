@@ -1,0 +1,598 @@
+
+ <!DOCTYPE HTML>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  
+    <title>更友好的shell | Hello Code</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1,user-scalable=no">
+    
+    <meta name="author" content="王欢明">
+    
+
+    
+    <meta name="description" content="如果你是Ubuntu的用户，并且还在使用着默认的shell（也就是bash），那么你有必要读一下这篇文章。或者，你对一些程序员愿意在一个漆黑的屏幕面前敲下一行行的命令而不使用友好美观的图形界面这种现象感到疑惑，，再或者，你受够了bash这种落后的生产工具，我相信并且努力让这篇文章对你有所启发。
+什么是shell起初，这世上本没有图形界面，电脑屏幕是一片黑暗，以及一行一行的代码。
+神说，要有图形界面">
+<meta property="og:type" content="article">
+<meta property="og:title" content="更友好的shell">
+<meta property="og:url" content="http://wanghuanming.com/2014/11/fish-shell/index.html">
+<meta property="og:site_name" content="Hello Code">
+<meta property="og:description" content="如果你是Ubuntu的用户，并且还在使用着默认的shell（也就是bash），那么你有必要读一下这篇文章。或者，你对一些程序员愿意在一个漆黑的屏幕面前敲下一行行的命令而不使用友好美观的图形界面这种现象感到疑惑，，再或者，你受够了bash这种落后的生产工具，我相信并且努力让这篇文章对你有所启发。
+什么是shell起初，这世上本没有图形界面，电脑屏幕是一片黑暗，以及一行一行的代码。
+神说，要有图形界面">
+<meta property="og:image" content="http://huanming-blog.qiniudn.com/fishautosuggestion.png">
+<meta property="og:image" content="http://huanming-blog.qiniudn.com/fishcolors.png">
+<meta property="og:image" content="http://huanming-blog.qiniudn.com/fishscripting.png">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="更友好的shell">
+<meta name="twitter:description" content="如果你是Ubuntu的用户，并且还在使用着默认的shell（也就是bash），那么你有必要读一下这篇文章。或者，你对一些程序员愿意在一个漆黑的屏幕面前敲下一行行的命令而不使用友好美观的图形界面这种现象感到疑惑，，再或者，你受够了bash这种落后的生产工具，我相信并且努力让这篇文章对你有所启发。
+什么是shell起初，这世上本没有图形界面，电脑屏幕是一片黑暗，以及一行一行的代码。
+神说，要有图形界面">
+
+    
+    <link rel="alternative" href="/atom.xml" title="Hello Code" type="application/atom+xml">
+    
+    
+    <link rel="icon" href="/img/panda-icon.ico">
+    
+    
+    <link rel="apple-touch-icon" href="/img/panda.png">
+    <link rel="apple-touch-icon-precomposed" href="/img/panda.png">
+    
+    <link rel="stylesheet" href="/css/style.css" type="text/css">
+</head>
+
+  <body>
+    <header>
+      <div>
+		
+			<div id="imglogo">
+				<a href="/"><img src="/img/panda.png" alt="Hello Code" title="Hello Code"/></a>
+			</div>
+			
+			<div id="textlogo">
+				<h1 class="site-name"><a href="/" title="Hello Code">Hello Code</a></h1>
+				<h2 class="blog-motto"></h2>
+			</div>
+			<div class="navbar"><a class="navbutton navmobile" href="#" title="菜单">
+			</a></div>
+			<nav class="animated">
+				<ul>
+					<ul>
+					 
+						<li><a href="/">首页</a></li>
+					
+						<li><a href="/archives">归档</a></li>
+					
+						<li><a href="/about">关于</a></li>
+					
+					<li>
+ 					
+					<form class="search" action="//google.com/search" method="get" accept-charset="utf-8">
+						<label>Search</label>
+						<input type="search" id="search" name="q" autocomplete="off" maxlength="20" placeholder="搜索" />
+						<input type="hidden" name="q" value="site:wanghuanming.com">
+					</form>
+					
+					</li>
+				</ul>
+			</nav>			
+</div>
+    </header>
+    <div id="container">
+      <div id="main" class="post" itemscope itemprop="blogPost">
+  
+	<article itemprop="articleBody"> 
+		<header class="article-info clearfix">
+  <h1 itemprop="name">
+    
+      <a href="/2014/11/fish-shell/" title="更友好的shell" itemprop="url">更友好的shell</a>
+  </h1>
+  <p class="article-author">By
+       
+		<a href="http://wanghuanming.com/about" title="王欢明" target="_blank" itemprop="author">王欢明</a>
+		
+  <p class="article-time">
+    <time datetime="2014-11-02T13:33:18.000Z" itemprop="datePublished"> 发表于 2014 Nov 2</time>
+    
+  </p>
+</header>
+	<div class="article-content">
+		
+		<div id="toc" class="toc-article">
+			<strong class="toc-title">文章目录</strong>
+		
+			<ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#什么是shell"><span class="toc-number">1.</span> <span class="toc-text">什么是shell</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#不友好的shell"><span class="toc-number">2.</span> <span class="toc-text">不友好的shell</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#fish登场"><span class="toc-number">3.</span> <span class="toc-text">fish登场</span></a></li></ol>
+		
+		</div>
+		
+		<p>如果你是Ubuntu的用户，并且还在使用着默认的shell（也就是bash），那么你有必要读一下这篇文章。或者，你对一些程序员愿意在一个漆黑的屏幕面前敲下一行行的命令而不使用友好美观的图形界面这种现象感到疑惑，，再或者，你受够了bash这种落后的生产工具，我相信并且努力让这篇文章对你有所启发。</p>
+<h2 id="什么是shell">什么是shell</h2><p>起初，这世上本没有图形界面，电脑屏幕是一片黑暗，以及一行一行的代码。</p>
+<p>神说，要有图形界面，于是便有了GUI。</p>
+<p>开始是dialog，再有macintosh，windows98，拟物化，毛玻璃，动画，扁平化，阴影，高光，gnome，modern，material。这一切的一切，都是符合达尔文的进化论的。</p>
+<p>可是有 一群人，他们却还在固执并且守旧地使用命令行，他们以熟悉一条一条的命令为荣，他们不时地炫耀自己用代码控制电脑的能力，他们是邪恶的程序员！</p>
+<p>咳咳，扯淡到此结束。</p>
+<p>我们使用电脑，其实就是和电脑对话。我们按下QQ的发送按钮，就是告诉电脑，帮我把这条消息发送出去，我们点击浏览器右上角的小叉叉，就是告诉电脑，把这个窗口关闭。同样的操作如果用语言描述，那就成了shell。关闭一个程序的命令可能变成了“kill 1928”，打开一个文件就是“vim test.txt”。</p>
+<p>它们都可以达到我们的目的–与电脑进行交流。相比之下GUI可能会更加直观并且友好一点，并且学习成本会更低。而shell则显得死板单调，相信最初接触Linux的时候，我们应该都会有一段不堪回首的被折磨的经历。想当年，我曾经把/lib误删了，导致电脑无法使用。</p>
+<p>GUI和shell之间没有绝对的优劣之分，只有适用场景的不同。对开发人员来说，shell的开发成本显然是更低的，程序员使用的很多工具是没有图形界面的，原因就是开发者懒得做一个图形界面，或者说，做一个图形界面的成本太高了。我们有时候会写一些小的工具来提高我们的生活质量，可能就是几十分钟或是几个小时的事情，但是如果为它再加上一个图形界面那么时间就可能会翻倍了。还有一个原因就是，有些软件不太适合做图形界面，比如说有几十项或几百项功能的软件，如果把它们有条理有逻辑地组织到图形界面里，这本身可能就会成为另一个工程了。当然，图形界面本身的运行成本也可能是原因之一，在服务器端我们希望电脑的性能尽可能发挥到极致，所以便剔除了非必要的部件。</p>
+<h2 id="不友好的shell">不友好的shell</h2><p>shell给人最初的印象就是单调，但具有控制力。</p>
+<p>让我们先来列举一下shell的罪状。</p>
+<ol>
+<li><p>在文件夹之间的切换，我们需要重复地输入“cd”，有时候路径很长，这绝对会是一个很恐怖的体验。</p>
+</li>
+<li><p>当我们输入一条很长的命令，按下enter，却被告知“command not found”，然后我们需要翻看历史，查找原因，把光标移过去，修改，再执行。</p>
+</li>
+<li><p>bash的命令行往往是黑白的，你输入的所有的命令都是同一种颜色，对眼睛来说是一个很大的负担，看多了眼睛往往会花。</p>
+</li>
+<li><p>历史记录功能很弱，你昨天在执行一项工作，今天已经很难找到历史记录，于是不得不重新输入所有的命令，这对记忆力是一个很大的挑战。</p>
+</li>
+<li><p>不够智能，它只能以QA模式运行，你执行一条，然后给你一个回答，你按下tab得到的提示是那么弱智且无用。</p>
+</li>
+</ol>
+<p>当然，shell也不是一无是处，它本身就是一种编程，因此你可以控制程序的每一个细节，你可以修改程序的优先级，让程序后台运行，让程序定期运行，可以更改程序的每一项配置。这是我们喜欢shell的原因。</p>
+<p>So, shell needs a hero!</p>
+<h2 id="fish登场">fish登场</h2><p>shell其实也在不断进化，从最初的sh，到csh，bash，ash，它都在不断地提供更加强大的功能以及更好的使用体验。</p>
+<p>那么shell到bash就停止了吗？显然并没有。本文想要介绍的fish就是一个更加友好更加智能的shell。</p>
+<p>fish全称是friendly interactive shell（提供友好交互的shell）。显然，它想要为我们提供更加友好的交互方式。</p>
+<p>注意这里使用了<strong>交互</strong>两个字，传统的shell，很难称得上交互，至少我不认为在我们犯错之后才提醒我们的shell是一个好shell。</p>
+<p>在fish中，我们可以做到以下几点：</p>
+<ul>
+<li>错误提示：正确的命令用蓝色显示，输入错误则用红色显示。</li>
+<li>tab补全：你所输入过的命令，它都有记录，你每输入一个字符，都会对应一个提示。</li>
+<li>历史记录：输入部分命令，再上下翻看，实现部分查找，远离ctrl+r。</li>
+<li>前缀：你讨厌那个在每条命令之前很长的路径名吗，在fish中，你可以自由修改。</li>
+<li>丰富的配色：从此命令不再单调，每条命令的不同部分都用不用的颜色显示。</li>
+<li>现代化的语法：接近Lua的函数式编程语法，降低学习成本。</li>
+<li>函数定义：你可以编写各种函数，提高生产效率。</li>
+</ul>
+<p><img src="http://huanming-blog.qiniudn.com/fishautosuggestion.png" alt="auto suggestion"><br><img src="http://huanming-blog.qiniudn.com/fishcolors.png" alt="colors"><br><img src="http://huanming-blog.qiniudn.com/fishscripting.png" alt="script"><br>可以说，用了fish之后，生活质量绝对会有很大的提升。</p>
+<p>##如何开始<br>首先，你需要安装它。各个Linux发行版的源里都会有fish，所以只需要一条命令。</p>
+<p>然后，你需要去它的<a href="fish.com">官网</a>学习一些基础知识。</p>
+<p>接着你就可以开始定制自己的fish，如果有必要，可以使用<a href="https://github.com/bpinto/oh-my-fish" target="_blank" rel="external">oh my fish</a>，它是一个成套的fish配置。</p>
+<p>最后，开始享受你的fish。</p>
+  
+	</div>
+		<footer class="article-footer clearfix">
+<div class="article-catetags">
+
+<div class="article-categories">
+  <span></span>
+  <a class="article-category-link" href="/categories/Tech-Tool/">Tech & Tool</a>
+</div>
+
+
+  <div class="article-tags">
+  
+  <span></span> <a href="/tags/fish/">fish</a><a href="/tags/linux/">linux</a><a href="/tags/shell/">shell</a>
+  </div>
+
+</div>
+
+
+
+	<div class="article-share" id="share">
+	
+	  <div data-url="http://wanghuanming.com/2014/11/fish-shell/" data-title="更友好的shell | Hello Code" data-tsina="null" class="share clearfix">
+	  </div>
+	
+	</div>
+
+
+</footer>
+
+   	       
+	</article>
+	
+<nav class="article-nav clearfix">
+ 
+ <div class="prev" >
+ <a href="/2014/11/introduction-to-coffee-script/" title="不妨来一杯coffee">
+  <strong>上一篇：</strong><br/>
+  <span>
+  不妨来一杯coffee</span>
+</a>
+</div>
+
+
+<div class="next">
+<a href="/2014/10/lua-vm/"  title="Lua源码阅读之虚拟机（一）">
+ <strong>下一篇：</strong><br/> 
+ <span>Lua源码阅读之虚拟机（一）
+</span>
+</a>
+</div>
+
+</nav>
+
+	
+<section id="comments" class="comment">
+	<div class="ds-thread" data-thread-key="2014/11/fish-shell/" data-title="更友好的shell" data-url="http://wanghuanming.com/2014/11/fish-shell/"></div>
+</section>
+
+
+</div>  
+      <div class="openaside"><a class="navbutton" href="#" title="显示侧边栏"></a></div>
+
+  <div id="toc" class="toc-aside">
+  <strong class="toc-title">文章目录</strong>
+ 
+ <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#什么是shell"><span class="toc-number">1.</span> <span class="toc-text">什么是shell</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#不友好的shell"><span class="toc-number">2.</span> <span class="toc-text">不友好的shell</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#fish登场"><span class="toc-number">3.</span> <span class="toc-text">fish登场</span></a></li></ol>
+ 
+  </div>
+
+<div id="asidepart">
+<div class="closeaside"><a class="closebutton" href="#" title="隐藏侧边栏"></a></div>
+<aside class="clearfix">
+
+  
+<div class="categorieslist">
+	<p class="asidetitle">分类</p>
+		<ul>
+		
+		  
+			<li><a href="/categories/Code/" title="Code">Code<sup>39</sup></a></li>
+		  
+		
+		  
+			<li><a href="/categories/Life-Work/" title="Life &amp; Work">Life &amp; Work<sup>10</sup></a></li>
+		  
+		
+		  
+			<li><a href="/categories/Reading/" title="Reading">Reading<sup>4</sup></a></li>
+		  
+		
+		  
+			<li><a href="/categories/Tech-Tool/" title="Tech &amp; Tool">Tech &amp; Tool<sup>24</sup></a></li>
+		  
+		
+		</ul>
+</div>
+
+
+  
+<div class="tagslist">
+	<p class="asidetitle">标签</p>
+		<ul class="clearfix">
+		
+			
+				<li><a href="/tags/C/" title="C++">C++<sup>9</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Scala/" title="Scala">Scala<sup>6</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/编译原理/" title="编译原理">编译原理<sup>4</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/LLVM/" title="LLVM">LLVM<sup>4</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/数据结构/" title="数据结构">数据结构<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Spark/" title="Spark">Spark<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/javascript/" title="javascript">javascript<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/OS/" title="OS">OS<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/ACM/" title="ACM">ACM<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/虚拟机/" title="虚拟机">虚拟机<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/线段树/" title="线段树">线段树<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/解释器/" title="解释器">解释器<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/C语言/" title="C语言">C语言<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/进程/" title="进程">进程<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Linux/" title="Linux">Linux<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Coursera/" title="Coursera">Coursera<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/ssh/" title="ssh">ssh<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/openwrt/" title="openwrt">openwrt<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/C/" title="C">C<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/函数式编程/" title="函数式编程">函数式编程<sup>2</sup></a></li>
+			
+		
+		</ul>
+</div>
+
+
+  <div class="rsspart">
+	<a href="/atom.xml" target="_blank" title="rss">RSS 订阅</a>
+</div>
+
+</aside>
+</div>
+    </div>
+    <footer><div id="footer" >
+	
+	<div class="line">
+		<span></span>
+		<div class="author"></div>
+	</div>
+	
+	
+	<div class="social-font" class="clearfix">
+		
+		<a href="http://weibo.com/5108629996" target="_blank" class="icon-weibo" title="微博"></a>
+		
+		
+		<a href="https://github.com/HelloCodeMing" target="_blank" class="icon-github" title="github"></a>
+		
+		
+		
+		
+		
+		
+		<a href="https://www.douban.com/people/94795087" target="_blank" class="icon-douban" title="豆瓣"></a>
+		
+		
+		<a href="https://www.zhihu.com/people/hellocode-67" target="_blank" class="icon-zhihu" title="知乎"></a>
+		
+		
+		
+		<a href="mailto:huanmingwong@163.com" target="_blank" class="icon-email" title="Email Me"></a>
+		
+	</div>
+			
+		
+
+		<p class="copyright">
+		Powered by <a href="http://hexo.io" target="_blank" title="hexo">hexo</a> and Theme by <a href="https://github.com/wuchong/jacman" target="_blank" title="Jacman">Jacman</a> © 2016 
+		
+		<a href="http://wanghuanming.com/about" target="_blank" title="王欢明">王欢明</a>
+		
+		
+		</p>
+</div>
+</footer>
+    <script src="/js/jquery-2.0.3.min.js"></script>
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  $('.navbar').click(function(){
+    $('header nav').toggleClass('shownav');
+  });
+  var myWidth = 0;
+  function getSize(){
+    if( typeof( window.innerWidth ) == 'number' ) {
+      myWidth = window.innerWidth;
+    } else if( document.documentElement && document.documentElement.clientWidth) {
+      myWidth = document.documentElement.clientWidth;
+    };
+  };
+  var m = $('#main'),
+      a = $('#asidepart'),
+      c = $('.closeaside'),
+      o = $('.openaside');
+  c.click(function(){
+    a.addClass('fadeOut').css('display', 'none');
+    o.css('display', 'block').addClass('fadeIn');
+    m.addClass('moveMain');
+  });
+  o.click(function(){
+    o.css('display', 'none').removeClass('beforeFadeIn');
+    a.css('display', 'block').removeClass('fadeOut').addClass('fadeIn');      
+    m.removeClass('moveMain');
+  });
+  $(window).scroll(function(){
+    o.css("top",Math.max(80,260-$(this).scrollTop()));
+  });
+  
+  $(window).resize(function(){
+    getSize(); 
+    if (myWidth >= 1024) {
+      $('header nav').removeClass('shownav');
+    }else{
+      m.removeClass('moveMain');
+      a.css('display', 'block').removeClass('fadeOut');
+      o.css('display', 'none');
+      
+      $('#toc.toc-aside').css('display', 'none');
+        
+    }
+  });
+});
+</script>
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  var ai = $('.article-content>iframe'),
+      ae = $('.article-content>embed'),
+      t  = $('#toc'),
+      ta = $('#toc.toc-aside'),
+      o  = $('.openaside'),
+      c  = $('.closeaside');
+  if(ai.length>0){
+    ai.wrap('<div class="video-container" />');
+  };
+  if(ae.length>0){
+   ae.wrap('<div class="video-container" />');
+  };
+  c.click(function(){
+    ta.css('display', 'block').addClass('fadeIn');
+  });
+  o.click(function(){
+    ta.css('display', 'none');
+  });
+  $(window).scroll(function(){
+    ta.css("top",Math.max(140,320-$(this).scrollTop()));
+  });
+});
+</script>
+
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  var $this = $('.share'),
+      url = $this.attr('data-url'),
+      encodedUrl = encodeURIComponent(url),
+      title = $this.attr('data-title'),
+      tsina = $this.attr('data-tsina'),
+      description = $this.attr('description');
+  var html = [
+  '<a href="#" class="overlay" id="qrcode"></a>',
+  '<div class="qrcode clearfix"><span>扫描二维码分享到微信朋友圈</span><a class="qrclose" href="#nothing"></a><strong>Loading...Please wait</strong><img id="qrcode-pic" data-src="http://s.jiathis.com/qrcode.php?url=' + encodedUrl + '"/></div>',
+  '<a href="https://www.facebook.com/sharer.php?u=' + encodedUrl + '" class="article-share-facebook" target="_blank" title="Facebook"></a>',
+  '<a href="https://twitter.com/intent/tweet?url=' + encodedUrl + '" class="article-share-twitter" target="_blank" title="Twitter"></a>',
+  '<a href="#qrcode" class="article-share-qrcode" title="微信"></a>',
+  '<a href="http://widget.renren.com/dialog/share?resourceUrl=' + encodedUrl + '&srcUrl=' + encodedUrl + '&title=' + title +'" class="article-share-renren" target="_blank" title="人人"></a>',
+  '<a href="http://service.weibo.com/share/share.php?title='+title+'&url='+encodedUrl +'&ralateUid='+ tsina +'&searchPic=true&style=number' +'" class="article-share-weibo" target="_blank" title="微博"></a>',
+  '<span title="Share to"></span>'
+  ].join('');
+  $this.append(html);
+  $('.article-share-qrcode').click(function(){
+    var imgSrc = $('#qrcode-pic').attr('data-src');
+    $('#qrcode-pic').attr('src', imgSrc);
+    $('#qrcode-pic').load(function(){
+        $('.qrcode strong').text(' ');
+    });
+  });
+});     
+</script>
+
+
+
+<script type="text/javascript">
+  var duoshuoQuery = {short_name:"wanghuanming"};
+  (function() {
+    var ds = document.createElement('script');
+    ds.type = 'text/javascript';ds.async = true;
+    ds.src = '//static.duoshuo.com/embed.js';
+    ds.charset = 'UTF-8';
+    (document.getElementsByTagName('head')[0] 
+    || document.getElementsByTagName('body')[0]).appendChild(ds);
+  })();
+</script> 
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+$(document).ready(function(){ 
+  $('.article-content').each(function(i){
+    $(this).find('img').each(function(){
+      if ($(this).parent().hasClass('fancybox')) return;
+      var alt = this.alt;
+      if (alt) $(this).after('<span class="caption">' + alt + '</span>');
+      $(this).wrap('<a href="' + this.src + '" title="' + alt + '" class="fancybox"></a>');
+    });
+    $(this).find('.fancybox').each(function(){
+      $(this).attr('rel', 'article' + i);
+    });
+  });
+  if($.fancybox){
+    $('.fancybox').fancybox();
+  }
+}); 
+</script>
+
+
+
+<!-- Analytics Begin -->
+
+
+
+
+
+<!-- Analytics End -->
+
+<!-- Totop Begin -->
+
+	<div id="totop">
+	<a title="返回顶部"><img src="/img/scrollup.png"/></a>
+	</div>
+	<script src="/js/totop.js"></script>
+
+<!-- Totop End -->
+
+<!-- MathJax Begin -->
+<!-- mathjax config similar to math.stackexchange -->
+
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    tex2jax: {
+      inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+      processEscapes: true
+    }
+  });
+</script>
+
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: {
+        skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+      }
+    });
+</script>
+
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Queue(function() {
+        var all = MathJax.Hub.getAllJax(), i;
+        for(i=0; i < all.length; i += 1) {
+            all[i].SourceElement().parentNode.className += ' has-jax';
+        }
+    });
+</script>
+
+<script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+</script>
+
+
+<!-- MathJax End -->
+
+<!-- Tiny_search Begin -->
+
+<!-- Tiny_search End -->
+
+  </body>
+</html>

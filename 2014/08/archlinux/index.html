@@ -1,0 +1,581 @@
+
+ <!DOCTYPE HTML>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  
+    <title>折腾Arch linux | Hello Code</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1,user-scalable=no">
+    
+    <meta name="author" content="王欢明">
+    
+
+    
+    <meta name="description" content="花了两天时间，终于把Arch linux折腾到能够正常使用了。从命令行安装系统，到自己安装图形界面，最后安装各种程序，原本熟悉的过程在Arch上都要重头开始，我甚至开始怀疑自己会不会使用linux了。不过，毋庸置疑的是，Arch真的能让你理解linux。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="折腾Arch linux">
+<meta property="og:url" content="http://wanghuanming.com/2014/08/archlinux/index.html">
+<meta property="og:site_name" content="Hello Code">
+<meta property="og:description" content="花了两天时间，终于把Arch linux折腾到能够正常使用了。从命令行安装系统，到自己安装图形界面，最后安装各种程序，原本熟悉的过程在Arch上都要重头开始，我甚至开始怀疑自己会不会使用linux了。不过，毋庸置疑的是，Arch真的能让你理解linux。">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="折腾Arch linux">
+<meta name="twitter:description" content="花了两天时间，终于把Arch linux折腾到能够正常使用了。从命令行安装系统，到自己安装图形界面，最后安装各种程序，原本熟悉的过程在Arch上都要重头开始，我甚至开始怀疑自己会不会使用linux了。不过，毋庸置疑的是，Arch真的能让你理解linux。">
+
+    
+    <link rel="alternative" href="/atom.xml" title="Hello Code" type="application/atom+xml">
+    
+    
+    <link rel="icon" href="/img/panda-icon.ico">
+    
+    
+    <link rel="apple-touch-icon" href="/img/panda.png">
+    <link rel="apple-touch-icon-precomposed" href="/img/panda.png">
+    
+    <link rel="stylesheet" href="/css/style.css" type="text/css">
+</head>
+
+  <body>
+    <header>
+      <div>
+		
+			<div id="imglogo">
+				<a href="/"><img src="/img/panda.png" alt="Hello Code" title="Hello Code"/></a>
+			</div>
+			
+			<div id="textlogo">
+				<h1 class="site-name"><a href="/" title="Hello Code">Hello Code</a></h1>
+				<h2 class="blog-motto"></h2>
+			</div>
+			<div class="navbar"><a class="navbutton navmobile" href="#" title="菜单">
+			</a></div>
+			<nav class="animated">
+				<ul>
+					<ul>
+					 
+						<li><a href="/">首页</a></li>
+					
+						<li><a href="/archives">归档</a></li>
+					
+						<li><a href="/about">关于</a></li>
+					
+					<li>
+ 					
+					<form class="search" action="//google.com/search" method="get" accept-charset="utf-8">
+						<label>Search</label>
+						<input type="search" id="search" name="q" autocomplete="off" maxlength="20" placeholder="搜索" />
+						<input type="hidden" name="q" value="site:wanghuanming.com">
+					</form>
+					
+					</li>
+				</ul>
+			</nav>			
+</div>
+    </header>
+    <div id="container">
+      <div id="main" class="post" itemscope itemprop="blogPost">
+  
+	<article itemprop="articleBody"> 
+		<header class="article-info clearfix">
+  <h1 itemprop="name">
+    
+      <a href="/2014/08/archlinux/" title="折腾Arch linux" itemprop="url">折腾Arch linux</a>
+  </h1>
+  <p class="article-author">By
+       
+		<a href="http://wanghuanming.com/about" title="王欢明" target="_blank" itemprop="author">王欢明</a>
+		
+  <p class="article-time">
+    <time datetime="2014-08-16T03:49:17.000Z" itemprop="datePublished"> 发表于 2014 Aug 16</time>
+    
+  </p>
+</header>
+	<div class="article-content">
+		
+		<div id="toc" class="toc-article">
+			<strong class="toc-title">文章目录</strong>
+		
+			<ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#系统简介"><span class="toc-number">1.</span> <span class="toc-text">系统简介</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#系统安装"><span class="toc-number">2.</span> <span class="toc-text">系统安装</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#图形界面安装"><span class="toc-number">3.</span> <span class="toc-text">图形界面安装</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#软件安装"><span class="toc-number">4.</span> <span class="toc-text">软件安装</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#总结"><span class="toc-number">5.</span> <span class="toc-text">总结</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#参考资料"><span class="toc-number">6.</span> <span class="toc-text">参考资料</span></a></li></ol>
+		
+		</div>
+		
+		<p>花了两天时间，终于把Arch linux折腾到能够正常使用了。从命令行安装系统，到自己安装图形界面，最后安装各种程序，原本熟悉的过程在Arch上都要重头开始，我甚至开始怀疑自己会不会使用linux了。不过，毋庸置疑的是，Arch真的能让你理解linux。</p>
+<a id="more"></a>
+<h2 id="系统简介">系统简介</h2><p><strong><em>Arch Linux, a lightweight and flexible Linux distribution that tries to Keep It Simple</em></strong>. </p>
+<p>KISS也就是Keep it simple, stupid. 可以说是Arch哲学最好的总结。 </p>
+<p>Arch有五条核心准则，分别是Simplicity，Code-correctness over convenience，User-centric，Openness，Freedom。</p>
+<p>Arch是一个极简的系统，它只提供你最基本的需求，你能够以这些基本的东西构建出一个高度定制化，自由并且强大的系统。比如说，它默认不提供图形界面，连安装界面也没有。如果我们需要，可以自己安装。</p>
+<p>所以它的好处显而易见，高度定制化，但是缺点也很明显，需要用户对linux有足够的了解。因此Arch不是一个适合linux初学者的系统，但在linuxer手中，它能够发挥很强大的威力。</p>
+<h2 id="系统安装">系统安装</h2><p>Arch有一个很强大的<a href="https://wiki.archlinux.org/index.php/Installation_guide_(%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87)" target="_blank" rel="external">wiki</a>，从系统安装到各种程序的使用都有详细的教程，所以我们也基本不用担心出了问题没有解决方案。</p>
+<p>需要注意的是，Arch的安装需要通过命令行，据说早期是有一个丑陋的图形安装界面的，但是后来为了逼格就放弃了。不过通过命令行安装也不是很麻烦，如果不出问题的话可以很轻松愉快地安装。（出了问题还是请教高手吧）</p>
+<p>基本上，安装Arch也就是先分区，连接网络，安装基本系统，配置系统，安装引导程序。和安装Ubuntu也没什么两样，只是没有了图形界面而已。</p>
+<p>到这里为止，都是学长帮我安装的，可见有一个优秀的学长的重要性。</p>
+<h2 id="图形界面安装">图形界面安装</h2><p>图形界面Arch默认不提供，但是作为PC使用肯定离不开它，所以我们需要自己安装一个图形界面。</p>
+<p>我习惯使用gnome，喜欢它简洁的风格，所以直接安装了gnome。</p>
+<p>但是之间有一个问题需要注意，我的机器是双显卡的，如果直接安装nviDIA的驱动，gnome是无法启动的，这也让我折腾了很久。具体原因也不清楚，不过如果出现gnome无法启动的情况，并且提示各种错误，需要警惕显卡驱动是否正确安装了。</p>
+<p>之后就可以进入gnome了，按照我个人的喜好，可以进行一些定制。我喜欢把顶栏去掉，毕竟它只有那么几个不常用的按钮，却占据了很醒目的一块空间。具体做法就是<br><figure class="highlight groovy"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">sudo vim <span class="regexp">/usr/</span>share<span class="regexp">/gnome-shell/</span>theme/gnome-shell.css</span><br><span class="line"><span class="comment">//把大约在517行的panel的height改成0</span></span><br></pre></td></tr></table></figure></p>
+<p>这样子顶栏在平时就看不到了，并且在我们需要的时候还可以点击，岂不是很完美？</p>
+<h2 id="软件安装">软件安装</h2><p>Arch的包管理系统叫pacman，使用起来和Ubuntu的apt-get差不多。</p>
+<p>常用的几个命令如下：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">-- 在源里搜索</span><br><span class="line">pacman -Ss packagename</span><br><span class="line">-- 安装包</span><br><span class="line">pacman -S packagename1 packagename2 ...</span><br><span class="line">-- 卸载包</span><br><span class="line">pacman -R packagename</span><br><span class="line">-- 卸载并删除依赖</span><br><span class="line">pacman -Rs packagename</span><br><span class="line">-- 安装本地包</span><br><span class="line">pacman -U /path/packagename</span><br></pre></td></tr></table></figure></p>
+<p>其他的可以自行阅读<a href="https://wiki.archlinux.org/index.php/Pacman_(%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87)" target="_blank" rel="external">pacman-wiki</a>。</p>
+<p>但是仅有pacman还是不够的，它的软件不够丰富，比如我们常用的chrome就不在它的仓库里。贴心的Arch还提供了另一个仓库，AUR（Arch User-community Repository），这个仓库是社区仓库，所以可以允许用户分享其他的软件，包括chrome，wps，快盘之类的常用软件里面都有，可谓是方便至极。官方提供的安装方法是，下载软件的PKGBUILDS文件，然后使用makepkg工具编译打包，之后就可以使用pacman安装了。但是这样还是略显麻烦，所以自然会有人开发自动化的工具来完成这个流程。yaourt就是其中很优秀的一个，它的使用和pacman相差无几，为我们减少了很多烦恼。</p>
+<p>通过yaourt，我们可以安装大部分常用软件，整个Arch的安装到这也就差不多结束了。</p>
+<h2 id="总结">总结</h2><p>Arch的确是一个很简洁的linux发行版，一些内部的结构也设置的很合理，比如说它的/bin和/lib是分别指向/usr/bin和/usr/lib的，这也为我减少了很多疑惑。（之前一直不明白这两个目录有什么区别）</p>
+<p>以我目前对linux的了解，我还不能体会到它更强大的地方，可能是daemon管理更强大，可能是针对机器的优化更多，在之后的使用中应该能体会到更多的优点。</p>
+<p>就目前而言，仅仅是相比与ubuntu，它的使用还是比较麻烦的，没有图形安装界面，没有许多现成的工具可以使用，在刚开始接触Arch的时候确实很不适应。就像我离开windows而去使用ubuntu的时候一样，没有了丰富的软件资源，没有了用户友好的界面，我也经历了相当一段时间的蛋疼期。但是适应之后就会发现linux的强大，可以脱离图形界面使用命令行进行全键盘操作，可以自己写脚本来解决平时遇到的问题，可以对操作系统有更多的了解。</p>
+<p>但是归根到底，我们不是为了用操作系统而用操作系统，我们是为了解决问题。相对于linux，windows可以说不需要学习就可以使用，但是它的瓶颈也很明显，windows已经考虑过的问题它能处理地很好，不过遇到它不擅长的问题，会万分的痛苦。而linux，则把一切都交给用户掌控，有问题自己解决，它不会帮你做任何东西。</p>
+<p>这像是vim的学习过程，开始的时候会很痛苦，很蛋疼，但是掌握了它之后，世界会变得那么美好而清澈。</p>
+<p>不过把问题交给用户有时候又会成为开发者偷懒的借口，如果开发者一个人解决了问题，那么就不需要千万个用户来重复地解决这个问题，效率不言而喻。</p>
+<p>另外一个不得不提的亮点就是，Arch的网站做的很不错，wiki也很丰富，大部分文章居然都有中文翻译。它的wiki也是学习linux的一个很好的途径。</p>
+<p>总的来说，Arch Linux还是一个很优秀的linux发行版，你值得拥有。</p>
+<h2 id="参考资料">参考资料</h2><ul>
+<li><a href="https://wiki.archlinux.org/index.php/Main_page_(%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87" target="_blank" rel="external">Arch 中文主页</a></li>
+<li><a href="http://www.nenew.net/arch-linux-install-guide-2012-08-04.html" target="_blank" rel="external">Arch 安装教程</a></li>
+<li><a href="https://wiki.archlinux.org/index.php/Installation_guide_(%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87" target="_blank" rel="external">Arch 安装官方教程</a></li>
+<li><a href="http://blog.csdn.net/weixi6/article/details/7433452" target="_blank" rel="external">Arch gnome安装</a></li>
+<li><a href="http://www.oschina.net/question/617272_63484" target="_blank" rel="external">Arch 双显卡驱动问题</a></li>
+</ul>
+  
+	</div>
+		<footer class="article-footer clearfix">
+<div class="article-catetags">
+
+<div class="article-categories">
+  <span></span>
+  <a class="article-category-link" href="/categories/Tech-Tool/">Tech & Tool</a>
+</div>
+
+
+  <div class="article-tags">
+  
+  <span></span> <a href="/tags/Arch-linux/">Arch linux</a><a href="/tags/OS/">OS</a><a href="/tags/linux/">linux</a>
+  </div>
+
+</div>
+
+
+
+	<div class="article-share" id="share">
+	
+	  <div data-url="http://wanghuanming.com/2014/08/archlinux/" data-title="折腾Arch linux | Hello Code" data-tsina="null" class="share clearfix">
+	  </div>
+	
+	</div>
+
+
+</footer>
+
+   	       
+	</article>
+	
+<nav class="article-nav clearfix">
+ 
+ <div class="prev" >
+ <a href="/2014/08/Makefile学习笔记/" title="Makefile学习笔记">
+  <strong>上一篇：</strong><br/>
+  <span>
+  Makefile学习笔记</span>
+</a>
+</div>
+
+
+<div class="next">
+<a href="/2014/08/segment-tree-third/"  title="poj2828">
+ <strong>下一篇：</strong><br/> 
+ <span>poj2828
+</span>
+</a>
+</div>
+
+</nav>
+
+	
+<section id="comments" class="comment">
+	<div class="ds-thread" data-thread-key="2014/08/archlinux/" data-title="折腾Arch linux" data-url="http://wanghuanming.com/2014/08/archlinux/"></div>
+</section>
+
+
+</div>  
+      <div class="openaside"><a class="navbutton" href="#" title="显示侧边栏"></a></div>
+
+  <div id="toc" class="toc-aside">
+  <strong class="toc-title">文章目录</strong>
+ 
+ <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#系统简介"><span class="toc-number">1.</span> <span class="toc-text">系统简介</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#系统安装"><span class="toc-number">2.</span> <span class="toc-text">系统安装</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#图形界面安装"><span class="toc-number">3.</span> <span class="toc-text">图形界面安装</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#软件安装"><span class="toc-number">4.</span> <span class="toc-text">软件安装</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#总结"><span class="toc-number">5.</span> <span class="toc-text">总结</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#参考资料"><span class="toc-number">6.</span> <span class="toc-text">参考资料</span></a></li></ol>
+ 
+  </div>
+
+<div id="asidepart">
+<div class="closeaside"><a class="closebutton" href="#" title="隐藏侧边栏"></a></div>
+<aside class="clearfix">
+
+  
+<div class="categorieslist">
+	<p class="asidetitle">分类</p>
+		<ul>
+		
+		  
+			<li><a href="/categories/Code/" title="Code">Code<sup>39</sup></a></li>
+		  
+		
+		  
+			<li><a href="/categories/Life-Work/" title="Life &amp; Work">Life &amp; Work<sup>10</sup></a></li>
+		  
+		
+		  
+			<li><a href="/categories/Reading/" title="Reading">Reading<sup>4</sup></a></li>
+		  
+		
+		  
+			<li><a href="/categories/Tech-Tool/" title="Tech &amp; Tool">Tech &amp; Tool<sup>24</sup></a></li>
+		  
+		
+		</ul>
+</div>
+
+
+  
+<div class="tagslist">
+	<p class="asidetitle">标签</p>
+		<ul class="clearfix">
+		
+			
+				<li><a href="/tags/C/" title="C++">C++<sup>9</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Scala/" title="Scala">Scala<sup>6</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/编译原理/" title="编译原理">编译原理<sup>4</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/LLVM/" title="LLVM">LLVM<sup>4</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/数据结构/" title="数据结构">数据结构<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Spark/" title="Spark">Spark<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/javascript/" title="javascript">javascript<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/OS/" title="OS">OS<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/ACM/" title="ACM">ACM<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/虚拟机/" title="虚拟机">虚拟机<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/线段树/" title="线段树">线段树<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/解释器/" title="解释器">解释器<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/C语言/" title="C语言">C语言<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/进程/" title="进程">进程<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Linux/" title="Linux">Linux<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Coursera/" title="Coursera">Coursera<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/ssh/" title="ssh">ssh<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/openwrt/" title="openwrt">openwrt<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/C/" title="C">C<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/函数式编程/" title="函数式编程">函数式编程<sup>2</sup></a></li>
+			
+		
+		</ul>
+</div>
+
+
+  <div class="rsspart">
+	<a href="/atom.xml" target="_blank" title="rss">RSS 订阅</a>
+</div>
+
+</aside>
+</div>
+    </div>
+    <footer><div id="footer" >
+	
+	<div class="line">
+		<span></span>
+		<div class="author"></div>
+	</div>
+	
+	
+	<div class="social-font" class="clearfix">
+		
+		<a href="http://weibo.com/5108629996" target="_blank" class="icon-weibo" title="微博"></a>
+		
+		
+		<a href="https://github.com/HelloCodeMing" target="_blank" class="icon-github" title="github"></a>
+		
+		
+		
+		
+		
+		
+		<a href="https://www.douban.com/people/94795087" target="_blank" class="icon-douban" title="豆瓣"></a>
+		
+		
+		<a href="https://www.zhihu.com/people/hellocode-67" target="_blank" class="icon-zhihu" title="知乎"></a>
+		
+		
+		
+		<a href="mailto:huanmingwong@163.com" target="_blank" class="icon-email" title="Email Me"></a>
+		
+	</div>
+			
+		
+
+		<p class="copyright">
+		Powered by <a href="http://hexo.io" target="_blank" title="hexo">hexo</a> and Theme by <a href="https://github.com/wuchong/jacman" target="_blank" title="Jacman">Jacman</a> © 2016 
+		
+		<a href="http://wanghuanming.com/about" target="_blank" title="王欢明">王欢明</a>
+		
+		
+		</p>
+</div>
+</footer>
+    <script src="/js/jquery-2.0.3.min.js"></script>
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  $('.navbar').click(function(){
+    $('header nav').toggleClass('shownav');
+  });
+  var myWidth = 0;
+  function getSize(){
+    if( typeof( window.innerWidth ) == 'number' ) {
+      myWidth = window.innerWidth;
+    } else if( document.documentElement && document.documentElement.clientWidth) {
+      myWidth = document.documentElement.clientWidth;
+    };
+  };
+  var m = $('#main'),
+      a = $('#asidepart'),
+      c = $('.closeaside'),
+      o = $('.openaside');
+  c.click(function(){
+    a.addClass('fadeOut').css('display', 'none');
+    o.css('display', 'block').addClass('fadeIn');
+    m.addClass('moveMain');
+  });
+  o.click(function(){
+    o.css('display', 'none').removeClass('beforeFadeIn');
+    a.css('display', 'block').removeClass('fadeOut').addClass('fadeIn');      
+    m.removeClass('moveMain');
+  });
+  $(window).scroll(function(){
+    o.css("top",Math.max(80,260-$(this).scrollTop()));
+  });
+  
+  $(window).resize(function(){
+    getSize(); 
+    if (myWidth >= 1024) {
+      $('header nav').removeClass('shownav');
+    }else{
+      m.removeClass('moveMain');
+      a.css('display', 'block').removeClass('fadeOut');
+      o.css('display', 'none');
+      
+      $('#toc.toc-aside').css('display', 'none');
+        
+    }
+  });
+});
+</script>
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  var ai = $('.article-content>iframe'),
+      ae = $('.article-content>embed'),
+      t  = $('#toc'),
+      ta = $('#toc.toc-aside'),
+      o  = $('.openaside'),
+      c  = $('.closeaside');
+  if(ai.length>0){
+    ai.wrap('<div class="video-container" />');
+  };
+  if(ae.length>0){
+   ae.wrap('<div class="video-container" />');
+  };
+  c.click(function(){
+    ta.css('display', 'block').addClass('fadeIn');
+  });
+  o.click(function(){
+    ta.css('display', 'none');
+  });
+  $(window).scroll(function(){
+    ta.css("top",Math.max(140,320-$(this).scrollTop()));
+  });
+});
+</script>
+
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  var $this = $('.share'),
+      url = $this.attr('data-url'),
+      encodedUrl = encodeURIComponent(url),
+      title = $this.attr('data-title'),
+      tsina = $this.attr('data-tsina'),
+      description = $this.attr('description');
+  var html = [
+  '<a href="#" class="overlay" id="qrcode"></a>',
+  '<div class="qrcode clearfix"><span>扫描二维码分享到微信朋友圈</span><a class="qrclose" href="#nothing"></a><strong>Loading...Please wait</strong><img id="qrcode-pic" data-src="http://s.jiathis.com/qrcode.php?url=' + encodedUrl + '"/></div>',
+  '<a href="https://www.facebook.com/sharer.php?u=' + encodedUrl + '" class="article-share-facebook" target="_blank" title="Facebook"></a>',
+  '<a href="https://twitter.com/intent/tweet?url=' + encodedUrl + '" class="article-share-twitter" target="_blank" title="Twitter"></a>',
+  '<a href="#qrcode" class="article-share-qrcode" title="微信"></a>',
+  '<a href="http://widget.renren.com/dialog/share?resourceUrl=' + encodedUrl + '&srcUrl=' + encodedUrl + '&title=' + title +'" class="article-share-renren" target="_blank" title="人人"></a>',
+  '<a href="http://service.weibo.com/share/share.php?title='+title+'&url='+encodedUrl +'&ralateUid='+ tsina +'&searchPic=true&style=number' +'" class="article-share-weibo" target="_blank" title="微博"></a>',
+  '<span title="Share to"></span>'
+  ].join('');
+  $this.append(html);
+  $('.article-share-qrcode').click(function(){
+    var imgSrc = $('#qrcode-pic').attr('data-src');
+    $('#qrcode-pic').attr('src', imgSrc);
+    $('#qrcode-pic').load(function(){
+        $('.qrcode strong').text(' ');
+    });
+  });
+});     
+</script>
+
+
+
+<script type="text/javascript">
+  var duoshuoQuery = {short_name:"wanghuanming"};
+  (function() {
+    var ds = document.createElement('script');
+    ds.type = 'text/javascript';ds.async = true;
+    ds.src = '//static.duoshuo.com/embed.js';
+    ds.charset = 'UTF-8';
+    (document.getElementsByTagName('head')[0] 
+    || document.getElementsByTagName('body')[0]).appendChild(ds);
+  })();
+</script> 
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+$(document).ready(function(){ 
+  $('.article-content').each(function(i){
+    $(this).find('img').each(function(){
+      if ($(this).parent().hasClass('fancybox')) return;
+      var alt = this.alt;
+      if (alt) $(this).after('<span class="caption">' + alt + '</span>');
+      $(this).wrap('<a href="' + this.src + '" title="' + alt + '" class="fancybox"></a>');
+    });
+    $(this).find('.fancybox').each(function(){
+      $(this).attr('rel', 'article' + i);
+    });
+  });
+  if($.fancybox){
+    $('.fancybox').fancybox();
+  }
+}); 
+</script>
+
+
+
+<!-- Analytics Begin -->
+
+
+
+
+
+<!-- Analytics End -->
+
+<!-- Totop Begin -->
+
+	<div id="totop">
+	<a title="返回顶部"><img src="/img/scrollup.png"/></a>
+	</div>
+	<script src="/js/totop.js"></script>
+
+<!-- Totop End -->
+
+<!-- MathJax Begin -->
+<!-- mathjax config similar to math.stackexchange -->
+
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    tex2jax: {
+      inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+      processEscapes: true
+    }
+  });
+</script>
+
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: {
+        skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+      }
+    });
+</script>
+
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Queue(function() {
+        var all = MathJax.Hub.getAllJax(), i;
+        for(i=0; i < all.length; i += 1) {
+            all[i].SourceElement().parentNode.className += ' has-jax';
+        }
+    });
+</script>
+
+<script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+</script>
+
+
+<!-- MathJax End -->
+
+<!-- Tiny_search Begin -->
+
+<!-- Tiny_search End -->
+
+  </body>
+</html>

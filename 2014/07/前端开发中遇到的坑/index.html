@@ -1,0 +1,572 @@
+
+ <!DOCTYPE HTML>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  
+    <title>前端开发中遇到的坑 | Hello Code</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1,user-scalable=no">
+    
+    <meta name="author" content="王欢明">
+    
+
+    
+    <meta name="description" content="缘起最近在进行web开发，也就是基于openwrt的智能路由器的配置界面开发。虽说是路由器，但本质上还是开发一个小型的网站。从前端到后台基本上都是一个人在搞，因为另一个在做这个项目的小组想法跟我不同。前期的难度比较大，但到了后期，基本上都是体力活了，一个人做起来还是挺麻烦的，吭哧吭哧忙了一个月，总算快完工了。所以趁此机会总结一下，今天先谈谈前端的js开发中遇到的一些坑，之后有机会会再讲讲后台。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="前端开发中遇到的坑">
+<meta property="og:url" content="http://wanghuanming.com/2014/07/前端开发中遇到的坑/index.html">
+<meta property="og:site_name" content="Hello Code">
+<meta property="og:description" content="缘起最近在进行web开发，也就是基于openwrt的智能路由器的配置界面开发。虽说是路由器，但本质上还是开发一个小型的网站。从前端到后台基本上都是一个人在搞，因为另一个在做这个项目的小组想法跟我不同。前期的难度比较大，但到了后期，基本上都是体力活了，一个人做起来还是挺麻烦的，吭哧吭哧忙了一个月，总算快完工了。所以趁此机会总结一下，今天先谈谈前端的js开发中遇到的一些坑，之后有机会会再讲讲后台。">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="前端开发中遇到的坑">
+<meta name="twitter:description" content="缘起最近在进行web开发，也就是基于openwrt的智能路由器的配置界面开发。虽说是路由器，但本质上还是开发一个小型的网站。从前端到后台基本上都是一个人在搞，因为另一个在做这个项目的小组想法跟我不同。前期的难度比较大，但到了后期，基本上都是体力活了，一个人做起来还是挺麻烦的，吭哧吭哧忙了一个月，总算快完工了。所以趁此机会总结一下，今天先谈谈前端的js开发中遇到的一些坑，之后有机会会再讲讲后台。">
+
+    
+    <link rel="alternative" href="/atom.xml" title="Hello Code" type="application/atom+xml">
+    
+    
+    <link rel="icon" href="/img/panda-icon.ico">
+    
+    
+    <link rel="apple-touch-icon" href="/img/panda.png">
+    <link rel="apple-touch-icon-precomposed" href="/img/panda.png">
+    
+    <link rel="stylesheet" href="/css/style.css" type="text/css">
+</head>
+
+  <body>
+    <header>
+      <div>
+		
+			<div id="imglogo">
+				<a href="/"><img src="/img/panda.png" alt="Hello Code" title="Hello Code"/></a>
+			</div>
+			
+			<div id="textlogo">
+				<h1 class="site-name"><a href="/" title="Hello Code">Hello Code</a></h1>
+				<h2 class="blog-motto"></h2>
+			</div>
+			<div class="navbar"><a class="navbutton navmobile" href="#" title="菜单">
+			</a></div>
+			<nav class="animated">
+				<ul>
+					<ul>
+					 
+						<li><a href="/">首页</a></li>
+					
+						<li><a href="/archives">归档</a></li>
+					
+						<li><a href="/about">关于</a></li>
+					
+					<li>
+ 					
+					<form class="search" action="//google.com/search" method="get" accept-charset="utf-8">
+						<label>Search</label>
+						<input type="search" id="search" name="q" autocomplete="off" maxlength="20" placeholder="搜索" />
+						<input type="hidden" name="q" value="site:wanghuanming.com">
+					</form>
+					
+					</li>
+				</ul>
+			</nav>			
+</div>
+    </header>
+    <div id="container">
+      <div id="main" class="post" itemscope itemprop="blogPost">
+  
+	<article itemprop="articleBody"> 
+		<header class="article-info clearfix">
+  <h1 itemprop="name">
+    
+      <a href="/2014/07/前端开发中遇到的坑/" title="前端开发中遇到的坑" itemprop="url">前端开发中遇到的坑</a>
+  </h1>
+  <p class="article-author">By
+       
+		<a href="http://wanghuanming.com/about" title="王欢明" target="_blank" itemprop="author">王欢明</a>
+		
+  <p class="article-time">
+    <time datetime="2014-07-28T08:26:21.000Z" itemprop="datePublished"> 发表于 2014 Jul 28</time>
+    
+  </p>
+</header>
+	<div class="article-content">
+		
+		<div id="toc" class="toc-article">
+			<strong class="toc-title">文章目录</strong>
+		
+			<ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#缘起"><span class="toc-number">1.</span> <span class="toc-text">缘起</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#jQuery"><span class="toc-number">2.</span> <span class="toc-text">jQuery</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#setTimeout"><span class="toc-number">3.</span> <span class="toc-text">setTimeout</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#one与on"><span class="toc-number">4.</span> <span class="toc-text">one与on</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#总结"><span class="toc-number">5.</span> <span class="toc-text">总结</span></a></li></ol>
+		
+		</div>
+		
+		<h2 id="缘起">缘起</h2><p>最近在进行web开发，也就是基于openwrt的智能路由器的配置界面开发。虽说是路由器，但本质上还是开发一个小型的网站。从前端到后台基本上都是一个人在搞，因为另一个在做这个项目的小组想法跟我不同。前期的难度比较大，但到了后期，基本上都是体力活了，一个人做起来还是挺麻烦的，吭哧吭哧忙了一个月，总算快完工了。所以趁此机会总结一下，今天先谈谈前端的js开发中遇到的一些坑，之后有机会会再讲讲后台。<br><a id="more"></a></p>
+<h2 id="jQuery">jQuery</h2><p>为了降低开发难度，也为了提高效率，直接采用了jQuery作为js开发的主力。之前没有接触过，先简单地介绍一下。</p>
+<blockquote>
+<p>jQuery 是一个 JavaScript 库。</p>
+<p>jQuery 极大地简化了 JavaScript 编程。</p>
+<p>jQuery 很容易学习。</p>
+</blockquote>
+<p><a href="http://www.w3school.com.cn/jquery/index.asp" target="_blank" rel="external">w3cschool</a>上的三句话基本可以概括jQuery了，自己翻翻手册，也差不多能用jQuery了，很是方便。推荐使用<a href="http://jquery.bootcss.com/" target="_blank" rel="external">jQuery的中文文档</a>。</p>
+<h2 id="setTimeout">setTimeout</h2><p>遇到的第一个问题就是setTimeout，顾名思义，延迟执行嘛，看看它的使用方式：<br><figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> id1 = setTimeout(<span class="string">"code"</span>, millisec);</span><br><span class="line">setTimeout(<span class="function"><span class="keyword">function</span>, <span class="title">millisec</span>);</span><br><span class="line"><span class="title">clearTimeout</span>(<span class="params">id1</span>);</span></span><br></pre></td></tr></table></figure></p>
+<p>第一个参数可以是代码语句，或者是一个函数。第二个参数是延迟的时间。函数返回一个ID，可以用于提前销毁这个函数。</p>
+<p>于是我们执行以下代码：<br><figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">setTimeout(<span class="string">"console.log('hello')"</span>, <span class="number">1000</span>);</span><br></pre></td></tr></table></figure></p>
+<p>于是在控制台上就可以看到hello了。<br>然后，<br><figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">log</span>(<span class="params">str</span>) </span>&#123;</span><br><span class="line">	<span class="built_in">console</span>.log(str);</span><br><span class="line">&#125;</span><br><span class="line">setTimeout(log(<span class="string">"hello"</span>), <span class="number">1000</span>);</span><br></pre></td></tr></table></figure></p>
+<p>当然，很容易发现，这段代码肯定会立即在控制台上写下hello而没有丝毫延迟，为什么呢，因为它只是把print函数的返回值传给了setTimeout，而print是没有返回值的，所以自然是不会有延迟的。那么，如果我们需要延迟执行一个带参数的函数要怎么做呢？</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">log</span>(<span class="params">str</span>) </span>&#123;</span><br><span class="line">	<span class="built_in">console</span>.log(str);</span><br><span class="line">&#125;</span><br><span class="line">setTimeout(<span class="string">"log('hello')"</span>, <span class="number">1000</span>);</span><br></pre></td></tr></table></figure>
+<p>把函数调用语句用字符串传给setTimeout就可以了呗，需要注意的是，作为函数参数的字符串中的字符串的引号（有点拗口，总之就是引号里面的引号），是需要转义或者用单引号的。但是，如果我们需要延迟执行多个函数，或者处理步骤比较多呢？<br><figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">log</span>(<span class="params">num</span>) </span>&#123;</span><br><span class="line">	<span class="built_in">console</span>.log(num);</span><br><span class="line">&#125;</span><br><span class="line">setTimeout(<span class="string">"var num = 1; log(num); num += 1; log(num);"</span>, <span class="number">1000</span>);</span><br></pre></td></tr></table></figure></p>
+<p>稍微复杂一点的代码写成一行都会很乱，而且还要处理引号的问题。那么有没有更好的解决办法呢？我们可以把这些代码放在一个函数里，传给setTimeout。<br><figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">log</span>(<span class="params">num</span>) </span>&#123;</span><br><span class="line">	<span class="built_in">console</span>.log(num);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">setTimeout(<span class="function"><span class="keyword">function</span>(<span class="params"></span>) </span>&#123;</span><br><span class="line">		<span class="keyword">var</span> num = <span class="number">1</span>;</span><br><span class="line">		log(num);</span><br><span class="line">		num += <span class="number">1</span>;</span><br><span class="line">		log(num);</span><br><span class="line">&#125;, <span class="number">1000</span>);</span><br></pre></td></tr></table></figure></p>
+<p>这样子不管有没有参数，都可以直接在匿名函数里直接调用其他函数。于是问题被轻松地解决啦。</p>
+<h2 id="one与on">one与on</h2><p>第二个问题隐藏地比较深，是事件的问题。情景是这样的。</p>
+<p>我需要在一个弹出框里完成一个对话，也就是会不断在对话框里增加内容。使用bootstrap的modal作为弹出框，它的弹出框是写在html里的，用js或者css来触发。为了方便，我先把弹出框的框架内容写在了网页里，这样用js触发或者追加内容都会比较方便。</p>
+<p>用事件来追加内容，也就是在弹出框注册几个监听器，根据相应的事件来追加内容。为了防止用户多次触发弹出框而导致内容累加，需要在弹出框弹出之前先清空内容。</p>
+<p>看起来没有一点漏洞！</p>
+<p>但是结果很诡异，每次弹出内容还是照样累加，直到撑爆屏幕。</p>
+<p>因为我忽视了一点。我的弹出框是由一个按钮触发的，在弹出框被触发之后我会去注册其他的监听器，于是，每次弹出，监听器都会多一倍，这也导致虽然弹出框的内容被清空，但是还会有很多已经过期的监听器被触发而导致内容的累加。</p>
+<p>解决起来倒是很很简单，在弹出框上所有的监听器都用one注册，也就是触发一次后会自动注销监听器，或者在对话结束时，手动注销所有的监听器。貌似empty就能注销所有监听器来着。</p>
+<p>之后开发的过程中还遇到了几次这样的问题，都是因为监听器没有注销而导致多次触发，被坑多了当然要长记性，监听器一定要注意注销。</p>
+<h2 id="总结">总结</h2><p>目前在前端开发中遇到的坑就这些，先记下来以免之后忘记。</p>
+<p>之后应该会写一篇关于Luci开发的文章，敬请期待。</p>
+  
+	</div>
+		<footer class="article-footer clearfix">
+<div class="article-catetags">
+
+<div class="article-categories">
+  <span></span>
+  <a class="article-category-link" href="/categories/Tech-Tool/">Tech & Tool</a>
+</div>
+
+
+  <div class="article-tags">
+  
+  <span></span> <a href="/tags/web/">web</a><a href="/tags/前端/">前端</a>
+  </div>
+
+</div>
+
+
+
+	<div class="article-share" id="share">
+	
+	  <div data-url="http://wanghuanming.com/2014/07/前端开发中遇到的坑/" data-title="前端开发中遇到的坑 | Hello Code" data-tsina="null" class="share clearfix">
+	  </div>
+	
+	</div>
+
+
+</footer>
+
+   	       
+	</article>
+	
+<nav class="article-nav clearfix">
+ 
+ <div class="prev" >
+ <a href="/2014/07/阳光灿烂的日子/" title="阳光灿烂的日子">
+  <strong>上一篇：</strong><br/>
+  <span>
+  阳光灿烂的日子</span>
+</a>
+</div>
+
+
+<div class="next">
+<a href="/2014/07/利用ssh登录到openwrt虚拟机/"  title="利用ssh登录到openwrt虚拟机">
+ <strong>下一篇：</strong><br/> 
+ <span>利用ssh登录到openwrt虚拟机
+</span>
+</a>
+</div>
+
+</nav>
+
+	
+<section id="comments" class="comment">
+	<div class="ds-thread" data-thread-key="2014/07/前端开发中遇到的坑/" data-title="前端开发中遇到的坑" data-url="http://wanghuanming.com/2014/07/前端开发中遇到的坑/"></div>
+</section>
+
+
+</div>  
+      <div class="openaside"><a class="navbutton" href="#" title="显示侧边栏"></a></div>
+
+  <div id="toc" class="toc-aside">
+  <strong class="toc-title">文章目录</strong>
+ 
+ <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#缘起"><span class="toc-number">1.</span> <span class="toc-text">缘起</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#jQuery"><span class="toc-number">2.</span> <span class="toc-text">jQuery</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#setTimeout"><span class="toc-number">3.</span> <span class="toc-text">setTimeout</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#one与on"><span class="toc-number">4.</span> <span class="toc-text">one与on</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#总结"><span class="toc-number">5.</span> <span class="toc-text">总结</span></a></li></ol>
+ 
+  </div>
+
+<div id="asidepart">
+<div class="closeaside"><a class="closebutton" href="#" title="隐藏侧边栏"></a></div>
+<aside class="clearfix">
+
+  
+<div class="categorieslist">
+	<p class="asidetitle">分类</p>
+		<ul>
+		
+		  
+			<li><a href="/categories/Code/" title="Code">Code<sup>39</sup></a></li>
+		  
+		
+		  
+			<li><a href="/categories/Life-Work/" title="Life &amp; Work">Life &amp; Work<sup>10</sup></a></li>
+		  
+		
+		  
+			<li><a href="/categories/Reading/" title="Reading">Reading<sup>4</sup></a></li>
+		  
+		
+		  
+			<li><a href="/categories/Tech-Tool/" title="Tech &amp; Tool">Tech &amp; Tool<sup>24</sup></a></li>
+		  
+		
+		</ul>
+</div>
+
+
+  
+<div class="tagslist">
+	<p class="asidetitle">标签</p>
+		<ul class="clearfix">
+		
+			
+				<li><a href="/tags/C/" title="C++">C++<sup>9</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Scala/" title="Scala">Scala<sup>6</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/编译原理/" title="编译原理">编译原理<sup>4</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/LLVM/" title="LLVM">LLVM<sup>4</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/数据结构/" title="数据结构">数据结构<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Spark/" title="Spark">Spark<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/javascript/" title="javascript">javascript<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/OS/" title="OS">OS<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/ACM/" title="ACM">ACM<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/虚拟机/" title="虚拟机">虚拟机<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/线段树/" title="线段树">线段树<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/解释器/" title="解释器">解释器<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/C语言/" title="C语言">C语言<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/进程/" title="进程">进程<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Linux/" title="Linux">Linux<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Coursera/" title="Coursera">Coursera<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/ssh/" title="ssh">ssh<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/openwrt/" title="openwrt">openwrt<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/C/" title="C">C<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/函数式编程/" title="函数式编程">函数式编程<sup>2</sup></a></li>
+			
+		
+		</ul>
+</div>
+
+
+  <div class="rsspart">
+	<a href="/atom.xml" target="_blank" title="rss">RSS 订阅</a>
+</div>
+
+</aside>
+</div>
+    </div>
+    <footer><div id="footer" >
+	
+	<div class="line">
+		<span></span>
+		<div class="author"></div>
+	</div>
+	
+	
+	<div class="social-font" class="clearfix">
+		
+		<a href="http://weibo.com/5108629996" target="_blank" class="icon-weibo" title="微博"></a>
+		
+		
+		<a href="https://github.com/HelloCodeMing" target="_blank" class="icon-github" title="github"></a>
+		
+		
+		
+		
+		
+		
+		<a href="https://www.douban.com/people/94795087" target="_blank" class="icon-douban" title="豆瓣"></a>
+		
+		
+		<a href="https://www.zhihu.com/people/hellocode-67" target="_blank" class="icon-zhihu" title="知乎"></a>
+		
+		
+		
+		<a href="mailto:huanmingwong@163.com" target="_blank" class="icon-email" title="Email Me"></a>
+		
+	</div>
+			
+		
+
+		<p class="copyright">
+		Powered by <a href="http://hexo.io" target="_blank" title="hexo">hexo</a> and Theme by <a href="https://github.com/wuchong/jacman" target="_blank" title="Jacman">Jacman</a> © 2016 
+		
+		<a href="http://wanghuanming.com/about" target="_blank" title="王欢明">王欢明</a>
+		
+		
+		</p>
+</div>
+</footer>
+    <script src="/js/jquery-2.0.3.min.js"></script>
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  $('.navbar').click(function(){
+    $('header nav').toggleClass('shownav');
+  });
+  var myWidth = 0;
+  function getSize(){
+    if( typeof( window.innerWidth ) == 'number' ) {
+      myWidth = window.innerWidth;
+    } else if( document.documentElement && document.documentElement.clientWidth) {
+      myWidth = document.documentElement.clientWidth;
+    };
+  };
+  var m = $('#main'),
+      a = $('#asidepart'),
+      c = $('.closeaside'),
+      o = $('.openaside');
+  c.click(function(){
+    a.addClass('fadeOut').css('display', 'none');
+    o.css('display', 'block').addClass('fadeIn');
+    m.addClass('moveMain');
+  });
+  o.click(function(){
+    o.css('display', 'none').removeClass('beforeFadeIn');
+    a.css('display', 'block').removeClass('fadeOut').addClass('fadeIn');      
+    m.removeClass('moveMain');
+  });
+  $(window).scroll(function(){
+    o.css("top",Math.max(80,260-$(this).scrollTop()));
+  });
+  
+  $(window).resize(function(){
+    getSize(); 
+    if (myWidth >= 1024) {
+      $('header nav').removeClass('shownav');
+    }else{
+      m.removeClass('moveMain');
+      a.css('display', 'block').removeClass('fadeOut');
+      o.css('display', 'none');
+      
+      $('#toc.toc-aside').css('display', 'none');
+        
+    }
+  });
+});
+</script>
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  var ai = $('.article-content>iframe'),
+      ae = $('.article-content>embed'),
+      t  = $('#toc'),
+      ta = $('#toc.toc-aside'),
+      o  = $('.openaside'),
+      c  = $('.closeaside');
+  if(ai.length>0){
+    ai.wrap('<div class="video-container" />');
+  };
+  if(ae.length>0){
+   ae.wrap('<div class="video-container" />');
+  };
+  c.click(function(){
+    ta.css('display', 'block').addClass('fadeIn');
+  });
+  o.click(function(){
+    ta.css('display', 'none');
+  });
+  $(window).scroll(function(){
+    ta.css("top",Math.max(140,320-$(this).scrollTop()));
+  });
+});
+</script>
+
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  var $this = $('.share'),
+      url = $this.attr('data-url'),
+      encodedUrl = encodeURIComponent(url),
+      title = $this.attr('data-title'),
+      tsina = $this.attr('data-tsina'),
+      description = $this.attr('description');
+  var html = [
+  '<a href="#" class="overlay" id="qrcode"></a>',
+  '<div class="qrcode clearfix"><span>扫描二维码分享到微信朋友圈</span><a class="qrclose" href="#nothing"></a><strong>Loading...Please wait</strong><img id="qrcode-pic" data-src="http://s.jiathis.com/qrcode.php?url=' + encodedUrl + '"/></div>',
+  '<a href="https://www.facebook.com/sharer.php?u=' + encodedUrl + '" class="article-share-facebook" target="_blank" title="Facebook"></a>',
+  '<a href="https://twitter.com/intent/tweet?url=' + encodedUrl + '" class="article-share-twitter" target="_blank" title="Twitter"></a>',
+  '<a href="#qrcode" class="article-share-qrcode" title="微信"></a>',
+  '<a href="http://widget.renren.com/dialog/share?resourceUrl=' + encodedUrl + '&srcUrl=' + encodedUrl + '&title=' + title +'" class="article-share-renren" target="_blank" title="人人"></a>',
+  '<a href="http://service.weibo.com/share/share.php?title='+title+'&url='+encodedUrl +'&ralateUid='+ tsina +'&searchPic=true&style=number' +'" class="article-share-weibo" target="_blank" title="微博"></a>',
+  '<span title="Share to"></span>'
+  ].join('');
+  $this.append(html);
+  $('.article-share-qrcode').click(function(){
+    var imgSrc = $('#qrcode-pic').attr('data-src');
+    $('#qrcode-pic').attr('src', imgSrc);
+    $('#qrcode-pic').load(function(){
+        $('.qrcode strong').text(' ');
+    });
+  });
+});     
+</script>
+
+
+
+<script type="text/javascript">
+  var duoshuoQuery = {short_name:"wanghuanming"};
+  (function() {
+    var ds = document.createElement('script');
+    ds.type = 'text/javascript';ds.async = true;
+    ds.src = '//static.duoshuo.com/embed.js';
+    ds.charset = 'UTF-8';
+    (document.getElementsByTagName('head')[0] 
+    || document.getElementsByTagName('body')[0]).appendChild(ds);
+  })();
+</script> 
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+$(document).ready(function(){ 
+  $('.article-content').each(function(i){
+    $(this).find('img').each(function(){
+      if ($(this).parent().hasClass('fancybox')) return;
+      var alt = this.alt;
+      if (alt) $(this).after('<span class="caption">' + alt + '</span>');
+      $(this).wrap('<a href="' + this.src + '" title="' + alt + '" class="fancybox"></a>');
+    });
+    $(this).find('.fancybox').each(function(){
+      $(this).attr('rel', 'article' + i);
+    });
+  });
+  if($.fancybox){
+    $('.fancybox').fancybox();
+  }
+}); 
+</script>
+
+
+
+<!-- Analytics Begin -->
+
+
+
+
+
+<!-- Analytics End -->
+
+<!-- Totop Begin -->
+
+	<div id="totop">
+	<a title="返回顶部"><img src="/img/scrollup.png"/></a>
+	</div>
+	<script src="/js/totop.js"></script>
+
+<!-- Totop End -->
+
+<!-- MathJax Begin -->
+<!-- mathjax config similar to math.stackexchange -->
+
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    tex2jax: {
+      inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+      processEscapes: true
+    }
+  });
+</script>
+
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: {
+        skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+      }
+    });
+</script>
+
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Queue(function() {
+        var all = MathJax.Hub.getAllJax(), i;
+        for(i=0; i < all.length; i += 1) {
+            all[i].SourceElement().parentNode.className += ' has-jax';
+        }
+    });
+</script>
+
+<script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+</script>
+
+
+<!-- MathJax End -->
+
+<!-- Tiny_search Begin -->
+
+<!-- Tiny_search End -->
+
+  </body>
+</html>

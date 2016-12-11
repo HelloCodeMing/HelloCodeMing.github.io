@@ -1,0 +1,589 @@
+
+ <!DOCTYPE HTML>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  
+    <title>Lua源码阅读之虚拟机（一） | Hello Code</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1,user-scalable=no">
+    
+    <meta name="author" content="王欢明">
+    
+
+    
+    <meta name="description" content="前一段时间本想读读Lua的源码，但因为功力不够，还没开始就已经结束了。搁置了一段时间之后，觉得是时候再次来读Lua了，主要是想提升自己对程序本质的了解，想了解所谓程序，到底是什么，在底层的环境下，一个程序又是如何运行的。
+必须要感谢云风老大，阅读的过程中主要是参考了他写的《Lua源码赏析》，自己做笔记的过程中也可能会借鉴一些。
+Lua虚拟机简介Lua的虚拟机是一种采用三地址指令的基于寄存器的解释型">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Lua源码阅读之虚拟机（一）">
+<meta property="og:url" content="http://wanghuanming.com/2014/10/lua-vm/index.html">
+<meta property="og:site_name" content="Hello Code">
+<meta property="og:description" content="前一段时间本想读读Lua的源码，但因为功力不够，还没开始就已经结束了。搁置了一段时间之后，觉得是时候再次来读Lua了，主要是想提升自己对程序本质的了解，想了解所谓程序，到底是什么，在底层的环境下，一个程序又是如何运行的。
+必须要感谢云风老大，阅读的过程中主要是参考了他写的《Lua源码赏析》，自己做笔记的过程中也可能会借鉴一些。
+Lua虚拟机简介Lua的虚拟机是一种采用三地址指令的基于寄存器的解释型">
+<meta property="og:image" content="http://huanming-blog.qiniudn.com/opcode.png">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Lua源码阅读之虚拟机（一）">
+<meta name="twitter:description" content="前一段时间本想读读Lua的源码，但因为功力不够，还没开始就已经结束了。搁置了一段时间之后，觉得是时候再次来读Lua了，主要是想提升自己对程序本质的了解，想了解所谓程序，到底是什么，在底层的环境下，一个程序又是如何运行的。
+必须要感谢云风老大，阅读的过程中主要是参考了他写的《Lua源码赏析》，自己做笔记的过程中也可能会借鉴一些。
+Lua虚拟机简介Lua的虚拟机是一种采用三地址指令的基于寄存器的解释型">
+
+    
+    <link rel="alternative" href="/atom.xml" title="Hello Code" type="application/atom+xml">
+    
+    
+    <link rel="icon" href="/img/panda-icon.ico">
+    
+    
+    <link rel="apple-touch-icon" href="/img/panda.png">
+    <link rel="apple-touch-icon-precomposed" href="/img/panda.png">
+    
+    <link rel="stylesheet" href="/css/style.css" type="text/css">
+</head>
+
+  <body>
+    <header>
+      <div>
+		
+			<div id="imglogo">
+				<a href="/"><img src="/img/panda.png" alt="Hello Code" title="Hello Code"/></a>
+			</div>
+			
+			<div id="textlogo">
+				<h1 class="site-name"><a href="/" title="Hello Code">Hello Code</a></h1>
+				<h2 class="blog-motto"></h2>
+			</div>
+			<div class="navbar"><a class="navbutton navmobile" href="#" title="菜单">
+			</a></div>
+			<nav class="animated">
+				<ul>
+					<ul>
+					 
+						<li><a href="/">首页</a></li>
+					
+						<li><a href="/archives">归档</a></li>
+					
+						<li><a href="/about">关于</a></li>
+					
+					<li>
+ 					
+					<form class="search" action="//google.com/search" method="get" accept-charset="utf-8">
+						<label>Search</label>
+						<input type="search" id="search" name="q" autocomplete="off" maxlength="20" placeholder="搜索" />
+						<input type="hidden" name="q" value="site:wanghuanming.com">
+					</form>
+					
+					</li>
+				</ul>
+			</nav>			
+</div>
+    </header>
+    <div id="container">
+      <div id="main" class="post" itemscope itemprop="blogPost">
+  
+	<article itemprop="articleBody"> 
+		<header class="article-info clearfix">
+  <h1 itemprop="name">
+    
+      <a href="/2014/10/lua-vm/" title="Lua源码阅读之虚拟机（一）" itemprop="url">Lua源码阅读之虚拟机（一）</a>
+  </h1>
+  <p class="article-author">By
+       
+		<a href="http://wanghuanming.com/about" title="王欢明" target="_blank" itemprop="author">王欢明</a>
+		
+  <p class="article-time">
+    <time datetime="2014-10-29T11:50:15.000Z" itemprop="datePublished"> 发表于 2014 Oct 29</time>
+    
+  </p>
+</header>
+	<div class="article-content">
+		
+		<div id="toc" class="toc-article">
+			<strong class="toc-title">文章目录</strong>
+		
+			<ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#Lua虚拟机简介"><span class="toc-number">1.</span> <span class="toc-text">Lua虚拟机简介</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#指令编码"><span class="toc-number">2.</span> <span class="toc-text">指令编码</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#指令执行"><span class="toc-number">3.</span> <span class="toc-text">指令执行</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#PC及更新PC"><span class="toc-number">3.1.</span> <span class="toc-text">PC及更新PC</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#取指"><span class="toc-number">3.2.</span> <span class="toc-text">取指</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#译码"><span class="toc-number">3.3.</span> <span class="toc-text">译码</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#CallInfo"><span class="toc-number">3.4.</span> <span class="toc-text">CallInfo</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#总结"><span class="toc-number">4.</span> <span class="toc-text">总结</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#参考资料"><span class="toc-number">5.</span> <span class="toc-text">参考资料</span></a></li></ol>
+		
+		</div>
+		
+		<p>前一段时间本想读读Lua的源码，但因为功力不够，还没开始就已经结束了。搁置了一段时间之后，觉得是时候再次来读Lua了，主要是想提升自己对程序本质的了解，想了解所谓程序，到底是什么，在底层的环境下，一个程序又是如何运行的。</p>
+<p>必须要感谢云风老大，阅读的过程中主要是参考了他写的《Lua源码赏析》，自己做笔记的过程中也可能会借鉴一些。</p>
+<h2 id="Lua虚拟机简介">Lua虚拟机简介</h2><p>Lua的虚拟机是一种采用三地址指令的基于寄存器的解释型虚拟机。（Lua5开始使用基于寄存器的虚拟机）</p>
+<p>Lua是一门解释型语言，在运行的时候，Lua源代码会先被解析器（parser）翻译成一种类似机器码的字节码，然后再调用虚拟机执行字节码。所谓字节码，如果接触过汇编语言就很容易理解，它往往直接操作寄存器或栈，操作也很有限，比如赋值，压栈，调用。而字节码又分多种，Lua采用是的三地址指令的字节码，翻译一下就像这样：<br><figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">MOVE A B&#10;ADD A B C</span><br></pre></td></tr></table></figure></p>
+<p>当然，这里说的三地址指令，并不意味着所有操作的操作数都是三个。</p>
+<p>在CPU指令中，既有寄存器操作，也会有栈操作。通常来说，寄存器操作会快很多，但是性能越高的东西往往越宝贵，所以CPU的寄存器数量也是有限的，在x86-64架构的CPU上往往只有16个寄存器，并且有些寄存器还有特定的用途。</p>
+<p>虚拟机中的寄存器和CPU上的寄存器并不是一回事，虽然设计的初衷是虚拟机上的寄存器能够一一映射到物理寄存器，但结果未必如此。比如说Lua虚拟机有256个寄存器，无论如何也是无法全部映射到物理寄存器的。</p>
+<p>所以我们这里说的寄存器，栈，往往都是虚拟的，都是映射到内存的栈上的，只是在虚拟机的概念中会有区分。</p>
+<p>至于解释型虚拟机，也是才听说的概念。虚拟机其实也分解释型和编译型，或者也有两者结合的。简单来说，解释型虚拟机就是一条一条地执行字节码，而编译型虚拟机则会把字节码编译成机器码再运行。看起来编译型虚拟机有点多此一举，但是它往往能提高程序的复用性，比如一个模块化的程序，有些模块会重复运行，如果先编译一下，运行速度自然会提高。SUN的HotSpot就采用了JIT的技术，将部分字节码编译成native code，加快运行速度。</p>
+<h2 id="指令编码">指令编码</h2><p>Lua中的指令并不是像汇编语言那样直白的“mov add”，毕竟太浪费空间了，而是把每一条指令都压缩成4个字节提高效率。</p>
+<p><img src="http://huanming-blog.qiniudn.com/opcode.png" alt=" "></p>
+<p>opcode就是操作指令，ABC则是操作数。opcode共有40种，所以由6位编码。有些指令有3个操作数，有些只有2个或1个，所以存储的方式也不一样。</p>
+<p>详细的opcode描述在lopcode.h和lopcode.c中可以看到。</p>
+<h2 id="指令执行">指令执行</h2><p>虚拟机做的主要工作就是不断地处理每一条指令，这个过程和CPU的工作模式是很类似的。参照《CSAPP》4.3.1节“Y86的顺序实现”，我们可以把Lua虚拟机的工作流程作如下描述：</p>
+<ul>
+<li>取指（fetch）：取指阶段即读取一条指令，从指令中抽取opcode。</li>
+<li>译码（decode）：译码阶段从寄存器读入操作数，得到RA，RB或者其他的操作数。</li>
+<li>执行（execute）：执行opcode，有算数指令，条件指令，mov指令等等。</li>
+<li>访存（memory）：访问存储器。</li>
+<li>写回（write back）：将处理结果写回寄存器</li>
+<li>更新PC（PC update）：将PC设置成吓一跳指令的地址。</li>
+</ul>
+<p>主要执行流程在luaV_execute中。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">luaV_execute</span> <span class="params">(lua_State *L)</span> </span>&#123;</span><br><span class="line">  CallInfo *ci = L-&gt;ci;</span><br><span class="line">  LClosure *cl;</span><br><span class="line">  TValue *k;</span><br><span class="line">  StkId base;</span><br><span class="line"> newframe:  <span class="comment">/* reentry point when frame changes (call/return) */</span></span><br><span class="line">  lua_assert(ci == L-&gt;ci);</span><br><span class="line">  cl = clLvalue(ci-&gt;func);</span><br><span class="line">  k = cl-&gt;p-&gt;k;</span><br><span class="line">  base = ci-&gt;u.l.base;</span><br><span class="line">  <span class="comment">/* main loop of interpreter */</span></span><br><span class="line">  <span class="keyword">for</span> (;;) &#123;</span><br><span class="line">    Instruction i = *(ci-&gt;u.l.savedpc++);</span><br><span class="line">    StkId ra;</span><br><span class="line">    <span class="keyword">if</span> ((L-&gt;hookmask &amp; (LUA_MASKLINE | LUA_MASKCOUNT)) &amp;&amp;</span><br><span class="line">        (--L-&gt;hookcount == <span class="number">0</span> || L-&gt;hookmask &amp; LUA_MASKLINE)) &#123;</span><br><span class="line">      Protect(traceexec(L));</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">/* WARNING: several calls may realloc the stack and invalidate `ra' */</span></span><br><span class="line">    ra = RA(i);</span><br><span class="line">    lua_assert(base == ci-&gt;u.l.base);</span><br><span class="line">    lua_assert(base &lt;= L-&gt;top &amp;&amp; L-&gt;top &lt; L-&gt;<span class="built_in">stack</span> + L-&gt;stacksize);</span><br><span class="line">    vmdispatch (GET_OPCODE(i)) &#123;</span><br><span class="line">      vmcase(OP_MOVE,</span><br><span class="line">        setobjs2s(L, ra, RB(i));</span><br><span class="line">      )</span><br><span class="line">      vmcase(OP_LOADK,</span><br><span class="line">        TValue *rb = k + GETARG_Bx(i);</span><br><span class="line">        setobj2s(L, ra, rb);</span><br><span class="line">      )</span><br><span class="line">    ......</span><br></pre></td></tr></table></figure></p>
+<p>一个大的switch-case（代码中的vmdispatch-vmcase）既是大的循环了，从Lua_State中取出Instruction，RA取得操作数A，而vmdispatch和vmcase则是宏定义的。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="preprocessor">#<span class="keyword">define</span> vmdispatch(o)	switch(o)</span></span><br><span class="line"><span class="preprocessor">#<span class="keyword">define</span> vmcase(l,b)	case l: &#123;b&#125;  break;</span></span><br><span class="line"><span class="preprocessor">#<span class="keyword">define</span> vmcasenb(l,b)	case l: &#123;b&#125;		<span class="comment">/* nb = no break */</span></span></span><br></pre></td></tr></table></figure></p>
+<h3 id="PC及更新PC">PC及更新PC</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Instruction i = *(ci-&gt;u.l.savedpc++);</span><br></pre></td></tr></table></figure>
+<p>指令地址在savedpc记录，每次读取指令时即更新PC。</p>
+<h3 id="取指">取指</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="preprocessor">#<span class="keyword">define</span> GET_OPCODE(i)	(cast(OpCode, ((i)&gt;&gt;POS_OP) &amp; MASK1(SIZE_OP,<span class="number">0</span>)))</span></span><br><span class="line"><span class="preprocessor">#<span class="keyword">define</span> MASK1(n,p)	((~((~(Instruction)<span class="number">0</span>)&lt;&lt;(n)))&lt;&lt;(p))</span></span><br></pre></td></tr></table></figure>
+<p>操作指令是0-6位的，所以做一个0-6的掩码然后转成int就可以对应到相应的opcode了。</p>
+<h3 id="译码">译码</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">    ra = RA(i);</span><br><span class="line"><span class="preprocessor">#<span class="keyword">define</span> RA(i)	(base+GETARG_A(i))</span></span><br><span class="line"><span class="preprocessor">#<span class="keyword">define</span> GETARG_A(i)	getarg(i, POS_A, SIZE_A)</span></span><br><span class="line"><span class="preprocessor">#<span class="keyword">define</span> getarg(i,pos,size)	(cast(int, ((i)&gt;&gt;pos) &amp; MASK1(size,<span class="number">0</span>)))</span></span><br></pre></td></tr></table></figure>
+<p>获得操作数的原理也是同理。需要注意的是，这里获得的操作数都是指针。</p>
+<h3 id="CallInfo">CallInfo</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="keyword">struct</span> CallInfo &#123;</span><br><span class="line">  StkId func;  <span class="comment">/* function index in the stack */</span></span><br><span class="line">  StkId	top;  <span class="comment">/* top for this function */</span></span><br><span class="line">  <span class="keyword">struct</span> CallInfo *previous, *next;  <span class="comment">/* dynamic call link */</span></span><br><span class="line">  <span class="keyword">short</span> nresults;  <span class="comment">/* expected number of results from this function */</span></span><br><span class="line">  lu_byte callstatus;</span><br><span class="line">  <span class="keyword">ptrdiff_t</span> extra;</span><br><span class="line">  <span class="keyword">union</span> &#123;</span><br><span class="line">    <span class="keyword">struct</span> &#123;  <span class="comment">/* only for Lua functions */</span></span><br><span class="line">      StkId base;  <span class="comment">/* base for this function */</span></span><br><span class="line">      <span class="keyword">const</span> Instruction *savedpc;</span><br><span class="line">    &#125; l;</span><br><span class="line">    <span class="keyword">struct</span> &#123;  <span class="comment">/* only for C functions */</span></span><br><span class="line">      <span class="keyword">int</span> ctx;  <span class="comment">/* context info. in case of yields */</span></span><br><span class="line">      lua_CFunction k;  <span class="comment">/* continuation in case of yields */</span></span><br><span class="line">      <span class="keyword">ptrdiff_t</span> old_errfunc;</span><br><span class="line">      lu_byte old_allowhook;</span><br><span class="line">      lu_byte status;</span><br><span class="line">    &#125; c;</span><br><span class="line">  &#125; u;</span><br><span class="line">&#125; CallInfo;</span><br></pre></td></tr></table></figure>
+<p>CallInfo实际上是一个栈帧。保存了一个函数的运行状态。</p>
+<h2 id="总结">总结</h2><p>由于对虚拟机的了解很少，字节码部分也花了不少时间来理解，了解了大体的运行流程之后，会去理解每一条指令的执行过程，会在之后讲述。</p>
+<h2 id="参考资料">参考资料</h2><ul>
+<li><a href="http://rednaxelafx.iteye.com/blog/492667" target="_blank" rel="external">虚拟机随谈（一）：解释器，树遍历解释器，基于栈与基于寄存器，大杂烩</a></li>
+<li><a href="https://www.google.com.hk/url?sa=t&amp;rct=j&amp;q=&amp;esrc=s&amp;source=web&amp;cd=1&amp;ved=0CBsQFjAA&amp;url=%68%74%74%70%3a%2f%2f%77%77%77%2e%63%6f%64%69%6e%67%6e%6f%77%2e%63%6f%6d%2f%74%65%6d%70%2f%72%65%61%64%69%6e%67%6c%75%61%2e%70%64%66&amp;ei=OulQVJyLEILGmAWv7oCYCA&amp;usg=AFQjCNFuOZN1OSvlRRveKTUoA41u1t3_Yw&amp;bvm=bv.78597519,d.dGc&amp;cad=rjt" target="_blank" rel="external">Lua源码赏析</a></li>
+</ul>
+  
+	</div>
+		<footer class="article-footer clearfix">
+<div class="article-catetags">
+
+<div class="article-categories">
+  <span></span>
+  <a class="article-category-link" href="/categories/Tech-Tool/">Tech & Tool</a>
+</div>
+
+
+  <div class="article-tags">
+  
+  <span></span> <a href="/tags/Lua/">Lua</a><a href="/tags/虚拟机/">虚拟机</a>
+  </div>
+
+</div>
+
+
+
+	<div class="article-share" id="share">
+	
+	  <div data-url="http://wanghuanming.com/2014/10/lua-vm/" data-title="Lua源码阅读之虚拟机（一） | Hello Code" data-tsina="null" class="share clearfix">
+	  </div>
+	
+	</div>
+
+
+</footer>
+
+   	       
+	</article>
+	
+<nav class="article-nav clearfix">
+ 
+ <div class="prev" >
+ <a href="/2014/11/fish-shell/" title="更友好的shell">
+  <strong>上一篇：</strong><br/>
+  <span>
+  更友好的shell</span>
+</a>
+</div>
+
+
+<div class="next">
+<a href="/2014/10/spark-apriori/"  title="Apriori算法的Spark实现">
+ <strong>下一篇：</strong><br/> 
+ <span>Apriori算法的Spark实现
+</span>
+</a>
+</div>
+
+</nav>
+
+	
+<section id="comments" class="comment">
+	<div class="ds-thread" data-thread-key="2014/10/lua-vm/" data-title="Lua源码阅读之虚拟机（一）" data-url="http://wanghuanming.com/2014/10/lua-vm/"></div>
+</section>
+
+
+</div>  
+      <div class="openaside"><a class="navbutton" href="#" title="显示侧边栏"></a></div>
+
+  <div id="toc" class="toc-aside">
+  <strong class="toc-title">文章目录</strong>
+ 
+ <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#Lua虚拟机简介"><span class="toc-number">1.</span> <span class="toc-text">Lua虚拟机简介</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#指令编码"><span class="toc-number">2.</span> <span class="toc-text">指令编码</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#指令执行"><span class="toc-number">3.</span> <span class="toc-text">指令执行</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#PC及更新PC"><span class="toc-number">3.1.</span> <span class="toc-text">PC及更新PC</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#取指"><span class="toc-number">3.2.</span> <span class="toc-text">取指</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#译码"><span class="toc-number">3.3.</span> <span class="toc-text">译码</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#CallInfo"><span class="toc-number">3.4.</span> <span class="toc-text">CallInfo</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#总结"><span class="toc-number">4.</span> <span class="toc-text">总结</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#参考资料"><span class="toc-number">5.</span> <span class="toc-text">参考资料</span></a></li></ol>
+ 
+  </div>
+
+<div id="asidepart">
+<div class="closeaside"><a class="closebutton" href="#" title="隐藏侧边栏"></a></div>
+<aside class="clearfix">
+
+  
+<div class="categorieslist">
+	<p class="asidetitle">分类</p>
+		<ul>
+		
+		  
+			<li><a href="/categories/Code/" title="Code">Code<sup>39</sup></a></li>
+		  
+		
+		  
+			<li><a href="/categories/Life-Work/" title="Life &amp; Work">Life &amp; Work<sup>10</sup></a></li>
+		  
+		
+		  
+			<li><a href="/categories/Reading/" title="Reading">Reading<sup>4</sup></a></li>
+		  
+		
+		  
+			<li><a href="/categories/Tech-Tool/" title="Tech &amp; Tool">Tech &amp; Tool<sup>24</sup></a></li>
+		  
+		
+		</ul>
+</div>
+
+
+  
+<div class="tagslist">
+	<p class="asidetitle">标签</p>
+		<ul class="clearfix">
+		
+			
+				<li><a href="/tags/C/" title="C++">C++<sup>9</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Scala/" title="Scala">Scala<sup>6</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/编译原理/" title="编译原理">编译原理<sup>4</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/LLVM/" title="LLVM">LLVM<sup>4</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/数据结构/" title="数据结构">数据结构<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Spark/" title="Spark">Spark<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/javascript/" title="javascript">javascript<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/OS/" title="OS">OS<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/ACM/" title="ACM">ACM<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/虚拟机/" title="虚拟机">虚拟机<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/线段树/" title="线段树">线段树<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/解释器/" title="解释器">解释器<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/C语言/" title="C语言">C语言<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/进程/" title="进程">进程<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Linux/" title="Linux">Linux<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Coursera/" title="Coursera">Coursera<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/ssh/" title="ssh">ssh<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/openwrt/" title="openwrt">openwrt<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/C/" title="C">C<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/函数式编程/" title="函数式编程">函数式编程<sup>2</sup></a></li>
+			
+		
+		</ul>
+</div>
+
+
+  <div class="rsspart">
+	<a href="/atom.xml" target="_blank" title="rss">RSS 订阅</a>
+</div>
+
+</aside>
+</div>
+    </div>
+    <footer><div id="footer" >
+	
+	<div class="line">
+		<span></span>
+		<div class="author"></div>
+	</div>
+	
+	
+	<div class="social-font" class="clearfix">
+		
+		<a href="http://weibo.com/5108629996" target="_blank" class="icon-weibo" title="微博"></a>
+		
+		
+		<a href="https://github.com/HelloCodeMing" target="_blank" class="icon-github" title="github"></a>
+		
+		
+		
+		
+		
+		
+		<a href="https://www.douban.com/people/94795087" target="_blank" class="icon-douban" title="豆瓣"></a>
+		
+		
+		<a href="https://www.zhihu.com/people/hellocode-67" target="_blank" class="icon-zhihu" title="知乎"></a>
+		
+		
+		
+		<a href="mailto:huanmingwong@163.com" target="_blank" class="icon-email" title="Email Me"></a>
+		
+	</div>
+			
+		
+
+		<p class="copyright">
+		Powered by <a href="http://hexo.io" target="_blank" title="hexo">hexo</a> and Theme by <a href="https://github.com/wuchong/jacman" target="_blank" title="Jacman">Jacman</a> © 2016 
+		
+		<a href="http://wanghuanming.com/about" target="_blank" title="王欢明">王欢明</a>
+		
+		
+		</p>
+</div>
+</footer>
+    <script src="/js/jquery-2.0.3.min.js"></script>
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  $('.navbar').click(function(){
+    $('header nav').toggleClass('shownav');
+  });
+  var myWidth = 0;
+  function getSize(){
+    if( typeof( window.innerWidth ) == 'number' ) {
+      myWidth = window.innerWidth;
+    } else if( document.documentElement && document.documentElement.clientWidth) {
+      myWidth = document.documentElement.clientWidth;
+    };
+  };
+  var m = $('#main'),
+      a = $('#asidepart'),
+      c = $('.closeaside'),
+      o = $('.openaside');
+  c.click(function(){
+    a.addClass('fadeOut').css('display', 'none');
+    o.css('display', 'block').addClass('fadeIn');
+    m.addClass('moveMain');
+  });
+  o.click(function(){
+    o.css('display', 'none').removeClass('beforeFadeIn');
+    a.css('display', 'block').removeClass('fadeOut').addClass('fadeIn');      
+    m.removeClass('moveMain');
+  });
+  $(window).scroll(function(){
+    o.css("top",Math.max(80,260-$(this).scrollTop()));
+  });
+  
+  $(window).resize(function(){
+    getSize(); 
+    if (myWidth >= 1024) {
+      $('header nav').removeClass('shownav');
+    }else{
+      m.removeClass('moveMain');
+      a.css('display', 'block').removeClass('fadeOut');
+      o.css('display', 'none');
+      
+      $('#toc.toc-aside').css('display', 'none');
+        
+    }
+  });
+});
+</script>
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  var ai = $('.article-content>iframe'),
+      ae = $('.article-content>embed'),
+      t  = $('#toc'),
+      ta = $('#toc.toc-aside'),
+      o  = $('.openaside'),
+      c  = $('.closeaside');
+  if(ai.length>0){
+    ai.wrap('<div class="video-container" />');
+  };
+  if(ae.length>0){
+   ae.wrap('<div class="video-container" />');
+  };
+  c.click(function(){
+    ta.css('display', 'block').addClass('fadeIn');
+  });
+  o.click(function(){
+    ta.css('display', 'none');
+  });
+  $(window).scroll(function(){
+    ta.css("top",Math.max(140,320-$(this).scrollTop()));
+  });
+});
+</script>
+
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  var $this = $('.share'),
+      url = $this.attr('data-url'),
+      encodedUrl = encodeURIComponent(url),
+      title = $this.attr('data-title'),
+      tsina = $this.attr('data-tsina'),
+      description = $this.attr('description');
+  var html = [
+  '<a href="#" class="overlay" id="qrcode"></a>',
+  '<div class="qrcode clearfix"><span>扫描二维码分享到微信朋友圈</span><a class="qrclose" href="#nothing"></a><strong>Loading...Please wait</strong><img id="qrcode-pic" data-src="http://s.jiathis.com/qrcode.php?url=' + encodedUrl + '"/></div>',
+  '<a href="https://www.facebook.com/sharer.php?u=' + encodedUrl + '" class="article-share-facebook" target="_blank" title="Facebook"></a>',
+  '<a href="https://twitter.com/intent/tweet?url=' + encodedUrl + '" class="article-share-twitter" target="_blank" title="Twitter"></a>',
+  '<a href="#qrcode" class="article-share-qrcode" title="微信"></a>',
+  '<a href="http://widget.renren.com/dialog/share?resourceUrl=' + encodedUrl + '&srcUrl=' + encodedUrl + '&title=' + title +'" class="article-share-renren" target="_blank" title="人人"></a>',
+  '<a href="http://service.weibo.com/share/share.php?title='+title+'&url='+encodedUrl +'&ralateUid='+ tsina +'&searchPic=true&style=number' +'" class="article-share-weibo" target="_blank" title="微博"></a>',
+  '<span title="Share to"></span>'
+  ].join('');
+  $this.append(html);
+  $('.article-share-qrcode').click(function(){
+    var imgSrc = $('#qrcode-pic').attr('data-src');
+    $('#qrcode-pic').attr('src', imgSrc);
+    $('#qrcode-pic').load(function(){
+        $('.qrcode strong').text(' ');
+    });
+  });
+});     
+</script>
+
+
+
+<script type="text/javascript">
+  var duoshuoQuery = {short_name:"wanghuanming"};
+  (function() {
+    var ds = document.createElement('script');
+    ds.type = 'text/javascript';ds.async = true;
+    ds.src = '//static.duoshuo.com/embed.js';
+    ds.charset = 'UTF-8';
+    (document.getElementsByTagName('head')[0] 
+    || document.getElementsByTagName('body')[0]).appendChild(ds);
+  })();
+</script> 
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+$(document).ready(function(){ 
+  $('.article-content').each(function(i){
+    $(this).find('img').each(function(){
+      if ($(this).parent().hasClass('fancybox')) return;
+      var alt = this.alt;
+      if (alt) $(this).after('<span class="caption">' + alt + '</span>');
+      $(this).wrap('<a href="' + this.src + '" title="' + alt + '" class="fancybox"></a>');
+    });
+    $(this).find('.fancybox').each(function(){
+      $(this).attr('rel', 'article' + i);
+    });
+  });
+  if($.fancybox){
+    $('.fancybox').fancybox();
+  }
+}); 
+</script>
+
+
+
+<!-- Analytics Begin -->
+
+
+
+
+
+<!-- Analytics End -->
+
+<!-- Totop Begin -->
+
+	<div id="totop">
+	<a title="返回顶部"><img src="/img/scrollup.png"/></a>
+	</div>
+	<script src="/js/totop.js"></script>
+
+<!-- Totop End -->
+
+<!-- MathJax Begin -->
+<!-- mathjax config similar to math.stackexchange -->
+
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    tex2jax: {
+      inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+      processEscapes: true
+    }
+  });
+</script>
+
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: {
+        skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+      }
+    });
+</script>
+
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Queue(function() {
+        var all = MathJax.Hub.getAllJax(), i;
+        for(i=0; i < all.length; i += 1) {
+            all[i].SourceElement().parentNode.className += ' has-jax';
+        }
+    });
+</script>
+
+<script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+</script>
+
+
+<!-- MathJax End -->
+
+<!-- Tiny_search Begin -->
+
+<!-- Tiny_search End -->
+
+  </body>
+</html>
